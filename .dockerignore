@@ -1,0 +1,28 @@
+# Dependencies (installed in image via Dockerfile deps stage)
+node_modules
+.pnpm-store
+
+# Next.js build output (built in builder stage)
+.next
+out
+
+# Git / IDE
+.git
+.gitignore
+.idea
+.vscode
+*.md
+
+# Local env — compose passes env_file .env at runtime (don’t bake secrets into context)
+.env
+.env.*
+!.env.example
+
+# Logs / caches
+npm-debug.log*
+pnpm-debug.log*
+.turbo
+
+# Misc
+coverage
+.vercel

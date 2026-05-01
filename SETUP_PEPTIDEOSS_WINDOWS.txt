@@ -1,0 +1,71 @@
+Workout.cool on Windows — cloned + PeptideOS SSO patch (already done here)
+============================================================================
+
+Location: C:\Users\administrators1\Desktop\workout-cool
+
+Already done for you:
+  • git clone Snouzy/workout-cool
+  • npm dependencies installed via: npx pnpm install
+  • peptideos SSO files copied to:
+      app\api\auth\peptideos-wc-sso\route.ts
+      app\api\auth\peptideos-wc-sso\derive-wc-password.ts
+
+You still do (manual secrets / cloud console):
+---------------------------------------------------------------------------
+
+A) Run Peptide migration on Supabase (if not yet)
+   File in peptideos repo: supabase\migrations\20260426120000_workout_cool_handoffs.sql
+   (Dashboard → SQL Editor → paste → Run.)
+
+B) Create Workout.cool .env from upstream template
+   In PowerShell:
+     cd C:\Users\administrators1\Desktop\workout-cool
+     copy .env.example .env
+   Edit .env:
+
+   DATABASE_URL=
+     Same Supabase project as PeptideOS. Dashboard → Database → URI.
+     Prefer "Transaction pooler" (often port 6543). Append ?pgbouncer=true when docs say so.
+     If your DB password contains @ or :, URL-encode it.
+
+   SUPABASE_JWT_SECRET=
+     Dashboard → Settings → Data API → JWT Secret (same string you add on PeptideOS).
+
+   NEXT_PUBLIC_APP_URL=  and BETTER_AUTH_URL=
+     Both http://localhost:3000 until you expose a tunnel.
+
+   BETTER_AUTH_SECRET=
+     openssl rand -base64 32
+     or: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
+     Required by upstream src/env.ts. Google Cloud Console → OAuth Web client →
+     Authorized redirect URI:
+       http://localhost:3000/api/auth/callback/google
+
+   OPTIONAL self-host tweaks:
+     DEFAULT_BILLING_MODE="DISABLED"
+     SEED_SAMPLE_DATA=true (heavy first import)
+
+   If DATABASE_URL points at Supabase, you do NOT need Docker postgres from docker-compose.yml.
+
+C) Apply Prisma migrations to Supabase (creates WC tables)
+     cd C:\Users\administrators1\Desktop\workout-cool
+     npx prisma migrate deploy
+
+   If PgBouncer blocks migrations: use Dashboard "direct" connection URI (port 5432) temporarily.
+
+D) Seed sample exercises (optional)
+     npx pnpm run import:exercises-full .\data\sample-exercises.csv
+
+E) Start dev server
+     npx pnpm dev
+   Open http://localhost:3000
+
+F) Wire PeptideOS
+   SUPABASE_JWT_SECRET (same as workout-cool)
+   NEXT_PUBLIC_WORKOUT_COOL_URL=http://localhost:3000
+   Restart PeptideOS → Workouts → Open training hub.
+
+pnpm tip (optional global): npm install -g pnpm
+Otherwise use: npx pnpm ...

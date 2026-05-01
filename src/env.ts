@@ -3,18 +3,36 @@ import { createEnv } from "@t3-oss/env-nextjs";
 
 const booleanString = z.enum(["true", "false"]).transform((val) => val === "true");
 
+/** Absolute http(s) origin; trims whitespace (common .env typo). PostgREST/Zod `.url()` is pickier than we need here. */
+const httpOriginSchema = z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().url());
+
 /**
  * This is the schema for the environment variables.
  *
  * Please import **this** file and use the `env` variable
  */
 export const env = createEnv({
+  skipValidation:
+    process.env.SKIP_ENV_VALIDATION === "1" ||
+    process.env.SKIP_ENV_VALIDATION === "true",
+  emptyStringAsUndefined: true,
+  onValidationError: (issues) => {
+    console.error("[env.ts] Validation failed:", JSON.stringify(issues, null, 2));
+    throw new Error("Invalid environment variables");
+  },
   server: {
-    BETTER_AUTH_URL: z.string().url(),
-    DATABASE_URL: z.string().url(),
+    BETTER_AUTH_URL: httpOriginSchema,
+    // Prisma URIs are not always valid `new URL()` strings (e.g. unencoded chars in passwords).
+    DATABASE_URL: z
+      .string()
+      .min(1)
+      .refine((s) => /^postgres(ql)?:\/\/.+/i.test(s), "DATABASE_URL must start with postgresql:// or postgres://"),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
-    NODE_ENV: z.enum(["development", "production", "test"]),
+    NODE_ENV: z.preprocess((v) => {
+      const s = typeof v === "string" ? v.trim() : "";
+      return s === "development" || s === "production" || s === "test" ? s : "production";
+    }, z.enum(["development", "production", "test"])),
     BETTER_AUTH_SECRET: z.string().min(1),
     OPENPANEL_SECRET_KEY: z.string().optional(),
     SMTP_HOST: z.string().optional(),
@@ -39,7 +57,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
-    NEXT_PUBLIC_APP_URL: z.string().url(),
+    NEXT_PUBLIC_APP_URL: httpOriginSchema,
     NEXT_PUBLIC_STRIPE_PRICE_MONTHLY_EU: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PRICE_YEARLY_EU: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PRICE_MONTHLY_US: z.string().optional(),

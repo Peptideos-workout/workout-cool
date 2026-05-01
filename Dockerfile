@@ -16,7 +16,8 @@ COPY --from=deps /app/prisma ./prisma
 COPY . .
 COPY .env.example .env
 
-RUN pnpm run build
+# Build does not require your real prod secrets in the image layers; compose injects `.env` at runtime.
+RUN SKIP_ENV_VALIDATION=1 pnpm run build
 
 # Production image, copy only necessary files
 FROM base AS runner

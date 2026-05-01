@@ -2,7 +2,8 @@ services:
   postgres:
     image: postgres:15
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Default 5433 avoids clashing with another local Postgres on 5432 (e.g. other Docker stacks).
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,7 +18,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${APP_PORT:-3000}:3000"
+      # Default 3001 avoids clashing with another app on host 3000 (e.g. another frontend container).
+      - "${APP_PORT:-3001}:3000"
     depends_on:
       postgres:
         condition: service_healthy

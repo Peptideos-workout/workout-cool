@@ -1,6 +1,12 @@
+import path from "node:path";
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Parent folders (e.g. another package-lock.json up the tree) confuse Turbopack root detection otherwise.
+  turbopack: {
+    root: path.join(__dirname),
+  },
   reactStrictMode: true,
   images: {
     unoptimized: true,

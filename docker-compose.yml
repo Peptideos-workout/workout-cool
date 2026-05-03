@@ -17,12 +17,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3010}
+        BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3010}
     ports:
-      # Default 3001 avoids clashing with another app on host 3000 (e.g. another frontend container).
-      - "${APP_PORT:-3001}:3000"
+      # Default 3010; override with APP_PORT when another stack uses host 3001/3020/etc.
+      - "${APP_PORT:-3010}:3000"
     depends_on:
       postgres:
         condition: service_healthy
-    env_file: .env
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      # Prefer IPv4 inside Docker Desktop / WSL2 (avoids ENETUNREACH to db.* when AAAA resolves but v6 routes are broken).
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:${APP_PORT:-3010}}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:${APP_PORT:-3010}}
+    # Docker Desktop (WSL2) sometimes fails to resolve/reach cloud DBs; public DNS often fixes it.
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 volumes:
   pgdata:

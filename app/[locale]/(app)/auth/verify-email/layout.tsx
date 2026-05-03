@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
-import { getServerUrl } from "@/shared/lib/server-url";
-import { paths } from "@/shared/constants/paths";
 import { serverRequiredUser } from "@/entities/user/model/get-server-session-user";
 
 interface RootLayoutProps {
@@ -10,11 +8,12 @@ interface RootLayoutProps {
   children: ReactNode;
 }
 
-export default async function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children, params }: RootLayoutProps) {
   const auth = await serverRequiredUser();
+  const { locale } = await params;
 
   if (auth.emailVerified) {
-    redirect(`${getServerUrl()}/${paths.root}`);
+    redirect(`/${locale}`);
   }
 
   return children;

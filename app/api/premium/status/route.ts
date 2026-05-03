@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/shared/lib/prisma";
+import { SiteConfig } from "@/shared/config/site-config";
 import { getMobileCompatibleSession } from "@/shared/api/mobile-auth";
 
 /**
@@ -23,6 +24,16 @@ export async function GET(request: NextRequest) {
         isPremium: false,
         source: null,
         message: "User not authenticated",
+      });
+    }
+
+    if (SiteConfig.allPremiumFeaturesFree) {
+      return NextResponse.json({
+        isPremium: true,
+        source: null,
+        subscriptions: { hasRevenueCat: false, hasStripe: false, count: 0 },
+        currentSubscription: null,
+        legacyMessage: null,
       });
     }
 

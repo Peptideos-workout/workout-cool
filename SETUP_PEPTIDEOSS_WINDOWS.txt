@@ -7,8 +7,8 @@ Already done for you:
   • git clone Snouzy/workout-cool
   • npm dependencies installed via: npx pnpm install
   • peptideos SSO files copied to:
-      app\api\auth\peptideos-wc-sso\route.ts
-      app\api\auth\peptideos-wc-sso\derive-wc-password.ts
+      app\api\peptideos-wc-sso\route.ts
+      app\api\peptideos-wc-sso\derive-wc-password.ts
 
 You still do (manual secrets / cloud console):
 ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ B) Create Workout.cool .env from upstream template
      Dashboard → Settings → Data API → JWT Secret (same string you add on PeptideOS).
 
    NEXT_PUBLIC_APP_URL=  and BETTER_AUTH_URL=
-     Both http://localhost:3000 until you expose a tunnel.
+     Your Workout.cool public origin (e.g. http://localhost:3010 or https://workouts.peptideos.us).
 
    BETTER_AUTH_SECRET=
      openssl rand -base64 32
@@ -40,8 +40,9 @@ B) Create Workout.cool .env from upstream template
 
    GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
      Required by upstream src/env.ts. Google Cloud Console → OAuth Web client →
-     Authorized redirect URI:
-       http://localhost:3000/api/auth/callback/google
+     Authorized redirect URI must match BETTER_AUTH_URL, e.g.:
+       http://localhost:3010/api/auth/callback/google
+       https://workouts.peptideos.us/api/auth/callback/google
 
    OPTIONAL self-host tweaks:
      DEFAULT_BILLING_MODE="DISABLED"
@@ -60,11 +61,11 @@ D) Seed sample exercises (optional)
 
 E) Start dev server
      npx pnpm dev
-   Open http://localhost:3000
+   Open the URL you set in NEXT_PUBLIC_APP_URL (e.g. http://localhost:3010 if your dev port is 3010).
 
 F) Wire PeptideOS
    SUPABASE_JWT_SECRET (same as workout-cool)
-   NEXT_PUBLIC_WORKOUT_COOL_URL=http://localhost:3000
+   NEXT_PUBLIC_WORKOUT_COOL_URL=<same origin as Workout.cool — e.g. http://localhost:3010 or https://workouts.peptideos.us>
    Restart PeptideOS → Workouts → Open training hub.
 
 pnpm tip (optional global): npm install -g pnpm

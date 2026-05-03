@@ -6,6 +6,41 @@ const booleanString = z.enum(["true", "false"]).transform((val) => val === "true
 /** Absolute http(s) origin; trims whitespace (common .env typo). PostgREST/Zod `.url()` is pickier than we need here. */
 const httpOriginSchema = z.preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().url());
 
+function preprocessDatabaseUrl(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  let s = v.replace(/^\uFEFF/, "").replace(/\r/g, "").trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+// Prisma reads `process.env.DATABASE_URL` directly — normalize BOM/CRLF/quotes before `createEnv` and Client init.
+if (typeof process.env.DATABASE_URL === "string") {
+  process.env.DATABASE_URL = preprocessDatabaseUrl(process.env.DATABASE_URL) as string;
+}
+
+// Normalize + mirror Better Auth vs public URL (Docker `.env` often misses `NEXT_PUBLIC_APP_URL`; `createEnv` requires both).
+if (typeof process.env.BETTER_AUTH_URL === "string") {
+  process.env.BETTER_AUTH_URL = preprocessDatabaseUrl(process.env.BETTER_AUTH_URL) as string;
+}
+if (typeof process.env.NEXT_PUBLIC_APP_URL === "string") {
+  process.env.NEXT_PUBLIC_APP_URL = preprocessDatabaseUrl(process.env.NEXT_PUBLIC_APP_URL) as string;
+}
+const _ba =
+  typeof process.env.BETTER_AUTH_URL === "string" && process.env.BETTER_AUTH_URL.length > 0
+    ? process.env.BETTER_AUTH_URL
+    : undefined;
+const _np =
+  typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.length > 0
+    ? process.env.NEXT_PUBLIC_APP_URL
+    : undefined;
+if (_ba && !_np) process.env.NEXT_PUBLIC_APP_URL = _ba;
+else if (_np && !_ba) process.env.BETTER_AUTH_URL = _np;
+
 /**
  * This is the schema for the environment variables.
  *
@@ -23,10 +58,13 @@ export const env = createEnv({
   server: {
     BETTER_AUTH_URL: httpOriginSchema,
     // Prisma URIs are not always valid `new URL()` strings (e.g. unencoded chars in passwords).
-    DATABASE_URL: z
-      .string()
-      .min(1)
-      .refine((s) => /^postgres(ql)?:\/\/.+/i.test(s), "DATABASE_URL must start with postgresql:// or postgres://"),
+    DATABASE_URL: z.preprocess(
+      preprocessDatabaseUrl,
+      z
+        .string()
+        .min(1)
+        .refine((s) => /^postgres(ql)?:\/\/.+/i.test(s), "DATABASE_URL must start with postgresql:// or postgres://"),
+    ),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     NODE_ENV: z.preprocess((v) => {

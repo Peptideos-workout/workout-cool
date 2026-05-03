@@ -2,17 +2,24 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
+
+// Workout.cool objects live in schema `wc` so `db push` / Migrate never reconcile Supabase `auth.*` or PeptideOS `public.*`.
+// Peptide-side SSO handoff stays in `public.workout_cool_handoffs` (see app/api/peptideos-wc-sso/route.ts).
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["wc"]
 }
 
 enum UserRole {
   admin
   user
+
+  @@schema("wc")
 }
 
 model User {
@@ -30,11 +37,11 @@ model User {
   accounts      Account[]
   feedbacks     Feedbacks[]
 
-  role           UserRole?        @default(user)
-  banned         Boolean?         @default(false)
-  banReason      String?
-  banExpires     DateTime?
-  WorkoutSession WorkoutSession[]
+  role              UserRole?              @default(user)
+  banned            Boolean?               @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  WorkoutSession    WorkoutSession[]
   FavoriteExercises UserFavoriteExercise[]
 
   // Subscription fields
@@ -49,6 +56,7 @@ model User {
   programEnrollments UserProgramEnrollment[]
 
   @@map("user")
+  @@schema("wc")
 }
 
 model UserFavoriteExercise {
@@ -61,6 +69,7 @@ model UserFavoriteExercise {
 
   @@unique([userId, exerciseId])
   @@map("user_favorite_exercises")
+  @@schema("wc")
 }
 
 model Session {
@@ -77,6 +86,7 @@ model Session {
   impersonatedBy String?
 
   @@map("session")
+  @@schema("wc")
 }
 
 model Account {
@@ -96,6 +106,7 @@ model Account {
   updatedAt             DateTime
 
   @@map("account")
+  @@schema("wc")
 }
 
 model Verification {
@@ -107,6 +118,7 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+  @@schema("wc")
 }
 
 model Feedbacks {
@@ -121,6 +133,7 @@ model Feedbacks {
   updatedAt DateTime @updatedAt
 
   @@map("feedbacks")
+  @@schema("wc")
 }
 
 model Exercise {
@@ -145,6 +158,7 @@ model Exercise {
   favoritesByUsers       UserFavoriteExercise[]
 
   @@map("exercises")
+  @@schema("wc")
 }
 
 model ExerciseAttributeName {
@@ -158,6 +172,7 @@ model ExerciseAttributeName {
   attributes ExerciseAttribute[]
 
   @@map("exercise_attribute_names")
+  @@schema("wc")
 }
 
 model ExerciseAttributeValue {
@@ -173,6 +188,7 @@ model ExerciseAttributeValue {
 
   @@unique([attributeNameId, value])
   @@map("exercise_attribute_values")
+  @@schema("wc")
 }
 
 model ExerciseAttribute {
@@ -190,12 +206,15 @@ model ExerciseAttribute {
 
   @@unique([exerciseId, attributeNameId, attributeValueId])
   @@map("exercise_attributes")
+  @@schema("wc")
 }
 
 // Enums
 enum ExercisePrivacy {
   PUBLIC
   PRIVATE
+
+  @@schema("wc")
 }
 
 // Noms d'attributs
@@ -205,6 +224,8 @@ enum ExerciseAttributeNameEnum {
   SECONDARY_MUSCLE
   EQUIPMENT
   MECHANICS_TYPE
+
+  @@schema("wc")
 }
 
 // Toutes les valeurs possibles
@@ -290,6 +311,8 @@ enum ExerciseAttributeValueEnum {
   // Types de mécanique
   ISOLATION
   COMPOUND
+
+  @@schema("wc")
 }
 
 model WorkoutSession {
@@ -309,6 +332,7 @@ model WorkoutSession {
   userSessionProgress UserSessionProgress?
 
   @@map("workout_sessions")
+  @@schema("wc")
 }
 
 model WorkoutSessionExercise {
@@ -321,6 +345,7 @@ model WorkoutSessionExercise {
   sets             WorkoutSet[]
 
   @@map("workout_session_exercises")
+  @@schema("wc")
 }
 
 model WorkoutSet {
@@ -336,6 +361,7 @@ model WorkoutSet {
   workoutSessionExercise   WorkoutSessionExercise @relation(fields: [workoutSessionExerciseId], references: [id], onDelete: Cascade)
 
   @@map("workout_sets")
+  @@schema("wc")
 }
 
 enum WorkoutSetType {
@@ -344,11 +370,15 @@ enum WorkoutSetType {
   REPS
   BODYWEIGHT
   NA
+
+  @@schema("wc")
 }
 
 enum WorkoutSetUnit {
   kg
   lbs
+
+  @@schema("wc")
 }
 
 // ========================================
@@ -377,6 +407,7 @@ model SubscriptionPlan {
   providerMappings PlanProviderMapping[]
 
   @@map("subscription_plans")
+  @@schema("wc")
 }
 
 // Provider mapping for external payment systems
@@ -403,6 +434,7 @@ model PlanProviderMapping {
   @@unique([planId, provider, region])
   @@index([provider, externalId])
   @@map("plan_provider_mappings")
+  @@schema("wc")
 }
 
 // Abonnements utilisateurs (source de vérité : RevenueCat pour mobile)
@@ -433,6 +465,7 @@ model Subscription {
 
   @@unique([userId, platform])
   @@map("subscriptions")
+  @@schema("wc")
 }
 
 // Licences pour self-hosted (alternative aux subscriptions)
@@ -459,6 +492,7 @@ model License {
   createdAt DateTime @default(now())
 
   @@map("licenses")
+  @@schema("wc")
 }
 
 // RevenueCat webhook event logging for debugging and monitoring
@@ -466,25 +500,25 @@ model RevenueCatWebhookEvent {
   id String @id @default(cuid())
 
   // Event metadata
-  eventType        String  // INITIAL_PURCHASE, RENEWAL, CANCELLATION, etc.
-  eventTimestamp   DateTime
-  appUserId        String
-  environment      String  // SANDBOX or PRODUCTION
-  
+  eventType      String // INITIAL_PURCHASE, RENEWAL, CANCELLATION, etc.
+  eventTimestamp DateTime
+  appUserId      String
+  environment    String // SANDBOX or PRODUCTION
+
   // Transaction details
-  productId        String?
-  transactionId    String?
+  productId             String?
+  transactionId         String?
   originalTransactionId String?
-  entitlementIds   String? // JSON array as string
-  
+  entitlementIds        String? // JSON array as string
+
   // Processing metadata
-  processed        Boolean @default(false)
-  processingError  String? @db.Text
-  retryCount       Int @default(0)
-  
+  processed       Boolean @default(false)
+  processingError String? @db.Text
+  retryCount      Int     @default(0)
+
   // Raw event data for debugging
-  rawEventData     Json
-  
+  rawEventData Json
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -493,6 +527,7 @@ model RevenueCatWebhookEvent {
   @@index([processed])
   @@index([eventTimestamp])
   @@map("revenuecat_webhook_events")
+  @@schema("wc")
 }
 
 // ========================================
@@ -505,12 +540,16 @@ enum SubscriptionStatus {
   CANCELLED
   EXPIRED
   PAUSED
+
+  @@schema("wc")
 }
 
 enum Platform {
   WEB
   IOS
   ANDROID
+
+  @@schema("wc")
 }
 
 enum PaymentProcessor {
@@ -523,6 +562,8 @@ enum PaymentProcessor {
   REVENUECAT
   NONE // self-hosted
   OTHER
+
+  @@schema("wc")
 }
 
 // ========================================
@@ -571,6 +612,7 @@ model Program {
   coaches     ProgramCoach[]
 
   @@map("programs")
+  @@schema("wc")
 }
 
 model ProgramCoach {
@@ -583,6 +625,7 @@ model ProgramCoach {
   program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
 
   @@map("program_coaches")
+  @@schema("wc")
 }
 
 model ProgramWeek {
@@ -607,6 +650,7 @@ model ProgramWeek {
 
   @@unique([programId, weekNumber])
   @@map("program_weeks")
+  @@schema("wc")
 }
 
 model ProgramSession {
@@ -647,6 +691,7 @@ model ProgramSession {
   @@unique([weekId, slugRu])
   @@unique([weekId, slugZhCn])
   @@map("program_sessions")
+  @@schema("wc")
 }
 
 model ProgramSessionExercise {
@@ -667,6 +712,7 @@ model ProgramSessionExercise {
 
   @@unique([sessionId, order])
   @@map("program_session_exercises")
+  @@schema("wc")
 }
 
 model ProgramSuggestedSet {
@@ -682,6 +728,7 @@ model ProgramSuggestedSet {
 
   @@unique([programSessionExerciseId, setIndex])
   @@map("program_suggested_sets")
+  @@schema("wc")
 }
 
 // User enrollment and progress tracking
@@ -702,6 +749,7 @@ model UserProgramEnrollment {
 
   @@unique([userId, programId])
   @@map("user_program_enrollments")
+  @@schema("wc")
 }
 
 model UserSessionProgress {
@@ -718,6 +766,7 @@ model UserSessionProgress {
 
   @@unique([enrollmentId, sessionId])
   @@map("user_session_progress")
+  @@schema("wc")
 }
 
 enum ProgramLevel {
@@ -725,10 +774,14 @@ enum ProgramLevel {
   INTERMEDIATE
   ADVANCED
   EXPERT
+
+  @@schema("wc")
 }
 
 enum ProgramVisibility {
   DRAFT
   PUBLISHED
   ARCHIVED
+
+  @@schema("wc")
 }

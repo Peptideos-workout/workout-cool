@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/features/auth/lib/auth-client";
 
 import type { PremiumStatus, UserSubscription } from "@/shared/types/premium.types";
+import { SiteConfig } from "@/shared/config/site-config";
 
 export function usePremiumStatus() {
   const { data: session } = useSession();
@@ -14,6 +15,9 @@ export function usePremiumStatus() {
     queryFn: async (): Promise<PremiumStatus> => {
       if (!session?.user?.id) {
         return { isPremium: false };
+      }
+      if (SiteConfig.allPremiumFeaturesFree) {
+        return { isPremium: true };
       }
 
       const response = await fetch("/api/premium/status");
@@ -38,6 +42,9 @@ export function useSubscription() {
       if (!session?.user?.id) {
         return { isActive: false };
       }
+      if (SiteConfig.allPremiumFeaturesFree) {
+        return { isActive: true };
+      }
 
       const response = await fetch("/api/premium/subscription");
       if (!response.ok) {
@@ -55,5 +62,5 @@ export function useSubscription() {
 // Simple boolean check - most common use case
 export function useIsPremium(): boolean {
   const { data: premiumStatus } = usePremiumStatus();
-  return premiumStatus?.isPremium ?? false;
+  return SiteConfig.allPremiumFeaturesFree || (premiumStatus?.isPremium ?? false);
 }

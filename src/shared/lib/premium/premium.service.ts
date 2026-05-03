@@ -1,5 +1,6 @@
 import { PaymentProcessor, Platform } from "@prisma/client";
 
+import { SiteConfig } from "@/shared/config/site-config";
 import { revenueCatApi } from "@/shared/lib/revenuecat";
 import { prisma } from "@/shared/lib/prisma";
 
@@ -17,6 +18,10 @@ export class PremiumService {
    * Check if user has premium access
    */
   static async checkUserPremiumStatus(userId: string): Promise<PremiumStatus> {
+    if (SiteConfig.allPremiumFeaturesFree) {
+      return { isPremium: true };
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       // select: {

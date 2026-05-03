@@ -260,6 +260,8 @@ export function generateStructuredData({
       const difficultyLevel =
         courseData.level === "BEGINNER" ? "Beginner" : courseData.level === "INTERMEDIATE" ? "Intermediate" : "Advanced";
 
+      const courseChargesPremium = courseData.isPremium && !SiteConfig.allPremiumFeaturesFree;
+
       const courseSchema = {
         "@context": "https://schema.org",
         "@type": "Course",
@@ -312,10 +314,10 @@ export function generateStructuredData({
         },
         offers: {
           "@type": "Offer",
-          price: courseData.isPremium ? "7.90" : "0",
+          price: courseChargesPremium ? "7.90" : "0",
           priceCurrency: "EUR",
           availability: "https://schema.org/InStock",
-          category: courseData.isPremium ? "Premium" : "Free",
+          category: courseChargesPremium ? "Premium" : "Free",
         },
         keywords: [courseData.category, difficultyLevel, "fitness", "workout", "training", ...courseData.equipment].join(", "),
         inLanguage:
@@ -330,7 +332,7 @@ export function generateStructuredData({
                   : locale === "zh-CN"
                     ? "zh-CN"
                     : "fr-FR",
-        isAccessibleForFree: !courseData.isPremium,
+        isAccessibleForFree: !courseChargesPremium,
         syllabusSections: [
           {
             "@type": "Syllabus",

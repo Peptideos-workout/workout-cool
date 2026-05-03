@@ -1,38 +1,41 @@
--- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('admin', 'user');
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "wc";
 
 -- CreateEnum
-CREATE TYPE "ExercisePrivacy" AS ENUM ('PUBLIC', 'PRIVATE');
+CREATE TYPE "wc"."UserRole" AS ENUM ('admin', 'user');
 
 -- CreateEnum
-CREATE TYPE "ExerciseAttributeNameEnum" AS ENUM ('TYPE', 'PRIMARY_MUSCLE', 'SECONDARY_MUSCLE', 'EQUIPMENT', 'MECHANICS_TYPE');
+CREATE TYPE "wc"."ExercisePrivacy" AS ENUM ('PUBLIC', 'PRIVATE');
 
 -- CreateEnum
-CREATE TYPE "ExerciseAttributeValueEnum" AS ENUM ('BODYWEIGHT', 'STRENGTH', 'POWERLIFTING', 'CALISTHENIC', 'PLYOMETRICS', 'STRETCHING', 'STRONGMAN', 'CARDIO', 'STABILIZATION', 'POWER', 'RESISTANCE', 'CROSSFIT', 'WEIGHTLIFTING', 'BICEPS', 'SHOULDERS', 'CHEST', 'BACK', 'GLUTES', 'TRICEPS', 'HAMSTRINGS', 'QUADRICEPS', 'FOREARMS', 'CALVES', 'TRAPS', 'ABDOMINALS', 'NECK', 'LATS', 'ADDUCTORS', 'ABDUCTORS', 'OBLIQUES', 'GROIN', 'FULL_BODY', 'ROTATOR_CUFF', 'HIP_FLEXOR', 'ACHILLES_TENDON', 'FINGERS', 'DUMBBELL', 'KETTLEBELLS', 'BARBELL', 'SMITH_MACHINE', 'BODY_ONLY', 'OTHER', 'BANDS', 'EZ_BAR', 'MACHINE', 'DESK', 'PULLUP_BAR', 'NONE', 'CABLE', 'MEDICINE_BALL', 'SWISS_BALL', 'FOAM_ROLL', 'WEIGHT_PLATE', 'TRX', 'BOX', 'ROPES', 'SPIN_BIKE', 'STEP', 'BOSU', 'TYRE', 'SANDBAG', 'POLE', 'BENCH', 'WALL', 'BAR', 'RACK', 'CAR', 'SLED', 'CHAIN', 'SKIERG', 'ROPE', 'NA', 'ISOLATION', 'COMPOUND');
+CREATE TYPE "wc"."ExerciseAttributeNameEnum" AS ENUM ('TYPE', 'PRIMARY_MUSCLE', 'SECONDARY_MUSCLE', 'EQUIPMENT', 'MECHANICS_TYPE');
 
 -- CreateEnum
-CREATE TYPE "WorkoutSetType" AS ENUM ('TIME', 'WEIGHT', 'REPS', 'BODYWEIGHT', 'NA');
+CREATE TYPE "wc"."ExerciseAttributeValueEnum" AS ENUM ('BODYWEIGHT', 'STRENGTH', 'POWERLIFTING', 'CALISTHENIC', 'PLYOMETRICS', 'STRETCHING', 'STRONGMAN', 'CARDIO', 'STABILIZATION', 'POWER', 'RESISTANCE', 'CROSSFIT', 'WEIGHTLIFTING', 'BICEPS', 'SHOULDERS', 'CHEST', 'BACK', 'GLUTES', 'TRICEPS', 'HAMSTRINGS', 'QUADRICEPS', 'FOREARMS', 'CALVES', 'TRAPS', 'ABDOMINALS', 'NECK', 'LATS', 'ADDUCTORS', 'ABDUCTORS', 'OBLIQUES', 'GROIN', 'FULL_BODY', 'ROTATOR_CUFF', 'HIP_FLEXOR', 'ACHILLES_TENDON', 'FINGERS', 'DUMBBELL', 'KETTLEBELLS', 'BARBELL', 'SMITH_MACHINE', 'BODY_ONLY', 'OTHER', 'BANDS', 'EZ_BAR', 'MACHINE', 'DESK', 'PULLUP_BAR', 'NONE', 'CABLE', 'MEDICINE_BALL', 'SWISS_BALL', 'FOAM_ROLL', 'WEIGHT_PLATE', 'TRX', 'BOX', 'ROPES', 'SPIN_BIKE', 'STEP', 'BOSU', 'TYRE', 'SANDBAG', 'POLE', 'BENCH', 'WALL', 'BAR', 'RACK', 'CAR', 'SLED', 'CHAIN', 'SKIERG', 'ROPE', 'NA', 'ISOLATION', 'COMPOUND');
 
 -- CreateEnum
-CREATE TYPE "WorkoutSetUnit" AS ENUM ('kg', 'lbs');
+CREATE TYPE "wc"."WorkoutSetType" AS ENUM ('TIME', 'WEIGHT', 'REPS', 'BODYWEIGHT', 'NA');
 
 -- CreateEnum
-CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'TRIAL', 'CANCELLED', 'EXPIRED', 'PAUSED');
+CREATE TYPE "wc"."WorkoutSetUnit" AS ENUM ('kg', 'lbs');
 
 -- CreateEnum
-CREATE TYPE "Platform" AS ENUM ('WEB', 'IOS', 'ANDROID');
+CREATE TYPE "wc"."SubscriptionStatus" AS ENUM ('ACTIVE', 'TRIAL', 'CANCELLED', 'EXPIRED', 'PAUSED');
 
 -- CreateEnum
-CREATE TYPE "PaymentProcessor" AS ENUM ('STRIPE', 'PAYPAL', 'LEMONSQUEEZY', 'PADDLE', 'APPLE_PAY', 'GOOGLE_PAY', 'REVENUECAT', 'NONE', 'OTHER');
+CREATE TYPE "wc"."Platform" AS ENUM ('WEB', 'IOS', 'ANDROID');
 
 -- CreateEnum
-CREATE TYPE "ProgramLevel" AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT');
+CREATE TYPE "wc"."PaymentProcessor" AS ENUM ('STRIPE', 'PAYPAL', 'LEMONSQUEEZY', 'PADDLE', 'APPLE_PAY', 'GOOGLE_PAY', 'REVENUECAT', 'NONE', 'OTHER');
 
 -- CreateEnum
-CREATE TYPE "ProgramVisibility" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+CREATE TYPE "wc"."ProgramLevel" AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT');
+
+-- CreateEnum
+CREATE TYPE "wc"."ProgramVisibility" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateTable
-CREATE TABLE "user" (
+CREATE TABLE "wc"."user" (
     "id" TEXT NOT NULL,
     "firstName" TEXT NOT NULL DEFAULT '',
     "lastName" TEXT NOT NULL DEFAULT '',
@@ -43,17 +46,18 @@ CREATE TABLE "user" (
     "locale" TEXT DEFAULT 'fr',
     "createdAt" TIMESTAMP(3) NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "role" "UserRole" DEFAULT 'user',
+    "role" "wc"."UserRole" DEFAULT 'user',
     "banned" BOOLEAN DEFAULT false,
     "banReason" TEXT,
     "banExpires" TIMESTAMP(3),
     "isPremium" BOOLEAN DEFAULT false,
+    "onboardingPreferences" JSONB,
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "user_favorite_exercises" (
+CREATE TABLE "wc"."user_favorite_exercises" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "exerciseId" TEXT NOT NULL,
@@ -63,7 +67,7 @@ CREATE TABLE "user_favorite_exercises" (
 );
 
 -- CreateTable
-CREATE TABLE "session" (
+CREATE TABLE "wc"."session" (
     "id" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "token" TEXT NOT NULL,
@@ -78,7 +82,7 @@ CREATE TABLE "session" (
 );
 
 -- CreateTable
-CREATE TABLE "account" (
+CREATE TABLE "wc"."account" (
     "id" TEXT NOT NULL,
     "accountId" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
@@ -97,7 +101,7 @@ CREATE TABLE "account" (
 );
 
 -- CreateTable
-CREATE TABLE "verification" (
+CREATE TABLE "wc"."verification" (
     "id" TEXT NOT NULL,
     "identifier" TEXT NOT NULL,
     "value" TEXT NOT NULL,
@@ -109,7 +113,7 @@ CREATE TABLE "verification" (
 );
 
 -- CreateTable
-CREATE TABLE "feedbacks" (
+CREATE TABLE "wc"."feedbacks" (
     "id" TEXT NOT NULL,
     "review" INTEGER NOT NULL,
     "message" TEXT NOT NULL,
@@ -122,7 +126,7 @@ CREATE TABLE "feedbacks" (
 );
 
 -- CreateTable
-CREATE TABLE "exercises" (
+CREATE TABLE "wc"."exercises" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "nameEn" TEXT,
@@ -141,9 +145,9 @@ CREATE TABLE "exercises" (
 );
 
 -- CreateTable
-CREATE TABLE "exercise_attribute_names" (
+CREATE TABLE "wc"."exercise_attribute_names" (
     "id" TEXT NOT NULL,
-    "name" "ExerciseAttributeNameEnum" NOT NULL,
+    "name" "wc"."ExerciseAttributeNameEnum" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -151,10 +155,10 @@ CREATE TABLE "exercise_attribute_names" (
 );
 
 -- CreateTable
-CREATE TABLE "exercise_attribute_values" (
+CREATE TABLE "wc"."exercise_attribute_values" (
     "id" TEXT NOT NULL,
     "attributeNameId" TEXT NOT NULL,
-    "value" "ExerciseAttributeValueEnum" NOT NULL,
+    "value" "wc"."ExerciseAttributeValueEnum" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -162,7 +166,7 @@ CREATE TABLE "exercise_attribute_values" (
 );
 
 -- CreateTable
-CREATE TABLE "exercise_attributes" (
+CREATE TABLE "wc"."exercise_attributes" (
     "id" TEXT NOT NULL,
     "exerciseId" TEXT NOT NULL,
     "attributeNameId" TEXT NOT NULL,
@@ -174,13 +178,13 @@ CREATE TABLE "exercise_attributes" (
 );
 
 -- CreateTable
-CREATE TABLE "workout_sessions" (
+CREATE TABLE "wc"."workout_sessions" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "startedAt" TIMESTAMP(3) NOT NULL,
     "endedAt" TIMESTAMP(3),
     "duration" INTEGER,
-    "muscles" "ExerciseAttributeValueEnum"[] DEFAULT ARRAY[]::"ExerciseAttributeValueEnum"[],
+    "muscles" "wc"."ExerciseAttributeValueEnum"[] DEFAULT ARRAY[]::"wc"."ExerciseAttributeValueEnum"[],
     "rating" INTEGER,
     "ratingComment" TEXT,
 
@@ -188,7 +192,7 @@ CREATE TABLE "workout_sessions" (
 );
 
 -- CreateTable
-CREATE TABLE "workout_session_exercises" (
+CREATE TABLE "wc"."workout_session_exercises" (
     "id" TEXT NOT NULL,
     "workoutSessionId" TEXT NOT NULL,
     "exerciseId" TEXT NOT NULL,
@@ -198,22 +202,22 @@ CREATE TABLE "workout_session_exercises" (
 );
 
 -- CreateTable
-CREATE TABLE "workout_sets" (
+CREATE TABLE "wc"."workout_sets" (
     "id" TEXT NOT NULL,
     "workoutSessionExerciseId" TEXT NOT NULL,
     "setIndex" INTEGER NOT NULL,
-    "type" "WorkoutSetType" NOT NULL,
-    "types" "WorkoutSetType"[] DEFAULT ARRAY[]::"WorkoutSetType"[],
+    "type" "wc"."WorkoutSetType" NOT NULL,
+    "types" "wc"."WorkoutSetType"[] DEFAULT ARRAY[]::"wc"."WorkoutSetType"[],
     "valuesInt" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "valuesSec" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
-    "units" "WorkoutSetUnit"[] DEFAULT ARRAY[]::"WorkoutSetUnit"[],
+    "units" "wc"."WorkoutSetUnit"[] DEFAULT ARRAY[]::"wc"."WorkoutSetUnit"[],
     "completed" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "workout_sets_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "subscription_plans" (
+CREATE TABLE "wc"."subscription_plans" (
     "id" TEXT NOT NULL,
     "priceMonthly" DECIMAL(10,2),
     "priceYearly" DECIMAL(10,2),
@@ -228,10 +232,10 @@ CREATE TABLE "subscription_plans" (
 );
 
 -- CreateTable
-CREATE TABLE "plan_provider_mappings" (
+CREATE TABLE "wc"."plan_provider_mappings" (
     "id" TEXT NOT NULL,
     "planId" TEXT NOT NULL,
-    "provider" "PaymentProcessor" NOT NULL,
+    "provider" "wc"."PaymentProcessor" NOT NULL,
     "externalId" TEXT NOT NULL,
     "region" TEXT,
     "metadata" JSONB,
@@ -243,16 +247,16 @@ CREATE TABLE "plan_provider_mappings" (
 );
 
 -- CreateTable
-CREATE TABLE "subscriptions" (
+CREATE TABLE "wc"."subscriptions" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "planId" TEXT NOT NULL,
     "revenueCatUserId" TEXT,
-    "status" "SubscriptionStatus" NOT NULL,
+    "status" "wc"."SubscriptionStatus" NOT NULL,
     "startedAt" TIMESTAMP(3) NOT NULL,
     "currentPeriodEnd" TIMESTAMP(3),
     "cancelledAt" TIMESTAMP(3),
-    "platform" "Platform",
+    "platform" "wc"."Platform",
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -260,7 +264,7 @@ CREATE TABLE "subscriptions" (
 );
 
 -- CreateTable
-CREATE TABLE "licenses" (
+CREATE TABLE "wc"."licenses" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "userId" TEXT,
@@ -276,7 +280,7 @@ CREATE TABLE "licenses" (
 );
 
 -- CreateTable
-CREATE TABLE "revenuecat_webhook_events" (
+CREATE TABLE "wc"."revenuecat_webhook_events" (
     "id" TEXT NOT NULL,
     "eventType" TEXT NOT NULL,
     "eventTimestamp" TIMESTAMP(3) NOT NULL,
@@ -297,7 +301,7 @@ CREATE TABLE "revenuecat_webhook_events" (
 );
 
 -- CreateTable
-CREATE TABLE "programs" (
+CREATE TABLE "wc"."programs" (
     "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "slugEn" TEXT NOT NULL,
@@ -319,15 +323,15 @@ CREATE TABLE "programs" (
     "descriptionZhCn" TEXT NOT NULL,
     "category" TEXT NOT NULL,
     "image" TEXT NOT NULL,
-    "level" "ProgramLevel" NOT NULL,
-    "type" "ExerciseAttributeValueEnum" NOT NULL,
+    "level" "wc"."ProgramLevel" NOT NULL,
+    "type" "wc"."ExerciseAttributeValueEnum" NOT NULL,
     "durationWeeks" INTEGER NOT NULL DEFAULT 4,
     "sessionsPerWeek" INTEGER NOT NULL DEFAULT 3,
     "sessionDurationMin" INTEGER NOT NULL DEFAULT 30,
-    "equipment" "ExerciseAttributeValueEnum"[] DEFAULT ARRAY[]::"ExerciseAttributeValueEnum"[],
+    "equipment" "wc"."ExerciseAttributeValueEnum"[] DEFAULT ARRAY[]::"wc"."ExerciseAttributeValueEnum"[],
     "isPremium" BOOLEAN NOT NULL DEFAULT true,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "visibility" "ProgramVisibility" NOT NULL DEFAULT 'DRAFT',
+    "visibility" "wc"."ProgramVisibility" NOT NULL DEFAULT 'DRAFT',
     "participantCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -336,7 +340,7 @@ CREATE TABLE "programs" (
 );
 
 -- CreateTable
-CREATE TABLE "program_coaches" (
+CREATE TABLE "wc"."program_coaches" (
     "id" TEXT NOT NULL,
     "programId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -347,7 +351,7 @@ CREATE TABLE "program_coaches" (
 );
 
 -- CreateTable
-CREATE TABLE "program_weeks" (
+CREATE TABLE "wc"."program_weeks" (
     "id" TEXT NOT NULL,
     "programId" TEXT NOT NULL,
     "weekNumber" INTEGER NOT NULL,
@@ -368,7 +372,7 @@ CREATE TABLE "program_weeks" (
 );
 
 -- CreateTable
-CREATE TABLE "program_sessions" (
+CREATE TABLE "wc"."program_sessions" (
     "id" TEXT NOT NULL,
     "weekId" TEXT NOT NULL,
     "sessionNumber" INTEGER NOT NULL,
@@ -390,7 +394,7 @@ CREATE TABLE "program_sessions" (
     "descriptionPt" TEXT NOT NULL,
     "descriptionRu" TEXT NOT NULL,
     "descriptionZhCn" TEXT NOT NULL,
-    "equipment" "ExerciseAttributeValueEnum"[] DEFAULT ARRAY[]::"ExerciseAttributeValueEnum"[],
+    "equipment" "wc"."ExerciseAttributeValueEnum"[] DEFAULT ARRAY[]::"wc"."ExerciseAttributeValueEnum"[],
     "estimatedMinutes" INTEGER NOT NULL,
     "isPremium" BOOLEAN NOT NULL DEFAULT true,
 
@@ -398,7 +402,7 @@ CREATE TABLE "program_sessions" (
 );
 
 -- CreateTable
-CREATE TABLE "program_session_exercises" (
+CREATE TABLE "wc"."program_session_exercises" (
     "id" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
     "exerciseId" TEXT NOT NULL,
@@ -414,20 +418,20 @@ CREATE TABLE "program_session_exercises" (
 );
 
 -- CreateTable
-CREATE TABLE "program_suggested_sets" (
+CREATE TABLE "wc"."program_suggested_sets" (
     "id" TEXT NOT NULL,
     "programSessionExerciseId" TEXT NOT NULL,
     "setIndex" INTEGER NOT NULL,
-    "types" "WorkoutSetType"[] DEFAULT ARRAY[]::"WorkoutSetType"[],
+    "types" "wc"."WorkoutSetType"[] DEFAULT ARRAY[]::"wc"."WorkoutSetType"[],
     "valuesInt" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "valuesSec" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
-    "units" "WorkoutSetUnit"[] DEFAULT ARRAY[]::"WorkoutSetUnit"[],
+    "units" "wc"."WorkoutSetUnit"[] DEFAULT ARRAY[]::"wc"."WorkoutSetUnit"[],
 
     CONSTRAINT "program_suggested_sets_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "user_program_enrollments" (
+CREATE TABLE "wc"."user_program_enrollments" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "programId" TEXT NOT NULL,
@@ -442,7 +446,7 @@ CREATE TABLE "user_program_enrollments" (
 );
 
 -- CreateTable
-CREATE TABLE "user_session_progress" (
+CREATE TABLE "wc"."user_session_progress" (
     "id" TEXT NOT NULL,
     "enrollmentId" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
@@ -454,191 +458,191 @@ CREATE TABLE "user_session_progress" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+CREATE UNIQUE INDEX "user_email_key" ON "wc"."user"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_favorite_exercises_userId_exerciseId_key" ON "user_favorite_exercises"("userId", "exerciseId");
+CREATE UNIQUE INDEX "user_favorite_exercises_userId_exerciseId_key" ON "wc"."user_favorite_exercises"("userId", "exerciseId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
+CREATE UNIQUE INDEX "session_token_key" ON "wc"."session"("token");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "exercises_slug_key" ON "exercises"("slug");
+CREATE UNIQUE INDEX "exercises_slug_key" ON "wc"."exercises"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "exercises_slugEn_key" ON "exercises"("slugEn");
+CREATE UNIQUE INDEX "exercises_slugEn_key" ON "wc"."exercises"("slugEn");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "exercise_attribute_names_name_key" ON "exercise_attribute_names"("name");
+CREATE UNIQUE INDEX "exercise_attribute_names_name_key" ON "wc"."exercise_attribute_names"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "exercise_attribute_values_attributeNameId_value_key" ON "exercise_attribute_values"("attributeNameId", "value");
+CREATE UNIQUE INDEX "exercise_attribute_values_attributeNameId_value_key" ON "wc"."exercise_attribute_values"("attributeNameId", "value");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "exercise_attributes_exerciseId_attributeNameId_attributeVal_key" ON "exercise_attributes"("exerciseId", "attributeNameId", "attributeValueId");
+CREATE UNIQUE INDEX "exercise_attributes_exerciseId_attributeNameId_attributeVal_key" ON "wc"."exercise_attributes"("exerciseId", "attributeNameId", "attributeValueId");
 
 -- CreateIndex
-CREATE INDEX "plan_provider_mappings_provider_externalId_idx" ON "plan_provider_mappings"("provider", "externalId");
+CREATE INDEX "plan_provider_mappings_provider_externalId_idx" ON "wc"."plan_provider_mappings"("provider", "externalId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "plan_provider_mappings_planId_provider_region_key" ON "plan_provider_mappings"("planId", "provider", "region");
+CREATE UNIQUE INDEX "plan_provider_mappings_planId_provider_region_key" ON "wc"."plan_provider_mappings"("planId", "provider", "region");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "subscriptions_userId_platform_key" ON "subscriptions"("userId", "platform");
+CREATE UNIQUE INDEX "subscriptions_userId_platform_key" ON "wc"."subscriptions"("userId", "platform");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "licenses_key_key" ON "licenses"("key");
+CREATE UNIQUE INDEX "licenses_key_key" ON "wc"."licenses"("key");
 
 -- CreateIndex
-CREATE INDEX "revenuecat_webhook_events_appUserId_idx" ON "revenuecat_webhook_events"("appUserId");
+CREATE INDEX "revenuecat_webhook_events_appUserId_idx" ON "wc"."revenuecat_webhook_events"("appUserId");
 
 -- CreateIndex
-CREATE INDEX "revenuecat_webhook_events_eventType_idx" ON "revenuecat_webhook_events"("eventType");
+CREATE INDEX "revenuecat_webhook_events_eventType_idx" ON "wc"."revenuecat_webhook_events"("eventType");
 
 -- CreateIndex
-CREATE INDEX "revenuecat_webhook_events_processed_idx" ON "revenuecat_webhook_events"("processed");
+CREATE INDEX "revenuecat_webhook_events_processed_idx" ON "wc"."revenuecat_webhook_events"("processed");
 
 -- CreateIndex
-CREATE INDEX "revenuecat_webhook_events_eventTimestamp_idx" ON "revenuecat_webhook_events"("eventTimestamp");
+CREATE INDEX "revenuecat_webhook_events_eventTimestamp_idx" ON "wc"."revenuecat_webhook_events"("eventTimestamp");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "programs_slug_key" ON "programs"("slug");
+CREATE UNIQUE INDEX "programs_slug_key" ON "wc"."programs"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "programs_slugEn_key" ON "programs"("slugEn");
+CREATE UNIQUE INDEX "programs_slugEn_key" ON "wc"."programs"("slugEn");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "programs_slugEs_key" ON "programs"("slugEs");
+CREATE UNIQUE INDEX "programs_slugEs_key" ON "wc"."programs"("slugEs");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "programs_slugPt_key" ON "programs"("slugPt");
+CREATE UNIQUE INDEX "programs_slugPt_key" ON "wc"."programs"("slugPt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "programs_slugRu_key" ON "programs"("slugRu");
+CREATE UNIQUE INDEX "programs_slugRu_key" ON "wc"."programs"("slugRu");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "programs_slugZhCn_key" ON "programs"("slugZhCn");
+CREATE UNIQUE INDEX "programs_slugZhCn_key" ON "wc"."programs"("slugZhCn");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_weeks_programId_weekNumber_key" ON "program_weeks"("programId", "weekNumber");
+CREATE UNIQUE INDEX "program_weeks_programId_weekNumber_key" ON "wc"."program_weeks"("programId", "weekNumber");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_sessionNumber_key" ON "program_sessions"("weekId", "sessionNumber");
+CREATE UNIQUE INDEX "program_sessions_weekId_sessionNumber_key" ON "wc"."program_sessions"("weekId", "sessionNumber");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_slug_key" ON "program_sessions"("weekId", "slug");
+CREATE UNIQUE INDEX "program_sessions_weekId_slug_key" ON "wc"."program_sessions"("weekId", "slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_slugEn_key" ON "program_sessions"("weekId", "slugEn");
+CREATE UNIQUE INDEX "program_sessions_weekId_slugEn_key" ON "wc"."program_sessions"("weekId", "slugEn");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_slugEs_key" ON "program_sessions"("weekId", "slugEs");
+CREATE UNIQUE INDEX "program_sessions_weekId_slugEs_key" ON "wc"."program_sessions"("weekId", "slugEs");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_slugPt_key" ON "program_sessions"("weekId", "slugPt");
+CREATE UNIQUE INDEX "program_sessions_weekId_slugPt_key" ON "wc"."program_sessions"("weekId", "slugPt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_slugRu_key" ON "program_sessions"("weekId", "slugRu");
+CREATE UNIQUE INDEX "program_sessions_weekId_slugRu_key" ON "wc"."program_sessions"("weekId", "slugRu");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_sessions_weekId_slugZhCn_key" ON "program_sessions"("weekId", "slugZhCn");
+CREATE UNIQUE INDEX "program_sessions_weekId_slugZhCn_key" ON "wc"."program_sessions"("weekId", "slugZhCn");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_session_exercises_sessionId_order_key" ON "program_session_exercises"("sessionId", "order");
+CREATE UNIQUE INDEX "program_session_exercises_sessionId_order_key" ON "wc"."program_session_exercises"("sessionId", "order");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "program_suggested_sets_programSessionExerciseId_setIndex_key" ON "program_suggested_sets"("programSessionExerciseId", "setIndex");
+CREATE UNIQUE INDEX "program_suggested_sets_programSessionExerciseId_setIndex_key" ON "wc"."program_suggested_sets"("programSessionExerciseId", "setIndex");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_program_enrollments_userId_programId_key" ON "user_program_enrollments"("userId", "programId");
+CREATE UNIQUE INDEX "user_program_enrollments_userId_programId_key" ON "wc"."user_program_enrollments"("userId", "programId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_session_progress_workoutSessionId_key" ON "user_session_progress"("workoutSessionId");
+CREATE UNIQUE INDEX "user_session_progress_workoutSessionId_key" ON "wc"."user_session_progress"("workoutSessionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_session_progress_enrollmentId_sessionId_key" ON "user_session_progress"("enrollmentId", "sessionId");
+CREATE UNIQUE INDEX "user_session_progress_enrollmentId_sessionId_key" ON "wc"."user_session_progress"("enrollmentId", "sessionId");
 
 -- AddForeignKey
-ALTER TABLE "user_favorite_exercises" ADD CONSTRAINT "user_favorite_exercises_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_favorite_exercises" ADD CONSTRAINT "user_favorite_exercises_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_favorite_exercises" ADD CONSTRAINT "user_favorite_exercises_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_favorite_exercises" ADD CONSTRAINT "user_favorite_exercises_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "wc"."exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "feedbacks" ADD CONSTRAINT "feedbacks_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "wc"."feedbacks" ADD CONSTRAINT "feedbacks_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "exercise_attribute_values" ADD CONSTRAINT "exercise_attribute_values_attributeNameId_fkey" FOREIGN KEY ("attributeNameId") REFERENCES "exercise_attribute_names"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."exercise_attribute_values" ADD CONSTRAINT "exercise_attribute_values_attributeNameId_fkey" FOREIGN KEY ("attributeNameId") REFERENCES "wc"."exercise_attribute_names"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "exercise_attributes" ADD CONSTRAINT "exercise_attributes_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."exercise_attributes" ADD CONSTRAINT "exercise_attributes_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "wc"."exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "exercise_attributes" ADD CONSTRAINT "exercise_attributes_attributeNameId_fkey" FOREIGN KEY ("attributeNameId") REFERENCES "exercise_attribute_names"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."exercise_attributes" ADD CONSTRAINT "exercise_attributes_attributeNameId_fkey" FOREIGN KEY ("attributeNameId") REFERENCES "wc"."exercise_attribute_names"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "exercise_attributes" ADD CONSTRAINT "exercise_attributes_attributeValueId_fkey" FOREIGN KEY ("attributeValueId") REFERENCES "exercise_attribute_values"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."exercise_attributes" ADD CONSTRAINT "exercise_attributes_attributeValueId_fkey" FOREIGN KEY ("attributeValueId") REFERENCES "wc"."exercise_attribute_values"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "workout_sessions" ADD CONSTRAINT "workout_sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."workout_sessions" ADD CONSTRAINT "workout_sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "workout_session_exercises" ADD CONSTRAINT "workout_session_exercises_workoutSessionId_fkey" FOREIGN KEY ("workoutSessionId") REFERENCES "workout_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."workout_session_exercises" ADD CONSTRAINT "workout_session_exercises_workoutSessionId_fkey" FOREIGN KEY ("workoutSessionId") REFERENCES "wc"."workout_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "workout_session_exercises" ADD CONSTRAINT "workout_session_exercises_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "exercises"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."workout_session_exercises" ADD CONSTRAINT "workout_session_exercises_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "wc"."exercises"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "workout_sets" ADD CONSTRAINT "workout_sets_workoutSessionExerciseId_fkey" FOREIGN KEY ("workoutSessionExerciseId") REFERENCES "workout_session_exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."workout_sets" ADD CONSTRAINT "workout_sets_workoutSessionExerciseId_fkey" FOREIGN KEY ("workoutSessionExerciseId") REFERENCES "wc"."workout_session_exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "plan_provider_mappings" ADD CONSTRAINT "plan_provider_mappings_planId_fkey" FOREIGN KEY ("planId") REFERENCES "subscription_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."plan_provider_mappings" ADD CONSTRAINT "plan_provider_mappings_planId_fkey" FOREIGN KEY ("planId") REFERENCES "wc"."subscription_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."subscriptions" ADD CONSTRAINT "subscriptions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_planId_fkey" FOREIGN KEY ("planId") REFERENCES "subscription_plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."subscriptions" ADD CONSTRAINT "subscriptions_planId_fkey" FOREIGN KEY ("planId") REFERENCES "wc"."subscription_plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "licenses" ADD CONSTRAINT "licenses_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "wc"."licenses" ADD CONSTRAINT "licenses_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "program_coaches" ADD CONSTRAINT "program_coaches_programId_fkey" FOREIGN KEY ("programId") REFERENCES "programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."program_coaches" ADD CONSTRAINT "program_coaches_programId_fkey" FOREIGN KEY ("programId") REFERENCES "wc"."programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "program_weeks" ADD CONSTRAINT "program_weeks_programId_fkey" FOREIGN KEY ("programId") REFERENCES "programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."program_weeks" ADD CONSTRAINT "program_weeks_programId_fkey" FOREIGN KEY ("programId") REFERENCES "wc"."programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "program_sessions" ADD CONSTRAINT "program_sessions_weekId_fkey" FOREIGN KEY ("weekId") REFERENCES "program_weeks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."program_sessions" ADD CONSTRAINT "program_sessions_weekId_fkey" FOREIGN KEY ("weekId") REFERENCES "wc"."program_weeks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "program_session_exercises" ADD CONSTRAINT "program_session_exercises_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "program_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."program_session_exercises" ADD CONSTRAINT "program_session_exercises_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "wc"."program_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "program_session_exercises" ADD CONSTRAINT "program_session_exercises_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "exercises"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."program_session_exercises" ADD CONSTRAINT "program_session_exercises_exerciseId_fkey" FOREIGN KEY ("exerciseId") REFERENCES "wc"."exercises"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "program_suggested_sets" ADD CONSTRAINT "program_suggested_sets_programSessionExerciseId_fkey" FOREIGN KEY ("programSessionExerciseId") REFERENCES "program_session_exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."program_suggested_sets" ADD CONSTRAINT "program_suggested_sets_programSessionExerciseId_fkey" FOREIGN KEY ("programSessionExerciseId") REFERENCES "wc"."program_session_exercises"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_program_enrollments" ADD CONSTRAINT "user_program_enrollments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_program_enrollments" ADD CONSTRAINT "user_program_enrollments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "wc"."user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_program_enrollments" ADD CONSTRAINT "user_program_enrollments_programId_fkey" FOREIGN KEY ("programId") REFERENCES "programs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_program_enrollments" ADD CONSTRAINT "user_program_enrollments_programId_fkey" FOREIGN KEY ("programId") REFERENCES "wc"."programs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_session_progress" ADD CONSTRAINT "user_session_progress_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "user_program_enrollments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_session_progress" ADD CONSTRAINT "user_session_progress_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "wc"."user_program_enrollments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_session_progress" ADD CONSTRAINT "user_session_progress_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "program_sessions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_session_progress" ADD CONSTRAINT "user_session_progress_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "wc"."program_sessions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_session_progress" ADD CONSTRAINT "user_session_progress_workoutSessionId_fkey" FOREIGN KEY ("workoutSessionId") REFERENCES "workout_sessions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "wc"."user_session_progress" ADD CONSTRAINT "user_session_progress_workoutSessionId_fkey" FOREIGN KEY ("workoutSessionId") REFERENCES "wc"."workout_sessions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

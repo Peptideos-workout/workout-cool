@@ -18,7 +18,10 @@
     "db:seed-workout-advanced": "tsx scripts/seed-workout-data-advanced.ts",
     "lint:fix": "next lint --fix",
     "db:seed-leaderboard": "tsx scripts/seed-leaderboard-data.ts",
-    "migrate:prod": "env-cmd -f .env.production prisma migrate deploy"
+    "migrate:prod": "env-cmd -f .env.production prisma migrate deploy",
+    "db:migrate:direct": "node scripts/prisma-migrate-direct.cjs",
+    "db:bootstrap:w:direct": "node scripts/prisma-bootstrap-shared-db-wc.cjs",
+    "db:baseline:direct": "node scripts/prisma-baseline-shared-db.cjs"
   },
   "resolutions": {
     "prettier": "^3.4.2"

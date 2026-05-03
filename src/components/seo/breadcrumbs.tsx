@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
 
 import { StructuredDataScript } from "@/shared/lib/structured-data";
+import { SiteConfig } from "@/shared/config/site-config";
 
 interface BreadcrumbItem {
   label: string;
@@ -15,6 +16,7 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
+  const siteOrigin = SiteConfig.prodUrl.replace(/\/$/, "");
   // Generate BreadcrumbList structured data
   const breadcrumbStructuredData = {
     "@context": "https://schema.org",
@@ -23,7 +25,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
       "@type": "ListItem",
       position: index + 1,
       name: item.label,
-      item: item.href ? `https://www.workout.cool${item.href}` : undefined,
+      item: item.href ? `${siteOrigin}${item.href}` : undefined,
     })),
   };
 

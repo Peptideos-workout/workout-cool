@@ -1,5 +1,7 @@
 export const SiteConfig = {
-  title: "Workout Cool",
+  /** Self-hosted fork: bypass paywalls, subscription UI, and API premium checks when true */
+  allPremiumFeaturesFree: true,
+  title: "WorkoutOS",
   description: "Modern fitness coaching platform with comprehensive exercise database",
   keywords: [
     "fitness",
@@ -18,21 +20,21 @@ export const SiteConfig = {
   domain: "workout.cool",
   appIcon: "/images/logo4.jpg",
   company: {
-    name: "Workout Cool",
+    name: "WorkoutOS",
     address: "34 avenue des champ Elysée 75008 Paris, France",
   },
   brand: {
     primary: "#007291",
   },
   email: {
-    from: "Workout Cool <hello@workout.cool>",
+    from: "WorkoutOS <hello@workout.cool>",
     contact: "hello@workout.cool",
   },
   maker: {
     image: "https://workout.cool/images/me/twitter-en.jpg",
     website: "https://workout.cool",
     twitter: "https://twitter.com/workout_cool",
-    name: "Workout Cool",
+    name: "WorkoutOS",
   },
   auth: {
     password: false,
@@ -43,7 +45,7 @@ export const SiteConfig = {
       height: 630,
     },
     twitterHandle: "@snouzy_biceps",
-    applicationName: "Workout Cool",
+    applicationName: "WorkoutOS",
     category: "fitness",
     classification: "Fitness & Health",
   },

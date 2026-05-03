@@ -7,13 +7,14 @@ import { useCurrentLocale, useI18n } from "locales/client";
 
 import { cn } from "@/shared/lib/utils";
 import { paths } from "@/shared/constants/paths";
+import { SiteConfig } from "@/shared/config/site-config";
 
 export function BottomNavigation() {
   const pathname = usePathname();
   const t = useI18n();
   const locale = useCurrentLocale();
 
-  const tabs = [
+  const tabsRaw = [
     {
       id: "workout-builder",
       label: t("bottom_navigation.workouts"),
@@ -79,6 +80,11 @@ export function BottomNavigation() {
       isActive: pathname.includes("/premium"),
     },
   ];
+
+  const tabs =
+    SiteConfig.allPremiumFeaturesFree ?
+      tabsRaw.filter((tab) => tab.id !== "premium")
+    : tabsRaw;
 
   return (
     <nav className="relative bg-white/90 dark:bg-[#232324]/90 backdrop-blur-xl border-t border-[#4F8EF7]/15 dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40">

@@ -3,6 +3,8 @@
  * Determines user access based on authentication and premium status
  */
 
+import { SiteConfig } from "@/shared/config/site-config";
+
 export interface AccessControlContext {
   isAuthenticated: boolean;
   isPremium: boolean;
@@ -19,6 +21,10 @@ export type AccessAction =
  */
 export function getSessionAccess(context: AccessControlContext): AccessAction {
   const { isAuthenticated, isPremium, isSessionPremium } = context;
+
+  if (SiteConfig.allPremiumFeaturesFree) {
+    return isAuthenticated ? "allow" : "require_auth";
+  }
 
   // Rule 1: Not authenticated -> require auth
   if (!isAuthenticated) {

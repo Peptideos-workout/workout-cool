@@ -10,6 +10,7 @@ import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { env } from "@/env";
+import { SiteConfig } from "@/shared/config/site-config";
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -44,7 +45,10 @@ export const auth = betterAuth({
       });
 
       return {
-        user: userFromDB,
+        user:
+          userFromDB != null
+            ? { ...userFromDB, isPremium: SiteConfig.allPremiumFeaturesFree ? true : userFromDB.isPremium }
+            : null,
         session,
       };
     }),

@@ -8,6 +8,7 @@ import { useI18n } from "locales/client";
 import { cn } from "@/shared/lib/utils";
 import { useUserSubscription } from "@/features/ads/hooks/useUserSubscription";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SiteConfig } from "@/shared/config/site-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +38,10 @@ export function PremiumGate({
   className,
 }: PremiumGateProps) {
   const { isPremium, isPending } = useUserSubscription();
+
+  if (SiteConfig.allPremiumFeaturesFree) {
+    return <>{children}</>;
+  }
 
   // Show loading state while checking premium status
   if (isPending) {

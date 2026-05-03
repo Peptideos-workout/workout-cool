@@ -7,6 +7,7 @@ import { Locale } from "locales/types";
 import { getI18n } from "locales/server";
 import { getAttributeValueLabel } from "@/shared/lib/attribute-value-translation";
 import { getProgramDescription, getProgramSlug, getProgramTitle } from "@/features/programs/lib/translations-mapper";
+import { SiteConfig } from "@/shared/config/site-config";
 
 import { PublicProgram } from "../actions/get-public-programs.action";
 
@@ -17,7 +18,7 @@ interface ProgramCardProps {
 }
 
 export async function ProgramCard({ program, size = "medium", locale }: ProgramCardProps) {
-  const isLocked = program.isPremium;
+  const isLocked = program.isPremium && !SiteConfig.allPremiumFeaturesFree;
   const t = await getI18n();
   const title = getProgramTitle(program, locale);
   const description = getProgramDescription(program, locale);

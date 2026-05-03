@@ -36,6 +36,7 @@ import {
   getWeekTitle,
 } from "@/features/programs/lib/translations-mapper";
 import { env } from "@/env";
+import { SiteConfig } from "@/shared/config/site-config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { HorizontalBottomBanner, HorizontalTopBanner } from "@/components/ads";
 
@@ -450,6 +451,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       const sessionSlug = getSlugForLocale(session, currentLocale);
                       const sessionName = getSessionTitle(session, currentLocale);
                       const sessionDescription = getSessionDescription(session, currentLocale);
+                      const sessionPaywalled = session.isPremium && !SiteConfig.allPremiumFeaturesFree;
 
                       const isCompleted = completedSessions.has(session.id);
                       return (
@@ -457,7 +459,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                           className={`bg-white dark:bg-gray-800 rounded-xl p-4 border-2 cursor-pointer transition-all duration-200 ease-in-out flex items-center gap-4 ${
                             isCompleted
                               ? "border-[#25CB78] bg-[#25CB78]/5"
-                              : session.isPremium
+                              : sessionPaywalled
                                 ? "border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10 hover:border-yellow-300 hover:scale-[1.02]"
                                 : "border-[#25CB78]/20 hover:border-[#25CB78] hover:scale-[1.02]"
                           }`}
@@ -472,7 +474,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                               className={`w-8 sm:w-12 h-8 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-white ${
                                 isCompleted
                                   ? "bg-[#25CB78]"
-                                  : session.isPremium
+                                  : sessionPaywalled
                                     ? isPremium
                                       ? "bg-[#4F8EF7]"
                                       : "bg-yellow-500"
@@ -481,7 +483,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                             >
                               {isCompleted ? (
                                 <CheckCircle2 size={18} />
-                              ) : session.isPremium ? (
+                              ) : sessionPaywalled ? (
                                 isPremium ? (
                                   <Unlock size={18} />
                                 ) : (
@@ -504,10 +506,10 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                                   {t("programs.completed")}
                                 </div>
                               )}
-                              {!isCompleted && !session.isPremium && (
+                              {!isCompleted && !sessionPaywalled && (
                                 <div className="bg-[#25CB78] text-white px-2 py-1 rounded-full text-xs font-bold">{t("programs.free")}</div>
                               )}
-                              {!isCompleted && session.isPremium && (
+                              {!isCompleted && sessionPaywalled && (
                                 <div className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                                   {t("programs.premium")}
                                 </div>

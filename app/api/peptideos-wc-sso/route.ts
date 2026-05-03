@@ -23,13 +23,47 @@ import { deriveWorkoutCoolCredentialFromSupabaseJwtSecret } from "./derive-wc-pa
 
 const CREDENTIAL_PROVIDER = "credential";
 
+function isLoopbackOrigin(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Always send users to the origin that handled this SSO request.
- * NEXT_PUBLIC_APP_URL is often localhost in Docker compose while SSO is reached at workouts.* — trusting it would redirect
- * users away after Set-Cookie and break login (looks like “stuck” on `/api/peptideos-wc-sso?token=…`).
+ * Public origin for Set-Cookie + post-login Location. Prefer Cloudflare forwards; fall back only when tunnel/proxy exposes
+ * a loopback Host or request.url is wrong; last resort BETTER_AUTH_URL / NEXT_PUBLIC_APP_URL.
  */
 function workoutOrigin(request: NextRequest): string {
-  return request.nextUrl.origin;
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+
+  if (forwardedProto && forwardedHost) {
+    try {
+      return new URL(`${forwardedProto}://${forwardedHost}`).origin;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const fromRequest = request.nextUrl.origin;
+
+  if (!isLoopbackOrigin(fromRequest)) {
+    return fromRequest;
+  }
+
+  const publicUrl = process.env.BETTER_AUTH_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (publicUrl) {
+    try {
+      return new URL(publicUrl).origin;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return fromRequest;
 }
 
 function mergeSetCookies(from: Response, to: NextResponse) {

@@ -9,7 +9,6 @@ import { LanguageSelector } from "@/widgets/language-selector/language-selector"
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { SiteConfig } from "@/shared/config/site-config";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
-import { ReleaseNotesDialog } from "@/features/release-notes";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
 import { useLogout } from "@/features/auth/model/useLogout";
 import { useSession } from "@/features/auth/lib/auth-client";
@@ -69,7 +68,6 @@ export const Header = () => {
         {/* User Menu */}
         <div className="navbar-end">
           {allFeaturesFree || isPremium || !showAds || !hasAdProvider ? <WorkoutStreakHeader /> : <RemoveAdsText />}
-          <ReleaseNotesDialog />
           <ThemeToggle />
           <LanguageSelector />
 

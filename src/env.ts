@@ -175,6 +175,8 @@ export const env = createEnv({
     NEXT_PUBLIC_EZOIC_BOTTOM_TOOLS_PLACEMENT_ID: z.string().optional(),
     // GA4
     NEXT_PUBLIC_GA4_MEASUREMENT_ID: z.string().optional(),
+    /** Gatekeeper / Ezoic partner CMP ("Privacy Preferences", Do Not Sell). Off by default; set `true` if you rely on this banner. */
+    NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT: booleanString.optional(),
   },
 
   experimental__runtimeEnv: {
@@ -258,5 +260,6 @@ export const env = createEnv({
     NEXT_PUBLIC_EZOIC_TOP_TOOLS_PLACEMENT_ID: process.env.NEXT_PUBLIC_EZOIC_TOP_TOOLS_PLACEMENT_ID,
     NEXT_PUBLIC_EZOIC_BOTTOM_TOOLS_PLACEMENT_ID: process.env.NEXT_PUBLIC_EZOIC_BOTTOM_TOOLS_PLACEMENT_ID,
     NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID,
+    NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT: process.env.NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT,
   },
 });

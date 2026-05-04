@@ -3,7 +3,7 @@
 import React from "react";
 import { useQueryState } from "nuqs";
 import Image from "next/image";
-import { Trophy, Users, Calendar } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 import { useI18n } from "locales/client";
 
@@ -173,40 +173,6 @@ export default function LeaderboardPage() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto px-4 my-4 pb-16">
-          <div className="card bg-base-100 dark:bg-gray-800/50 border border-base-200 dark:border-gray-700">
-            <div className="card-body p-4 flex-row items-start gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">{t("leaderboard.registered_members_only")}</h3>
-                <p className="text-xs text-base-content/60 dark:text-gray-500">
-                  {t("leaderboard.registered_members_description")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 dark:bg-gray-800/50 border border-base-200 dark:border-gray-700">
-            <div className="card-body p-4 flex-row items-start gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">{t("leaderboard.reset_timezone")}</h3>
-                <p className="text-xs text-base-content/60 dark:text-gray-500">
-                  {t("leaderboard.reset_timezone_description")}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

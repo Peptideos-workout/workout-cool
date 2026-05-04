@@ -256,9 +256,13 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${env.NEXT_PUBLIC_AD_CLIENT}`}
             />
 
-            {/* Ezoic Privacy Scripts */}
-            <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js" />
-            <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js" />
+            {env.NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT === true && (
+              <>
+                {/* Gatekeeper CMP: large privacy UI; optional — see NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT */}
+                <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js" />
+                <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js" />
+              </>
+            )}
 
             {/* Ezoic Header Script */}
             <script async src="//www.ezojs.com/ezoic/sa.min.js" />

@@ -25,7 +25,6 @@ import type { NextRequest } from "next/server";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
 
 import { prisma } from "@/shared/lib/prisma";
-import { runWithSsoSignupAllowed } from "@/features/auth/lib/public-signup-guard";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
 
@@ -165,7 +164,7 @@ export async function GET(request: NextRequest) {
         const displayName = metaDisplayName(userRows[0]?.meta);
         const snapshot = await loadSsoAccountSnapshot(email);
 
-        const completed = await runWithSsoSignupAllowed(() => completePeptideOsSsoLogin(hid, snapshot, {
+        const completed = await completePeptideOsSsoLogin(hid, snapshot, {
           findUserByEmail: async () => prisma.user.findUnique({ where: { email }, select: { id: true } }),
           signUp: async () => {
             const { firstName, lastName, name } = splitName(displayName, email);
@@ -195,7 +194,7 @@ export async function GET(request: NextRequest) {
             }
             return false;
           }
-        }));
+        });
 
         if (!completed.ok) {
           return {

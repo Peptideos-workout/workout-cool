@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   isBetterAuthEmailSignUpPath,
+  isPublicBetterAuthSignupRequest,
   shouldAllowBetterAuthUserCreate,
   shouldAllowOAuthNewUser
 } from "./block-public-signup";
@@ -13,6 +14,14 @@ test("Better Auth email signup endpoints are public signup paths", () => {
   assert.equal(isBetterAuthEmailSignUpPath("/sign-in/email"), false);
   assert.equal(isBetterAuthEmailSignUpPath("/sign-in/social"), false);
   assert.equal(isBetterAuthEmailSignUpPath("/callback/google"), false);
+});
+
+test("HTTP /api/auth/sign-up/* is a public signup request; sign-in and OAuth callback are not", () => {
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-up/email"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-up"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-in/email"), false);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-in/social"), false);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/callback/google"), false);
 });
 
 test("user.create is allowed only inside the SSO create-user path", () => {

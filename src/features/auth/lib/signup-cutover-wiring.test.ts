@@ -6,22 +6,29 @@ function read(path: string) {
   return readFileSync(path, "utf8");
 }
 
-test("Better Auth blocks public email signup and OAuth new-user creation", () => {
+test("Better Auth Google config blocks OAuth new-user creation and email-match linking", () => {
   const src = read("src/features/auth/lib/better-auth.ts");
-  assert.match(src, /isBetterAuthEmailSignUpPath/);
-  assert.match(src, /isPublicSignupBlocked/);
-  assert.match(src, /shouldAllowBetterAuthUserCreate/);
   assert.match(src, /disableImplicitSignUp:\s*true/);
+  assert.match(src, /disableSignUp:\s*true/);
   assert.match(src, /accountLinking/);
   assert.doesNotMatch(src, /trustedProviders:\s*\[["']google["']\]/);
+  assert.doesNotMatch(src, /databaseHooks/);
+  assert.doesNotMatch(src, /runWithSsoSignupAllowed/);
 });
 
-test("SSO create-user path still calls signUpEmail inside the allowlisted context", () => {
+test("SSO create-user path is unchanged and not wrapped by this cutover", () => {
   const src = read("app/api/peptideos-wc-sso/route.ts");
-  assert.match(src, /runWithSsoSignupAllowed/);
   assert.match(src, /auth\.api\.signUpEmail/);
   assert.match(src, /createPeptideosAccount/);
   assert.match(src, /newUnusedSsoPassword/);
+  assert.doesNotMatch(src, /runWithSsoSignupAllowed/);
+  assert.doesNotMatch(src, /public-signup-guard/);
+});
+
+test("Better Auth HTTP catch-all blocks public email signup paths", () => {
+  const src = read("app/api/auth/[...all]/route.ts");
+  assert.match(src, /isPublicBetterAuthSignupRequest/);
+  assert.match(src, /publicSignupDisabledBody/);
 });
 
 test("public signup HTTP surfaces are blocked or redirected to PeptideOS", () => {

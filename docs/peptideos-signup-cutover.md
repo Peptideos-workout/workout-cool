@@ -22,11 +22,12 @@ Revisit after PeptideOS has provisioned `wc.user` / `wc.account` for every legac
 | `/auth/signup` page, header/register, sign-in “Sign up”, profile alert, program “signup to continue” | **Redirect / link** to PeptideOS `/signup` |
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
-| Better Auth `POST /api/auth/sign-up/email` | **Blocked** unless SSO create-user ALS context |
-| Better Auth `user.create` (covers OAuth new-user) | **Blocked** unless SSO create-user ALS context |
+| Better Auth HTTP `POST /api/auth/sign-up/email` (catch-all `[...all]`) | **Blocked** `403` + `{ error, redirectTo }` |
 | Google OAuth `disableSignUp` / `disableImplicitSignUp` | **Blocked** new-user creation |
 | Google / email **sign-in** for existing accounts | **Allowed** |
-| `/api/peptideos-wc-sso` create-user (`auth.api.signUpEmail` + `peptideos` account + signed session) | **Allowed** (unchanged, wrapped in `runWithSsoSignupAllowed`) |
+| `/api/peptideos-wc-sso` create-user (`auth.api.signUpEmail` in-process + `peptideos` account + signed session) | **Allowed** — this PR does **not** edit that route |
+
+PR #3 (account-link) owns `app/api/peptideos-wc-sso` and `/auth/link-peptideos`. This cutover does not touch those files. `/auth/link-peptideos` is not redirected to PeptideOS.
 
 ## PeptideOS URL
 
@@ -47,7 +48,7 @@ That PR should insert `wc.user` / `wc.account` itself (`providerId = "peptideos"
 - `PEPTIDEOS_PROVIDER` (`"peptideos"`) and the unique `(providerId, accountId)` pair
 - Never attach a `peptideos` account to an existing `wc.user` because emails match (`sso_email_collision`)
 - After those rows exist, SSO takes the **sign_in** path and does not call `signUpEmail`
-- Until then, keep using this repo’s SSO create-user path (do not call `/api/auth/signup` or `signUpAction`)
+- Until then, keep using this repo’s SSO create-user path (in-process `auth.api.signUpEmail`, not `/api/auth/signup` or `signUpAction`)
 - If inserting via Prisma/SQL, you do not need Better Auth `signUpEmail` or a login password
 
 Do not apply migrations or restore the shared Supabase project from this workout-cool change.

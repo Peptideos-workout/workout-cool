@@ -54,12 +54,13 @@ const config = [
   ),
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
+    ...nextPlugin.configs["core-web-vitals"],
     plugins: {
       "react-hooks": fixupPluginRules(reactHooks),
       react: fixupPluginRules(reactPlugin),
       import: fixupPluginRules(importPlugin),
       "unused-imports": fixupPluginRules(unusedImportsPlugin),
-      "@next/next": nextPlugin,
+      ...nextPlugin.configs["core-web-vitals"].plugins,
     },
     languageOptions: {
       globals: {
@@ -87,6 +88,7 @@ const config = [
       },
     },
     rules: {
+      ...nextPlugin.configs["core-web-vitals"].rules,
       "prettier/prettier": ["off", { singleQuote: true }],
       "no-use-before-define": ["off", { functions: false, classes: false }],
       "@typescript-eslint/naming-convention": [

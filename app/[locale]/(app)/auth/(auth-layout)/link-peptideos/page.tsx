@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
-import { loadLinkPeptideosPageState } from "../../../../../../api/peptideos-wc-sso/load-link-page";
-import { LINK_COOKIE_NAME } from "../../../../../../api/peptideos-wc-sso/link-cookie";
+import { loadLinkPeptideosPageState } from "../../../../../api/peptideos-wc-sso/load-link-page";
+import { LINK_COOKIE_NAME } from "../../../../../api/peptideos-wc-sso/link-cookie";
 
 import { prisma } from "@/shared/lib/prisma";
 import { LinkPeptideosForm } from "@/features/auth/link-peptideos/ui/link-peptideos-form";

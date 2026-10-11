@@ -38,6 +38,37 @@ test("does not adopt a victim user when signup throws (email already taken)", as
   assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409 });
 });
 
+test("logs the real signup error on 409 without putting email or tokens in the client result", async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+
+  try {
+    const result = await createSsoUserIfAbsent({
+      findUserByEmail: async () => null,
+      signUp: async () => {
+        throw Object.assign(new Error("User already exists: victim@example.com bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig"), {
+          code: "P2002"
+        });
+      }
+    });
+
+    assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409 });
+    assert.equal("dev_detail" in result, false);
+    assert.equal(lines.length, 1);
+    assert.match(lines[0] ?? "", /sso_email_collision/);
+    assert.match(lines[0] ?? "", /signup_threw/);
+    assert.match(lines[0] ?? "", /P2002/);
+    assert.doesNotMatch(lines[0] ?? "", /User already exists/);
+    assert.doesNotMatch(lines[0] ?? "", /victim@example.com/);
+    assert.doesNotMatch(lines[0] ?? "", /eyJhbGciOiJIUzI1NiJ9/);
+  } finally {
+    console.error = original;
+  }
+});
+
 test("rejects when signup returns a different user than the email now resolves to", async () => {
   let finds = 0;
   const result = await createSsoUserIfAbsent({

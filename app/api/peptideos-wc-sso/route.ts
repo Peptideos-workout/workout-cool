@@ -8,18 +8,22 @@
  *   • DATABASE_URL = same Supabase Postgres as PeptideOS (pooler/direct URI from Dashboard → Database).
  *   • SUPABASE_JWT_SECRET = same value as PeptideOS (Dashboard → Settings → API → JWT Secret).
  *   • Run Peptide migration `20260426120000_workout_cool_handoffs.sql` on that DB (included in peptideos repo).
+ *   • PeptideOS PR #22 stores `secret_token` as sha256(rawToken) hex — never compare plaintext.
  */
 import crypto from "crypto";
-import type { NextRequest } from "next/server";
+
 import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
 
+import { deriveWorkoutCoolCredentialFromSupabaseJwtSecret } from "./derive-wc-password";
+import { consumeWorkoutCoolHandoff, lookupUnconsumedHandoffByHash } from "./consume-handoff";
+
+import type { NextRequest } from "next/server";
+
+import { prisma } from "@/shared/lib/prisma";
+import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
-import { hashStringWithSalt } from "@/features/update-password/lib/hash";
-import { prisma } from "@/shared/lib/prisma";
-
-import { deriveWorkoutCoolCredentialFromSupabaseJwtSecret } from "./derive-wc-password";
 
 const CREDENTIAL_PROVIDER = "credential";
 
@@ -152,22 +156,14 @@ export async function GET(request: NextRequest) {
   if (!tokenParam) return NextResponse.json({ error: "missing_token" }, { status: 400 });
 
   try {
-    let rows: { user_id: string }[];
+    let hid: string | null;
     try {
-      rows = await prisma.$queryRaw<{ user_id: string }[]>`
-      UPDATE public.workout_cool_handoffs
-      SET consumed_at = NOW()
-      WHERE secret_token = ${tokenParam}
-        AND consumed_at IS NULL
-        AND expires_at > NOW()
-      RETURNING user_id
-    `;
+      hid = await consumeWorkoutCoolHandoff(tokenParam, (tokenHash) => lookupUnconsumedHandoffByHash(prisma, tokenHash));
     } catch (e) {
       console.error("[peptideos-wc-sso] workout_cool_handoffs consume:", e);
       return NextResponse.json({ error: "database_error", ...ssoExplain(e) }, { status: 500 });
     }
 
-    const hid = rows[0]?.user_id;
     if (!hid) return NextResponse.json({ error: "invalid_or_expired_handoff" }, { status: 400 });
 
     let userRows: { email: string; meta: unknown }[];

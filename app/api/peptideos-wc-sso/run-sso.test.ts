@@ -164,6 +164,15 @@ test("finalizeSession rejects an untrusted redirect and fails closed to the WC o
   assert.equal(response.headers.get("location"), "https://workouts.example.test/");
 });
 
+test("finalizeSession denies leftover WC auth pages and falls back to home", async () => {
+  for (const redirect of ["/auth/signout", "/en/auth/signin", "https://workouts.example.test/zh-CN/auth/signup"]) {
+    const { deps } = fakeWorld();
+    const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect }), deps);
+    assert.equal(response.status, 307, redirect);
+    assert.equal(response.headers.get("location"), "https://workouts.example.test/", redirect);
+  }
+});
+
 test("linked PeptideOS user: consume, skip signup, session, and signed cookie", async () => {
   const { deps, released, accounts } = fakeWorld({
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId }
@@ -231,6 +240,63 @@ test("browser SSO collisions render an HTML error page with a PeptideOS try-agai
     assert.match(html, /support/i);
     assert.doesNotMatch(html, /athlete@example.test/);
     assert.doesNotMatch(html, /sso_email_collision/);
+  } finally {
+    console.error = original;
+  }
+});
+
+test("browser SSO error Try again preserves a sanitized redirect", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+
+  try {
+    const { deps } = fakeWorld({
+      snapshot: { existingUser: null, peptideosAccountId: null },
+      signUp: async () => {
+        throw new Error("User already exists: athlete@example.test");
+      }
+    });
+    deps.findUserByEmail = async () => null;
+
+    const dest = "https://workouts.example.test/en/programs/strength";
+    const response = await runPeptideOsSso(
+      ssoRequest(rawToken, { accept: "text/html,application/xhtml+xml", redirect: dest }),
+      deps
+    );
+    const html = await response.text();
+
+    assert.equal(response.status, 409);
+    assert.match(html, /Try again/i);
+    assert.match(html, /\/api\/workouts\/sso\?redirect=/);
+    assert.match(html, new RegExp(encodeURIComponent(dest)));
+    assert.doesNotMatch(html, /athlete@example.test/);
+  } finally {
+    console.error = original;
+  }
+});
+
+test("browser SSO error Try again drops leftover WC auth redirects", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+
+  try {
+    const { deps } = fakeWorld({
+      snapshot: { existingUser: null, peptideosAccountId: null },
+      signUp: async () => {
+        throw new Error("User already exists");
+      }
+    });
+    deps.findUserByEmail = async () => null;
+
+    const response = await runPeptideOsSso(
+      ssoRequest(rawToken, { accept: "text/html", redirect: "/auth/signout" }),
+      deps
+    );
+    const html = await response.text();
+
+    assert.equal(response.status, 409);
+    assert.match(html, /href="https:\/\/example\.test\/api\/workouts\/sso"/);
+    assert.doesNotMatch(html, /auth\/signout/);
   } finally {
     console.error = original;
   }

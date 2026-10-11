@@ -60,6 +60,16 @@ test("signout_confirm_title is defined in every locale", () => {
   }
 });
 
+test("workout-cool does not load PeptideOS SSO inside an iframe", () => {
+  for (const file of [...walkTsx("src"), ...walkTsx("app")]) {
+    const src = read(file);
+    const iframes = src.match(/<iframe\b[\s\S]{0,800}?>/g) ?? [];
+    for (const tag of iframes) {
+      assert.doesNotMatch(tag, /workouts\/sso|peptideos-wc-sso/i, `${file} must not iframe the SSO URL`);
+    }
+  }
+});
+
 test("any Link to /auth/signout disables Next.js prefetch", () => {
   for (const file of [...walkTsx("src"), ...walkTsx("app")]) {
     const src = read(file);

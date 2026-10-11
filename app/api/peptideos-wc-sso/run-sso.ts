@@ -92,7 +92,8 @@ function metaDisplayName(meta: unknown): string | undefined {
 }
 
 export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
-  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+  const redirectParam = request.nextUrl.searchParams.get("redirect") ?? undefined;
+  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin, redirectParam);
   const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref);
   const tokenParam = request.nextUrl.searchParams.get("token")?.trim();
   if (!tokenParam) return reply({ error: "missing_token" }, 400);

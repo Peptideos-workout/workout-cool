@@ -9,7 +9,7 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 | Surface | Behavior |
 |---|---|
 | Signed-out visitor on a **gated** app page | **HTTP 307** from `proxy.ts` to PeptideOS `/api/workouts/sso` (SSO launcher). Optional `?redirect=` is a safe same-origin workout-cool URL (fail closed). |
-| Signed-out visitor on a **public marketing** page | **Renders**. Header Sign in / Sign up CTAs go to PeptideOS `/login` and `/signup`. |
+| Signed-out visitor on a **public marketing** page | **Renders**. Header Login goes to PeptideOS `/api/workouts/sso?redirect=`. Header and program Signup go to `/signup?next=/api/workouts/sso?redirect=` (PeptideOS `/login` and `/signup` ignore `?redirect=`). |
 | `/auth/signin` and `/auth/signup` pages, workout-cool login/register forms | **Removed**. Those leftover paths are gated (307 to PeptideOS SSO). |
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
@@ -23,7 +23,7 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 | Change-password | PeptideOS `/settings#password` only, when the linked account has an email identity. Legacy local `PasswordForm` and `PUT /api/user/password` are removed. |
 | `/auth/link-peptideos` | **Not allowlisted.** PR #3 is deferred; email collisions in SSO stay `409` and go to support. |
 
-After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars). Anything else fails closed to the workout-cool origin home (`${workoutOrigin}/`, e.g. `https://workouts.peptideos.us/`) — not a relative `/` that the browser would resolve against PeptideOS.
+After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars) and not a leftover auth page (`/auth/signout`, `/auth/signin`, `/auth/signup`, including locale prefixes). Anything else fails closed to the workout-cool origin home (`${workoutOrigin}/`, e.g. `https://workouts.peptideos.us/`) — not a relative `/` that the browser would resolve against PeptideOS. The same denylist is applied by `planWorkoutSso` when building outbound PeptideOS SSO URLs.
 
 PeptideOS `GET /api/workouts/sso?redirect=<absolute WC URL>` preserves that redirect through login and passes it back on the WC SSO handoff. The proxy 307 for gated routes sends `?redirect=<original absolute WC URL, path+query>` with `Cache-Control: private, no-store`.
 

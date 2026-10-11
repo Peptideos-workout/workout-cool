@@ -148,6 +148,12 @@ test("WC sign-out to PeptideOS does not loop: WC home stays public after Peptide
   assert.doesNotMatch(location, /\/api\/workouts\/sso/);
 });
 
+test("signed-out SSO planner drops leftover WC auth pages so users do not land on logout or 404", () => {
+  for (const returnTo of ["/auth/signout", "/en/auth/signin", "/zh-CN/auth/signup", `${APP}/auth/signout`]) {
+    assert.equal(peptideOsSignedOutRedirectLocation(undefined, APP, returnTo), `${ORIGIN}/api/workouts/sso`, returnTo);
+  }
+});
+
 test("malicious return URLs are dropped from the PeptideOS SSO redirect", () => {
   const rejected = [
     "https://evil.example/phish",

@@ -82,6 +82,8 @@ test("public pages tolerate a missing session (no session-dependent crash)", () 
   assert.match(header, /!session\.data/);
   assert.match(header, /getConfiguredPeptideOsLoginUrl\(\)/);
   assert.match(header, /getConfiguredPeptideOsSignupUrl\(\)/);
+  assert.doesNotMatch(header, /peptideos\.us\/login\?redirect=/);
+  assert.doesNotMatch(header, /peptideos\.us\/signup\?redirect=/);
 
   const programDetail = read("src/features/programs/ui/program-detail-page.tsx");
   assert.match(programDetail, /if \(!isAuthenticated\)/);

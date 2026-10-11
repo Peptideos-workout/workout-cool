@@ -1,11 +1,21 @@
 export interface EnvValidationIssue {
-  readonly path?: readonly PropertyKey[];
+  readonly path?: readonly unknown[];
   readonly message: string;
+}
+
+function pathSegmentName(part: unknown): string {
+  if (typeof part === "string" || typeof part === "number" || typeof part === "symbol") {
+    return String(part);
+  }
+  if (part && typeof part === "object" && "key" in part) {
+    return String((part as { key: unknown }).key);
+  }
+  return "";
 }
 
 function issueVarName(issue: EnvValidationIssue): string {
   const skipped = new Set(["server", "client", "SERVER", "CLIENT"]);
-  const path = (issue.path ?? []).map((part) => String(part)).filter((part) => part.length > 0 && !skipped.has(part));
+  const path = (issue.path ?? []).map(pathSegmentName).filter((part) => part.length > 0 && !skipped.has(part));
   return path[path.length - 1] ?? "(unknown)";
 }
 

@@ -158,6 +158,7 @@ export const getTopWorkoutUsersAction = actionClient.schema(inputSchema).action(
     );
 
     return merged;
+  } catch (error) {
     console.error("Error fetching top workout users:", error);
     throw new Error("Failed to fetch top workout users");
   }

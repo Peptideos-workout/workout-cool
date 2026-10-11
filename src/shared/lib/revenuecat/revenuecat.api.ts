@@ -72,11 +72,13 @@ export interface RevenueCatApiError {
 
 export class RevenueCatApiClient {
   private baseUrl: string;
-  private headers: Record<string, string>;
 
   constructor() {
     this.baseUrl = RevenueCatConfig.getApiBaseUrl();
-    this.headers = RevenueCatConfig.getApiHeaders();
+  }
+
+  private getHeaders(): Record<string, string> {
+    return RevenueCatConfig.getApiHeaders();
   }
 
   /**
@@ -90,7 +92,7 @@ export class RevenueCatApiClient {
       
       const response = await fetch(url, {
         method: "GET",
-        headers: this.headers,
+        headers: this.getHeaders(),
       });
 
       if (response.status === 404) {

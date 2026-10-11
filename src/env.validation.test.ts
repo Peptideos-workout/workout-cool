@@ -37,12 +37,58 @@ test("createEnv names a missing required Production var", () => {
 });
 
 test("createEnv names an invalid optional enum var", () => {
-  const result = importEnv({ SMTP_SECURE: "yes", NEXT_PUBLIC_AD_PROVIDER: "AdSense" });
+  const result = importEnv({
+    SMTP_SECURE: "yes",
+    NEXT_PUBLIC_SHOW_ADS: "1",
+    NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT: "TRUE",
+    NEXT_PUBLIC_AD_PROVIDER: "AdSense"
+  });
 
   assert.notEqual(result.status, 0);
   const output = `${result.stdout}\n${result.stderr}`;
   assert.match(output, /SMTP_SECURE:/);
+  assert.match(output, /NEXT_PUBLIC_SHOW_ADS:/);
+  assert.match(output, /NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT:/);
   assert.match(output, /NEXT_PUBLIC_AD_PROVIDER:/);
   assert.match(output, /true/);
   assert.match(output, /adsense/);
+});
+
+test("createEnv accepts documented enum literals", () => {
+  const result = importEnv({
+    SMTP_SECURE: "false",
+    NEXT_PUBLIC_SHOW_ADS: "true",
+    NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT: "false",
+    NEXT_PUBLIC_AD_PROVIDER: "ezoic"
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("RevenueCat API client can load at build time without REVENUECAT_SECRET_KEY", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["--import", "tsx", "-e", "void import('./src/shared/lib/revenuecat/revenuecat.api.ts')"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: { ...placeholderEnv }
+    }
+  );
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("Stripe provider can load at build time without STRIPE_SECRET_KEY", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["--import", "tsx", "-e", "void import('./src/shared/lib/premium/premium.manager.ts')"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: { ...placeholderEnv }
+    }
+  );
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });

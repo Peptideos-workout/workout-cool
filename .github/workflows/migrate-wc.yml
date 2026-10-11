@@ -1,0 +1,43 @@
+name: migrate-wc
+
+# Manual only. Deploys Prisma migrations for schema `wc`.
+# Never runs on push, never seeds sample data, and never uses the pooler URL.
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+      SEED_SAMPLE_DATA: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject missing or pooled database URL
+        run: |
+          if [ -z "$DIRECT_DATABASE_URL" ]; then
+            echo "GitHub secret DIRECT_DATABASE_URL is not set."
+            exit 1
+          fi
+          if printf '%s' "$DIRECT_DATABASE_URL" | grep -Eqi 'pooler|:6543|pgbouncer=true'; then
+            echo "DIRECT_DATABASE_URL must be the direct Postgres URI (port 5432), not the pooler."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy Prisma migrations
+        run: npx prisma migrate deploy

@@ -1,72 +1,54 @@
-Workout.cool on Windows — cloned + PeptideOS SSO patch (already done here)
-============================================================================
+Workout.cool — production is Vercel, not this PC
+================================================
 
-Location: C:\Users\administrators1\Desktop\workout-cool
+Production site: https://workouts.peptideos.us
+GitHub repo: https://github.com/zomegz1/workout-cool (branch main)
+Vercel project: workout-cool (its own project; PeptideOS stays a separate Vercel app)
 
-Already done for you:
-  • git clone Snouzy/workout-cool
-  • npm dependencies installed via: npx pnpm install
-  • peptideos SSO files copied to:
-      app\api\peptideos-wc-sso\route.ts
-      app\api\peptideos-wc-sso\derive-wc-password.ts
-
-You still do (manual secrets / cloud console):
+How production updates ship
 ---------------------------------------------------------------------------
 
-A) Run Peptide migration on Supabase (if not yet)
-   File in peptideos repo: supabase\migrations\20260426120000_workout_cool_handoffs.sql
-   (Dashboard → SQL Editor → paste → Run.)
+1. Edit the app in the cloud (Cursor cloud or GitHub) on zomegz1/workout-cool.
+2. Push to main. Vercel builds that branch with `pnpm run vercel-build` (`next build` only).
+   The Vercel build does not run Prisma migrate and does not seed sample data.
+3. Schema changes for `wc` are applied by hand: GitHub → Actions → "migrate-wc" → Run workflow.
+   That workflow runs `npx prisma migrate deploy` with the DIRECT_DATABASE_URL secret
+   (direct host db.<ref>.supabase.co:5432). It never runs on push and never seeds.
+4. Keep these Vercel env values:
+     SEED_SAMPLE_DATA=false
+     SKIP_DB_MIGRATE=1
+     NEXT_PUBLIC_APP_URL=https://workouts.peptideos.us
+     BETTER_AUTH_URL=https://workouts.peptideos.us
+   DATABASE_URL on Vercel is the Supabase pooler URI with pgbouncer=true and connection_limit=1.
+   DIRECT_DATABASE_URL is for the migrate workflow only, not the pooler.
 
-B) Create Workout.cool .env from upstream template
-   In PowerShell:
-     cd C:\Users\administrators1\Desktop\workout-cool
-     copy .env.example .env
-   Edit .env:
+Shared Supabase project with PeptideOS. Workout.cool tables stay in schema `wc`.
+Do not merge the repos. Do not commit .env.
 
-   DATABASE_URL=
-     Same Supabase project as PeptideOS. Dashboard → Database → URI.
-     Prefer "Transaction pooler" (often port 6543). Append ?pgbouncer=true when docs say so.
-     If your DB password contains @ or :, URL-encode it.
+PeptideOS (dashboard only, do not edit that repo for this host move):
+  NEXT_PUBLIC_WORKOUT_COOL_URL=https://workouts.peptideos.us
+  SUPABASE_JWT_SECRET must match the value on the workout-cool Vercel project.
 
-   SUPABASE_JWT_SECRET=
-     Dashboard → Settings → Data API → JWT Secret (same string you add on PeptideOS).
+Google OAuth authorized redirect:
+  https://workouts.peptideos.us/api/auth/callback/google
 
-   NEXT_PUBLIC_APP_URL=  and BETTER_AUTH_URL=
-     Your Workout.cool public origin (e.g. http://localhost:3010 or https://workouts.peptideos.us).
+Optional local use (not production)
+---------------------------------------------------------------------------
 
-   BETTER_AUTH_SECRET=
-     openssl rand -base64 32
-     or: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+docker-compose.yml and the Dockerfile remain in the repo for a local container.
+They are not how workouts.peptideos.us is hosted.
 
-   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
-     Required by upstream src/env.ts. Google Cloud Console → OAuth Web client →
-     Authorized redirect URI must match BETTER_AUTH_URL, e.g.:
-       http://localhost:3010/api/auth/callback/google
-       https://workouts.peptideos.us/api/auth/callback/google
+  cd C:\Users\administrators1\Desktop\workout-cool
+  copy .env.example .env
+  npx pnpm install
+  npx pnpm dev
 
-   OPTIONAL self-host tweaks:
-     DEFAULT_BILLING_MODE="DISABLED"
-     SEED_SAMPLE_DATA=true (heavy first import)
+Local NEXT_PUBLIC_APP_URL / BETTER_AUTH_URL can be http://localhost:3010.
+If DATABASE_URL points at Supabase, you do not need the Docker Postgres service.
 
-   If DATABASE_URL points at Supabase, you do NOT need Docker postgres from docker-compose.yml.
+Migrations against the shared database, from this PC, if you are not using the GitHub workflow:
+  npm run db:migrate:direct
+Use the direct URI (port 5432), never the pooler, for migrate.
 
-C) Apply Prisma migrations to Supabase (creates WC tables)
-     cd C:\Users\administrators1\Desktop\workout-cool
-     npx prisma migrate deploy
-
-   If PgBouncer blocks migrations: use Dashboard "direct" connection URI (port 5432) temporarily.
-
-D) Seed sample exercises (optional)
-     npx pnpm run import:exercises-full .\data\sample-exercises.csv
-
-E) Start dev server
-     npx pnpm dev
-   Open the URL you set in NEXT_PUBLIC_APP_URL (e.g. http://localhost:3010 if your dev port is 3010).
-
-F) Wire PeptideOS
-   SUPABASE_JWT_SECRET (same as workout-cool)
-   NEXT_PUBLIC_WORKOUT_COOL_URL=<same origin as Workout.cool — e.g. http://localhost:3010 or https://workouts.peptideos.us>
-   Restart PeptideOS → Workouts → Open training hub.
-
-pnpm tip (optional global): npm install -g pnpm
-Otherwise use: npx pnpm ...
+Leave SEED_SAMPLE_DATA=false unless you intend to import the sample CSV.
+pnpm tip: npm install -g pnpm, otherwise npx pnpm ...

@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // load-mdx.ts readFile's content/{slug}/{locale}.mdx at request time, which the tracer cannot see.
+  outputFileTracingIncludes: {
+    "/**": ["./content/**/*.mdx"],
+    "/[locale]/about": ["./content/**/*.mdx"],
+    "/[locale]/legal/privacy": ["./content/**/*.mdx"],
+    "/[locale]/legal/terms": ["./content/**/*.mdx"],
+    "/[locale]/legal/sales-terms": ["./content/**/*.mdx"],
+  },
   reactStrictMode: true,
   images: {
     unoptimized: true,

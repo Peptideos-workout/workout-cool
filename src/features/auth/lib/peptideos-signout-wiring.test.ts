@@ -41,6 +41,7 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
   assert.match(action, /["']use server["']/);
   assert.match(action, /auth\.api\.signOut/);
   assert.match(action, /auth\/signout\/continue/);
+  assert.match(action, /logSsoEvent/);
   assert.doesNotMatch(action, /redirect\([^)]*workouts\/signout|redirect\([^)]*peptideOsWorkoutsSignout/);
   assert.doesNotMatch(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl|api\/workouts\/signout/);
 });
@@ -66,6 +67,7 @@ test("PeptideOS-initiated hop C is POST-only Origin-checked /api/peptideos-wc-si
   assert.match(route, /export async function POST/);
   assert.match(route, /405/);
   assert.match(runner, /isTrustedPeptideOsHopCRequest/);
+  assert.match(runner, /logSsoEvent/);
   assert.match(runner, /peptideOsSignoutFinalizeLocation/);
   assert.match(runner, /303/);
   assert.doesNotMatch(runner, /auth\/signout\/continue|from-peptideos/);

@@ -34,7 +34,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   return runPeptideOsWcSignout(request, {
-    signOut: (args) => auth.api.signOut(args),
+    signOut: (args) => auth.api.signOut({ ...args, asResponse: true }),
     peptideOsOrigin: peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL)
   });
 }

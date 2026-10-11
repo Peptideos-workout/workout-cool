@@ -14,4 +14,4 @@ export const useLogout = (_redirectUrl: string = "/") => {
       window.location.assign("/auth/signout/continue");
     }
   });
-}
+};

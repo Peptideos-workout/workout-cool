@@ -31,7 +31,7 @@ Cross-app sign-out is two hops (PeptideOS PR #37). Neither hop may land on WC `/
 
 **Hop B (WC-initiated):** `signOutAction` / `useLogout` end the Better Auth session, then `/auth/signout/continue` (a page on the WC origin) auto-submits `POST https://peptideos.us/api/workouts/signout?redirect=https://workouts.peptideos.us/` (no-JS submit button as fallback). PeptideOS Origin-checks the WC origin, signs out, and 303s to the sanitized WC home. WC home is public, so it cannot bounce into `/api/workouts/sso`.
 
-**Hop C (PeptideOS-initiated):** PeptideOS reaches WC with an auto-submit `POST https://workouts.peptideos.us/api/peptideos-wc-signout?redirect=https://peptideos.us/` (PeptideOS PR #37). GET on that route is 405 and does not sign out (logout CSRF). POST requires `Origin: https://peptideos.us` (Referer origin as fallback; 403 otherwise), ends the WC session, and 303s to PeptideOS `/`. It must not call hop B.
+**Hop C (PeptideOS-initiated):** PeptideOS reaches WC with an auto-submit `POST https://workouts.peptideos.us/api/peptideos-wc-signout?redirect=https://peptideos.us/` (PeptideOS PR #37). GET on that route is 405 and does not sign out (logout CSRF). POST requires Origin exactly `https://peptideos.us` or `https://www.peptideos.us` (Referer origin as fallback; 403 otherwise), ends the WC session (303 carries `Set-Cookie` `Max-Age=0` for `session_token` and `session_data`), and lands on PeptideOS `/`. Sign-out errors are logged through the allowlisted SSO logger. It must not call hop B.
 
 GET `/auth/signout` only renders a confirmation form. Sign-out runs on the POST server action (Next.js CSRF), so prefetch and a GET render cannot clear the session. `/auth/signout` stays allowlisted; `/dashboard` is gated.
 

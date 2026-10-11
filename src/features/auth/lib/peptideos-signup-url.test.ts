@@ -200,7 +200,10 @@ test("planWorkoutSso and ssoFinalizeLocation deny leftover WC auth pages and fal
     "/zh-CN/auth/signup/",
     `${APP}/auth/signout`,
     `${APP}/en/auth/signin`,
-    `${APP}/zh-cn/auth/signup`
+    `${APP}/zh-cn/auth/signup`,
+    "/AUTH/SIGNOUT",
+    "/Auth/SignIn",
+    `${APP}/AUTH/signup`
   ];
   for (const returnTo of denied) {
     assert.equal(ssoFinalizeLocation(APP, returnTo), `${APP}/`, returnTo);
@@ -239,6 +242,8 @@ test("hop C finalize lands on PeptideOS / and never hop B or WC /auth/signout", 
   assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${APP}/`), `${ORIGIN}/`);
   assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/api/workouts/signout`), `${ORIGIN}/`);
   assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/auth/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/AUTH/SIGNOUT`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/API/workouts/signout`), `${ORIGIN}/`);
   assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, "https://evil.example/"), `${ORIGIN}/`);
   assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/settings`), `${ORIGIN}/settings`);
 });

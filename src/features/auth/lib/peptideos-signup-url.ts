@@ -133,7 +133,7 @@ export function safeWorkoutReturnTo(returnTo: string | undefined, appUrl: string
 const DENIED_SSO_RETURN_PATHS = ["/auth/signout", "/auth/signin", "/auth/signup"] as const;
 
 function isDeniedSsoReturnPath(pathname: string): boolean {
-  const path = stripLocalePrefix(pathname);
+  const path = stripLocalePrefix(pathname).toLowerCase();
   return DENIED_SSO_RETURN_PATHS.some((denied) => path === denied || path.startsWith(`${denied}/`));
 }
 
@@ -282,7 +282,8 @@ export function resolvePeptideOsSettingsUrl(explicitUrl?: string, appUrl?: strin
 const DENIED_HOP_C_RETURN_PATHS = ["/api/workouts/signout", "/auth/signout", "/auth/signin", "/auth/signup"] as const;
 
 function isDeniedHopCReturnPath(pathname: string): boolean {
-  return DENIED_HOP_C_RETURN_PATHS.some((denied) => pathname === denied || pathname.startsWith(`${denied}/`));
+  const path = pathname.toLowerCase();
+  return DENIED_HOP_C_RETURN_PATHS.some((denied) => path === denied || path.startsWith(`${denied}/`));
 }
 
 /**

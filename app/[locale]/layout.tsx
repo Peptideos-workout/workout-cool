@@ -259,7 +259,9 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             {env.NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT === true && (
               <>
                 {/* Gatekeeper CMP: large privacy UI; optional — see NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT */}
+                {/* eslint-disable-next-line @next/next/no-sync-scripts -- CMP must load synchronously so consent is ready before ads */}
                 <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js" />
+                {/* eslint-disable-next-line @next/next/no-sync-scripts -- CMP must load synchronously so consent is ready before ads */}
                 <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js" />
               </>
             )}

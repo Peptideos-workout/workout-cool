@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 import { newUnusedSsoPassword } from "./unused-sso-password";
@@ -16,4 +16,8 @@ test("SSO route does not derive passwords from SUPABASE_JWT_SECRET", () => {
   assert.doesNotMatch(src, /deriveWorkoutCoolCredentialFromSupabaseJwtSecret/);
   assert.doesNotMatch(src, /SUPABASE_JWT_SECRET/);
   assert.match(src, /newUnusedSsoPassword/);
+});
+
+test("dead derive-wc-password helper is deleted", () => {
+  assert.equal(existsSync("app/api/peptideos-wc-sso/derive-wc-password.ts"), false);
 });

@@ -1,4 +1,3 @@
-
 import PullupBar from "@public/images/equipment/pull-up-bar.png";
 import Plate from "@public/images/equipment/plate.png";
 import Kettlebell from "@public/images/equipment/kettlebell.png";

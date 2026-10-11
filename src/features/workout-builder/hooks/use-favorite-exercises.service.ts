@@ -1,4 +1,3 @@
-
 import { favoriteExercisesLocal } from "../model/favorite-exercises.local";
 import { syncFavoriteExercisesAction } from "../actions/sync-favorite-exercises.action";
 import { getFavoriteExercises } from "../actions/get-favorite-exercises.action";

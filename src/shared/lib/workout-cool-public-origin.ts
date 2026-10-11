@@ -7,5 +7,9 @@ export function workoutCoolPublicOrigin(appUrl?: string): string {
     return DEFAULT_WORKOUT_COOL_ORIGIN;
   }
 
-  return new URL(raw).origin;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return DEFAULT_WORKOUT_COOL_ORIGIN;
+  }
 }

@@ -59,7 +59,9 @@ const GATED_APP_PATHS = [
   "/zh-CN/auth/signup",
   "/auth/verify-email",
   "/en/auth/verify-request",
-  "/auth/link-peptideos"
+  "/auth/link-peptideos",
+  "/dashboard",
+  "/en/dashboard"
 ];
 
 test("public landing and marketing pages render signed-out (no PeptideOS redirect)", () => {

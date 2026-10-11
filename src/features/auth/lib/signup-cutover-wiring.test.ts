@@ -26,6 +26,7 @@ test("SSO create-user wraps only signUpEmail with the in-process ALS flag", () =
   const src = read("app/api/peptideos-wc-sso/route.ts");
   assert.match(src, /runWithSsoUserCreate\s*\(\s*\(\s*\)\s*=>\s*auth\.api\.signUpEmail/);
   assert.match(src, /createPeptideosAccount/);
+  assert.match(src, /findPeptideosAccountByUserId/);
   assert.match(src, /newUnusedSsoPassword/);
   assert.doesNotMatch(src, /public-signup-guard/);
   assert.doesNotMatch(src, /x-sso|x-allow-signup/i);

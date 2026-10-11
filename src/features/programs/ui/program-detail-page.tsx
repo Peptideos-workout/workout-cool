@@ -44,7 +44,6 @@ import { env } from "@/env";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { HorizontalBottomBanner, HorizontalTopBanner } from "@/components/ads";
 
-
 interface ProgramDetailPageProps {
   program: ProgramDetail;
   isAuthenticated: boolean;

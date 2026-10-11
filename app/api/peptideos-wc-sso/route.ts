@@ -104,6 +104,11 @@ export async function GET(request: NextRequest) {
       return userId ? { userId } : null;
     },
     createPeptideosAccount,
+    findPeptideosAccountByUserId: async (userId) =>
+      prisma.account.findFirst({
+        where: { userId, providerId: PEPTIDEOS_PROVIDER },
+        select: { accountId: true }
+      }),
     createSignedSession: (userId) => createTrustedBetterAuthSession(userId),
     workoutOrigin: workoutOrigin()
   });

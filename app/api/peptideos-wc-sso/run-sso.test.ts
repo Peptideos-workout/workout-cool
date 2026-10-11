@@ -98,6 +98,7 @@ function fakeWorld(overrides: {
     createPeptideosAccount: async (userId, hid) => {
       accounts.push({ userId, peptideosUserId: hid });
     },
+    findPeptideosAccountByUserId: async () => null,
     createSignedSession: overrides.createSignedSession ?? defaultSession,
     workoutOrigin: "https://workouts.example.test"
   };
@@ -156,7 +157,7 @@ test("finalizeSession honours a same-origin WC redirect from PeptideOS", async (
   assert.equal(response.headers.get("location"), dest);
 });
 
-test("finalizeSession rejects an untrusted redirect and fails closed to /", async () => {
+test("finalizeSession rejects an untrusted redirect and fails closed to the WC origin home", async () => {
   const { deps } = fakeWorld();
   const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect: "https://evil.example/phish" }), deps);
   assert.equal(response.status, 307);

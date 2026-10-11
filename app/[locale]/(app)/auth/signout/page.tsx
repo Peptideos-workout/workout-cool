@@ -1,15 +1,16 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { getI18n } from "locales/server";
 
-import { getConfiguredPeptideOsWorkoutsSignoutUrl } from "@/features/auth/lib/configured-peptideos-signup";
-import { auth } from "@/features/auth/lib/better-auth";
+import { signOutAction } from "@/features/auth/signout/model/signout.action";
+import { Button } from "@/components/ui/button";
 
 export default async function AuthSignOutPage() {
-  try {
-    await auth.api.signOut({ headers: await headers() });
-  } catch {
-    // Session may already be gone; still continue to PeptideOS sign-out.
-  }
+  const t = await getI18n();
 
-  redirect(getConfiguredPeptideOsWorkoutsSignoutUrl());
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center px-4">
+      <form action={signOutAction} className="flex flex-col items-center gap-4">
+        <Button type="submit">{t("logout")}</Button>
+      </form>
+    </div>
+  );
 }

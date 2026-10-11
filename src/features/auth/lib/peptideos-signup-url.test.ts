@@ -170,7 +170,7 @@ test("rejects control characters in the return URL", () => {
   assert.equal(safeWorkoutReturnTo("/en/profile?tab=ok", APP), `${APP}/en/profile?tab=ok`);
 });
 
-test("SSO finalize honours only same-origin WC redirects and fails closed to /", () => {
+test("SSO finalize honours only same-origin WC redirects and fails closed to the WC origin home", () => {
   assert.equal(ssoFinalizeLocation(APP, `${APP}/en/profile?tab=history`), `${APP}/en/profile?tab=history`);
   assert.equal(ssoFinalizeLocation(APP, "/en/programs/strength"), `${APP}/en/programs/strength`);
   assert.equal(ssoFinalizeLocation(APP, undefined), `${APP}/`);

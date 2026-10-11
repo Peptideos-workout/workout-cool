@@ -202,7 +202,7 @@ export function resolvePeptideOsWorkoutsSsoUrl(explicitUrl?: string, appUrl?: st
   return peptideOsWorkoutsSsoUrl(origin, app, returnTo);
 }
 
-/** Honour PeptideOS `redirect` only when it is a safe same-origin WC URL. Fail closed to `/`. */
+/** Honour PeptideOS `redirect` only when it is a safe same-origin WC URL. Fail closed to `${origin}/`. */
 export function ssoFinalizeLocation(workoutOrigin: string, redirectParam?: string): string {
   const origin = new URL(workoutOrigin).origin;
   return safeWorkoutReturnTo(redirectParam, origin) ?? `${origin}/`;

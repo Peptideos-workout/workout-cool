@@ -23,11 +23,13 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 | Change-password | PeptideOS `/settings#password` only, when the linked account has an email identity. Legacy local `PasswordForm` and `PUT /api/user/password` are removed. |
 | `/auth/link-peptideos` | **Not allowlisted.** PR #3 is deferred; email collisions in SSO stay `409` and go to support. |
 
-After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars). Anything else fails closed to `/`.
+After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars). Anything else fails closed to the workout-cool origin home (`${workoutOrigin}/`, e.g. `https://workouts.peptideos.us/`) — not a relative `/` that the browser would resolve against PeptideOS.
 
 PeptideOS `GET /api/workouts/sso?redirect=<absolute WC URL>` preserves that redirect through login and passes it back on the WC SSO handoff. The proxy 307 for gated routes sends `?redirect=<original absolute WC URL, path+query>` with `Cache-Control: private, no-store`.
 
 WC sign-out clears the Better Auth session, then redirects to PeptideOS `GET /api/workouts/signout?redirect=<WC home>`. WC home is public, so PeptideOS cannot bounce the browser back into `/api/workouts/sso`.
+
+GET `/auth/signout` only renders a confirmation form. Sign-out runs on the POST server action (Next.js CSRF), so prefetch and a GET render cannot clear the session. `/auth/signout` stays allowlisted; `/dashboard` is gated.
 
 GET `/api/programs/[slug]/sessions/[sessionSlug]` is **gated** (401 without a session). It returns published program session catalog (exercises, videos, suggested sets), not user progress. The matching page is already gated.
 
@@ -68,6 +70,7 @@ Landing and marketing/info pages stay **public and indexable**. PeptideOS login 
 - `/onboarding`, `/sponsor/onboarding`
 - `/admin/*`
 - leftover WC auth pages (`/auth/signin`, `/auth/signup`, `/auth/verify-email`, `/auth/verify-request`, `/auth/error`)
+- `/dashboard`
 - `/auth/link-peptideos` (not allowlisted; PR #3 is deferred)
 
 `robots.ts` disallows the gated prefixes (including locale variants, unprefixed `/programs/*/session/`, and `/*/programs/*/session/`). The sitemap omits session, profile, and statistics URLs.
@@ -81,6 +84,8 @@ Locale prefixes are matched case-insensitively (`/zh-cn`, `/zh-CN`, `/ZH-CN`).
 `wc.account` has `@@unique([providerId, accountId])` (one PeptideOS user cannot link to two WC users) and `@@unique([userId, providerId], map: "account_userId_providerId_key")` so one WC user cannot have two rows for the same provider.
 
 The index name matches PeptideOS PR #35 / `docs/sql/account-user-provider-unique.sql`. The Prisma migration is a no-op: `CREATE UNIQUE INDEX IF NOT EXISTS "account_userId_providerId_key"` so `migrate dev` / `db push` stay in sync when the live index already exists. `prisma migrate deploy` (`.github/workflows/migrate-wc.yml` / `pnpm db:migrate:direct`) will record the migration without recreating the index.
+
+If SSO create races PeptideOS provisioning and hits `P2002` / `23505`, `complete-sso` re-reads the `(userId, providerId)` row and continues when `accountId` matches the PeptideOS hid. A real mismatch is still `409`.
 
 Standalone SQL (docs/rollback): `docs/sql/account-user-provider-unique.sql`. Rollback: `docs/sql/account-user-provider-unique.rollback.sql`.
 

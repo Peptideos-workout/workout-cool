@@ -21,8 +21,17 @@ interface FakeHandoff {
   consumed_at: Date | null;
 }
 
-function ssoRequest(token = rawToken) {
-  return new NextRequest(`https://workouts.example.test/api/peptideos-wc-sso?token=${token}`);
+function ssoRequest(token = rawToken, extras?: { redirect?: string; accept?: string }) {
+  const url = new URL("https://workouts.example.test/api/peptideos-wc-sso");
+  url.searchParams.set("token", token);
+  if (extras?.redirect) {
+    url.searchParams.set("redirect", extras.redirect);
+  }
+  const headers: Record<string, string> = {};
+  if (extras?.accept) {
+    headers.Accept = extras.accept;
+  }
+  return new NextRequest(url, { headers });
 }
 
 function fakeWorld(overrides: {
@@ -89,6 +98,7 @@ function fakeWorld(overrides: {
     createPeptideosAccount: async (userId, hid) => {
       accounts.push({ userId, peptideosUserId: hid });
     },
+    findPeptideosAccountByUserId: async () => null,
     createSignedSession: overrides.createSignedSession ?? defaultSession,
     workoutOrigin: "https://workouts.example.test"
   };
@@ -117,6 +127,41 @@ test("new PeptideOS user: consume, create user, session, and signed cookie; toke
   assert.ok(handoff.consumed_at);
   assert.deepEqual(released, []);
   assert.deepEqual(accounts, [{ userId: "new-user", peptideosUserId }]);
+});
+
+test("peptideos account unique violation after create-user is a 409, not a 500", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+  try {
+    const { deps, handoff } = fakeWorld();
+    deps.createPeptideosAccount = async () => {
+      throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "P2002" });
+    };
+
+    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const body = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(body, { error: "sso_email_collision" });
+    assert.ok(handoff.consumed_at);
+  } finally {
+    console.error = original;
+  }
+});
+
+test("finalizeSession honours a same-origin WC redirect from PeptideOS", async () => {
+  const { deps } = fakeWorld();
+  const dest = "https://workouts.example.test/en/profile?tab=history";
+  const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect: dest }), deps);
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), dest);
+});
+
+test("finalizeSession rejects an untrusted redirect and fails closed to the WC origin home", async () => {
+  const { deps } = fakeWorld();
+  const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect: "https://evil.example/phish" }), deps);
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), "https://workouts.example.test/");
 });
 
 test("linked PeptideOS user: consume, skip signup, session, and signed cookie", async () => {
@@ -158,6 +203,34 @@ test("email collision returns a generic 409 and burns the handoff", async () => 
     assert.deepEqual(accounts, []);
     assert.match(lines.join("\n"), /sso_email_collision/);
     assert.doesNotMatch(lines.join("\n"), /athlete@example.test/);
+  } finally {
+    console.error = original;
+  }
+});
+
+test("browser SSO collisions render an HTML error page with a PeptideOS try-again link", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+
+  try {
+    const { deps } = fakeWorld({
+      snapshot: { existingUser: null, peptideosAccountId: null },
+      signUp: async () => {
+        throw new Error("User already exists: athlete@example.test");
+      }
+    });
+    deps.findUserByEmail = async () => null;
+
+    const response = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html,application/xhtml+xml" }), deps);
+    const html = await response.text();
+
+    assert.equal(response.status, 409);
+    assert.match(response.headers.get("content-type") ?? "", /text\/html/);
+    assert.match(html, /Try again/i);
+    assert.match(html, /\/api\/workouts\/sso/);
+    assert.match(html, /support/i);
+    assert.doesNotMatch(html, /athlete@example.test/);
+    assert.doesNotMatch(html, /sso_email_collision/);
   } finally {
     console.error = original;
   }

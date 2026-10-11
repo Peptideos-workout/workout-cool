@@ -107,6 +107,7 @@ model Account {
   updatedAt             DateTime
 
   @@unique([providerId, accountId])
+  @@unique([userId, providerId], map: "account_userId_providerId_key")
   @@map("account")
   @@schema("wc")
 }

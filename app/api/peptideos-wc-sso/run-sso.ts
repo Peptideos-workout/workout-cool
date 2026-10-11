@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { ssoJson } from "./sso-response";
+import { ssoClientError } from "./sso-response";
 import { logSsoEvent } from "./sso-error-log";
 import { handoffDisposition } from "./handoff-disposition";
 import { runWithHandoffClaim } from "./consume-handoff";
@@ -8,8 +8,11 @@ import { completePeptideOsSsoLogin } from "./complete-sso";
 
 import type { NextRequest } from "next/server";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
+import type { CreatePeptideosAccountResult } from "./create-peptideos-account";
 import type { HandoffClaimRow } from "./consume-handoff";
 import type { AttachTrustedSessionResult } from "./attach-trusted-session";
+
+import { resolvePeptideOsWorkoutsSsoUrl, ssoFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
 
 export interface PeptideOsSsoDeps {
   claimByHash: (tokenHash: string) => Promise<HandoffClaimRow[]>;
@@ -25,7 +28,8 @@ export interface PeptideOsSsoDeps {
     name: string;
     headers: Headers;
   }) => Promise<{ userId: string } | null>;
-  createPeptideosAccount: (userId: string, peptideosUserId: string) => Promise<void>;
+  createPeptideosAccount: (userId: string, peptideosUserId: string) => Promise<void | CreatePeptideosAccountResult>;
+  findPeptideosAccountByUserId: (userId: string) => Promise<{ accountId: string } | null>;
   createSignedSession: (userId: string) => Promise<AttachTrustedSessionResult>;
   workoutOrigin: string;
 }
@@ -53,8 +57,8 @@ function splitName(displayName: string | undefined, email: string): { firstName:
   return { firstName: local || "Athlete", lastName: "User", name: `${local} User` };
 }
 
-function finalizeSession(origin: string, signInRes: Response): NextResponse {
-  const redirect = NextResponse.redirect(`${origin}/`);
+function finalizeSession(origin: string, signInRes: Response, redirectParam?: string): NextResponse {
+  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam));
   mergeSetCookies(signInRes, redirect);
   redirect.headers.set("Cache-Control", "private, no-store");
   return redirect;
@@ -88,8 +92,10 @@ function metaDisplayName(meta: unknown): string | undefined {
 }
 
 export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
+  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+  const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref);
   const tokenParam = request.nextUrl.searchParams.get("token")?.trim();
-  if (!tokenParam) return ssoJson({ error: "missing_token" }, 400);
+  if (!tokenParam) return reply({ error: "missing_token" }, 400);
 
   try {
     const claimed = await runWithHandoffClaim(
@@ -105,14 +111,14 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
         } catch (e) {
           logSsoEvent("auth_users_lookup", e);
           return {
-            value: ssoJson({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, 500),
+            value: reply({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, 500),
             disposition: "release" as const
           };
         }
 
         const email = authUser?.email?.trim().toLowerCase();
         if (!authUser || !email) {
-          return { value: ssoJson({ error: "missing_email" }, 500), disposition: "release" as const };
+          return { value: reply({ error: "missing_email" }, 500), disposition: "release" as const };
         }
 
         const displayName = metaDisplayName(authUser.meta);
@@ -125,9 +131,8 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
             const { firstName, lastName, name } = splitName(displayName, email);
             return deps.signUp({ email, displayName, firstName, lastName, name, headers: request.headers });
           },
-          createPeptideosAccount: async (userId) => {
-            await deps.createPeptideosAccount(userId, hid);
-          },
+          createPeptideosAccount: async (userId) => deps.createPeptideosAccount(userId, hid),
+          findPeptideosAccountByUserId: (userId) => deps.findPeptideosAccountByUserId(userId),
           createSignedSession: async (userId) => {
             const result = await deps.createSignedSession(userId);
             if (result.ok) sessionResponse = result.response;
@@ -137,30 +142,33 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
 
         if (!completed.ok) {
           return {
-            value: ssoJson({ error: completed.error }, completed.status),
+            value: reply({ error: completed.error }, completed.status),
             disposition: handoffDisposition(completed.status, completed.wroteUserState)
           };
         }
         if (!sessionResponse) {
           return {
-            value: ssoJson({ error: "sso_signin_failed" }, 500),
+            value: reply({ error: "sso_signin_failed" }, 500),
             disposition: handoffDisposition(500, completed.wroteUserState)
           };
         }
-        return { value: finalizeSession(deps.workoutOrigin, sessionResponse), disposition: "keep" as const };
+        return {
+          value: finalizeSession(deps.workoutOrigin, sessionResponse, request.nextUrl.searchParams.get("redirect") ?? undefined),
+          disposition: "keep" as const
+        };
       },
     );
 
     if (claimed.outcome === "invalid_or_expired_handoff") {
-      return ssoJson({ error: "invalid_or_expired_handoff" }, 400);
+      return reply({ error: "invalid_or_expired_handoff" }, 400);
     }
     if (claimed.outcome === "error") {
       logSsoEvent("claimed_run", claimed.error);
-      return ssoJson({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, 500);
+      return reply({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, 500);
     }
     return claimed.value;
   } catch (e) {
     logSsoEvent("unhandled", e);
-    return ssoJson({ error: "sso_internal_error", ...ssoExplain(e) }, 500);
+    return reply({ error: "sso_internal_error", ...ssoExplain(e) }, 500);
   }
 }

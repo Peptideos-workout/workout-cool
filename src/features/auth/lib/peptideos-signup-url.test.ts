@@ -7,18 +7,23 @@ import {
   PEPTIDEOS_SETTINGS_PASSWORD_HASH,
   PEPTIDEOS_SETTINGS_PATH,
   PEPTIDEOS_SIGNUP_PATH,
+  PEPTIDEOS_WORKOUTS_SIGNOUT_PATH,
   PEPTIDEOS_WORKOUTS_SSO_PATH,
-  peptideOsOrigin,
   peptideOsForgotPasswordUrl,
   peptideOsLoginUrl,
+  peptideOsOrigin,
   peptideOsSettingsUrl,
   peptideOsSignupUrl,
+  peptideOsWorkoutsSignoutUrl,
   peptideOsWorkoutsSsoUrl,
   resolvePeptideOsForgotPasswordUrl,
   resolvePeptideOsLoginUrl,
   resolvePeptideOsSettingsUrl,
   resolvePeptideOsSignupUrl,
-  resolvePeptideOsWorkoutsSsoUrl
+  resolvePeptideOsWorkoutsSignoutUrl,
+  resolvePeptideOsWorkoutsSsoUrl,
+  safeWorkoutReturnTo,
+  ssoFinalizeLocation
 } from "./peptideos-signup-url";
 
 const APP = "https://workouts.peptideos.us";
@@ -155,4 +160,35 @@ test("drops unsafe PeptideOS settings return URLs", () => {
   assert.equal(peptideOsSettingsUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/settings#password`);
   assert.equal(peptideOsSettingsUrl(ORIGIN, APP, "//evil.example/phish"), `${ORIGIN}/settings#password`);
   assert.equal(peptideOsSettingsUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/settings#password`);
+});
+
+test("rejects control characters in the return URL", () => {
+  assert.equal(safeWorkoutReturnTo(`${APP}/en/profile\u0000`, APP), undefined);
+  assert.equal(safeWorkoutReturnTo("/en/profile\u0007", APP), undefined);
+  assert.equal(safeWorkoutReturnTo(`${APP}/en/profile\u001f`, APP), undefined);
+  assert.equal(safeWorkoutReturnTo(`${APP}/en/profile\u007f`, APP), undefined);
+  assert.equal(safeWorkoutReturnTo("/en/profile?tab=ok", APP), `${APP}/en/profile?tab=ok`);
+});
+
+test("SSO finalize honours only same-origin WC redirects and fails closed to the WC origin home", () => {
+  assert.equal(ssoFinalizeLocation(APP, `${APP}/en/profile?tab=history`), `${APP}/en/profile?tab=history`);
+  assert.equal(ssoFinalizeLocation(APP, "/en/programs/strength"), `${APP}/en/programs/strength`);
+  assert.equal(ssoFinalizeLocation(APP, undefined), `${APP}/`);
+  assert.equal(ssoFinalizeLocation(APP, "https://evil.example/phish"), `${APP}/`);
+  assert.equal(ssoFinalizeLocation(APP, "//evil.example/phish"), `${APP}/`);
+  assert.equal(ssoFinalizeLocation(APP, "/en/%5cevil"), `${APP}/`);
+  assert.equal(ssoFinalizeLocation(APP, "https://evil@workouts.peptideos.us/phish"), `${APP}/`);
+  assert.equal(ssoFinalizeLocation(APP, `${APP}/en/profile\u0000`), `${APP}/`);
+});
+
+test("PeptideOS workouts sign-out URL redirects back to public WC home", () => {
+  assert.equal(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, "/api/workouts/signout");
+  assert.equal(
+    peptideOsWorkoutsSignoutUrl(ORIGIN, APP),
+    `${ORIGIN}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`
+  );
+  assert.equal(
+    resolvePeptideOsWorkoutsSignoutUrl(undefined, APP),
+    `${ORIGIN}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`
+  );
 });

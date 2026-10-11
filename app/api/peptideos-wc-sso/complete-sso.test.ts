@@ -18,6 +18,10 @@ function trackingDeps(overrides: Partial<Parameters<typeof completePeptideOsSsoL
       createPeptideosAccount: async (userId: string) => {
         calls.push(`createPeptideosAccount:${userId}`);
       },
+      findPeptideosAccountByUserId: async (userId: string) => {
+        calls.push(`findPeptideosAccountByUserId:${userId}`);
+        return null;
+      },
       createSignedSession: async (userId: string) => {
         calls.push(`createSignedSession:${userId}`);
         return { ok: true, wroteSession: true };
@@ -91,6 +95,116 @@ test("cookie failure after createSession marks wroteUserState so the handoff is 
 
   assert.deepEqual(result, { ok: false, error: "sso_signin_failed", status: 500, wroteUserState: true });
   assert.deepEqual(calls, ["createSignedSession:wc-user"]);
+});
+
+test("peptideos account unique violation after signup is a 409 collision, not a 500", async () => {
+  let finds = 0;
+  const { calls, deps } = trackingDeps({
+    findUserByEmail: async () => {
+      finds += 1;
+      return finds === 1 ? null : { id: "new-user" };
+    },
+    createPeptideosAccount: async () => {
+      throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "23505" });
+    }
+  });
+
+  const result = await completePeptideOsSsoLogin(
+    peptideosUserId,
+    { existingUser: null, peptideosAccountId: null },
+    deps
+  );
+
+  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, wroteUserState: true });
+  assert.deepEqual(calls, ["signUp", "findPeptideosAccountByUserId:new-user"]);
+});
+
+test("P2002/23505 that races PeptideOS provisioning continues when the (userId, providerId) accountId matches", async () => {
+  let finds = 0;
+  const { calls, deps } = trackingDeps({
+    findUserByEmail: async () => {
+      finds += 1;
+      return finds === 1 ? null : { id: "new-user" };
+    },
+    createPeptideosAccount: async (userId: string) => {
+      calls.push(`createPeptideosAccount:${userId}`);
+      throw Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+    },
+    findPeptideosAccountByUserId: async (userId: string) => {
+      calls.push(`findPeptideosAccountByUserId:${userId}`);
+      return { accountId: peptideosUserId };
+    }
+  });
+
+  const result = await completePeptideOsSsoLogin(
+    peptideosUserId,
+    { existingUser: null, peptideosAccountId: null },
+    deps
+  );
+
+  assert.deepEqual(result, { ok: true, userId: "new-user", wroteUserState: true });
+  assert.deepEqual(calls, [
+    "signUp",
+    "createPeptideosAccount:new-user",
+    "findPeptideosAccountByUserId:new-user",
+    "createSignedSession:new-user"
+  ]);
+});
+
+test("returned 409 that races PeptideOS provisioning continues when the re-read accountId matches", async () => {
+  let finds = 0;
+  const { calls, deps } = trackingDeps({
+    findUserByEmail: async () => {
+      finds += 1;
+      return finds === 1 ? null : { id: "new-user" };
+    },
+    createPeptideosAccount: async (userId: string) => {
+      calls.push(`createPeptideosAccount:${userId}`);
+      return { ok: false, error: "sso_email_collision", status: 409 };
+    },
+    findPeptideosAccountByUserId: async (userId: string) => {
+      calls.push(`findPeptideosAccountByUserId:${userId}`);
+      return { accountId: peptideosUserId };
+    }
+  });
+
+  const result = await completePeptideOsSsoLogin(
+    peptideosUserId,
+    { existingUser: null, peptideosAccountId: null },
+    deps
+  );
+
+  assert.deepEqual(result, { ok: true, userId: "new-user", wroteUserState: true });
+  assert.deepEqual(calls, [
+    "signUp",
+    "createPeptideosAccount:new-user",
+    "findPeptideosAccountByUserId:new-user",
+    "createSignedSession:new-user"
+  ]);
+});
+
+test("P2002/23505 is a 409 only when the re-read (userId, providerId) accountId mismatches", async () => {
+  let finds = 0;
+  const { calls, deps } = trackingDeps({
+    findUserByEmail: async () => {
+      finds += 1;
+      return finds === 1 ? null : { id: "new-user" };
+    },
+    createPeptideosAccount: async () => ({ ok: false, error: "sso_email_collision", status: 409 }),
+    findPeptideosAccountByUserId: async (userId: string) => {
+      calls.push(`findPeptideosAccountByUserId:${userId}`);
+      return { accountId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" };
+    }
+  });
+
+  const result = await completePeptideOsSsoLogin(
+    peptideosUserId,
+    { existingUser: null, peptideosAccountId: null },
+    deps
+  );
+
+  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, wroteUserState: true });
+  assert.deepEqual(calls, ["signUp", "findPeptideosAccountByUserId:new-user"]);
 });
 
 test("linked PeptideOS identity signs in with a signed session and never touches credentials", async () => {

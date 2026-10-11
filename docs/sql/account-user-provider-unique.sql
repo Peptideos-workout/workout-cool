@@ -1,8 +1,11 @@
 -- Unique (userId, providerId) so one workout-cool user cannot have two PeptideOS
 -- (or two of any provider) account rows.
 --
--- This is standalone SQL, not a Prisma migration. Do not apply from this PR.
--- Apply by hand on DIRECT_DATABASE_URL (port 5432), never the pooler.
+-- Standalone SQL kept for docs/rollback. PeptideOS PR #35 created
+-- wc.account_userId_providerId_key. Prisma maps that name with
+-- @@unique([userId, providerId], map: "account_userId_providerId_key") and
+-- prisma/migrations/20261011223000_account_user_provider_unique uses
+-- CREATE UNIQUE INDEX IF NOT EXISTS so migrate/db push stay in sync.
 --
 -- Pre-check (read-only) for rows that would block this constraint:
 --   SELECT "userId", "providerId", COUNT(*) AS n, array_agg(id ORDER BY "createdAt", id) AS ids

@@ -1,19 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { getConfiguredPeptideOsWorkoutsSignoutUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { authClient } from "@/features/auth/lib/auth-client";
 
-export const useLogout = (redirectUrl: string = "/") => {
-  const router = useRouter();
+export const useLogout = (_redirectUrl: string = "/") => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
       await authClient.signOut();
-      router.push(redirectUrl);
       queryClient.invalidateQueries({ queryKey: ["session"] });
-    },
+      window.location.assign(getConfiguredPeptideOsWorkoutsSignoutUrl());
+    }
   });
 };

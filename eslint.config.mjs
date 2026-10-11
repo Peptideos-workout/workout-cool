@@ -21,20 +21,7 @@ const compat = new FlatCompat({
 });
 
 const config = [
-  js.configs.recommended,
-  ...tsConfigs.recommended,
-  ...fixupConfigRules(
-    compat.extends(
-      "plugin:react/recommended",
-      "plugin:react/jsx-runtime",
-      "plugin:react-hooks/recommended",
-      "plugin:prettier/recommended",
-      "plugin:import/recommended",
-      "plugin:import/typescript",
-    ),
-  ),
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
     ignores: [
       "**/node_modules/**",
       "**/.next/**",
@@ -50,13 +37,29 @@ const config = [
       "src/utils/inapp.js",
       "src/utils/externalLinkOpener.js",
       "src/utils/browserEscape.js",
+      "public/sw.js",
     ],
+  },
+  js.configs.recommended,
+  ...tsConfigs.recommended,
+  ...fixupConfigRules(
+    compat.extends(
+      "plugin:react/recommended",
+      "plugin:react/jsx-runtime",
+      "plugin:react-hooks/recommended",
+      "plugin:prettier/recommended",
+      "plugin:import/recommended",
+      "plugin:import/typescript",
+    ),
+  ),
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
     plugins: {
       "react-hooks": fixupPluginRules(reactHooks),
       react: fixupPluginRules(reactPlugin),
       import: fixupPluginRules(importPlugin),
       "unused-imports": fixupPluginRules(unusedImportsPlugin),
-      next: nextPlugin,
+      "@next/next": nextPlugin,
     },
     languageOptions: {
       globals: {
@@ -67,7 +70,6 @@ const config = [
       sourceType: "module",
       parser: tsParser,
       parserOptions: {
-        project: "./tsconfig.json",
         ecmaFeatures: {
           jsx: true,
         },
@@ -147,6 +149,7 @@ const config = [
       "react-hooks/exhaustive-deps": "off",
       "react/jsx-filename-extension": "off",
       "react/jsx-props-no-spreading": "off",
+      "react/no-unknown-property": ["error", { ignore: ["jsx", "global"] }],
       "class-methods-use-this": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
@@ -163,6 +166,30 @@ const config = [
         },
       ],
       quotes: ["error", "double", { avoidEscape: false, allowTemplateLiterals: false }],
+    },
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
+  },
+  {
+    files: ["**/*.cjs", "scripts/**/*.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
+      },
+      parserOptions: {
+        project: null,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "prettier/prettier": "off",
     },
   },
 ];

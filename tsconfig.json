@@ -46,6 +46,7 @@
   ],
   "include": [
     "next-env.d.ts",
+    "src/types/images.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

@@ -8,8 +8,9 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 
 | Surface | Behavior |
 |---|---|
-| Signed-out visitor on any non-allowlisted app page | **HTTP 307** from `proxy.ts` to PeptideOS `/api/workouts/sso` (SSO launcher). Optional `?redirect=` is a safe same-origin workout-cool URL (fail closed). |
-| `/auth/signin` and `/auth/signup` pages, header login/register, profile “sign up to continue”, program prompts | **Removed**. Middleware sends signed-out visitors to PeptideOS SSO. |
+| Signed-out visitor on a **gated** app page | **HTTP 307** from `proxy.ts` to PeptideOS `/api/workouts/sso` (SSO launcher). Optional `?redirect=` is a safe same-origin workout-cool URL (fail closed). |
+| Signed-out visitor on a **public marketing** page | **Renders**. Header Sign in / Sign up CTAs go to PeptideOS `/login` and `/signup`. |
+| `/auth/signin` and `/auth/signup` pages, workout-cool login/register forms | **Removed**. Those leftover paths are gated (307 to PeptideOS SSO). |
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
 | Better Auth HTTP `POST /api/auth/sign-up/email` and `/api/auth/admin/create-user` | **Blocked** `403` + `{ error, redirectTo }` |
@@ -35,7 +36,33 @@ After PeptideOS SSO the session still lands on `/` (`finalizeSession`). The `red
 - `/api/auth/*` (sign-in/sign-up/reset still blocked in the Better Auth catch-all)
 - `/legal/*` (privacy, terms, sales-terms)
 
-**Public marketing pages are not public.** Home, about, tools, programs, and other app routes redirect signed-out visitors to PeptideOS. **Legal pages stay public** so policy/compliance URLs keep working without a session.
+Landing and marketing/info pages stay **public and indexable**. PeptideOS login is required only for the app itself (profile, statistics, program sessions, onboarding, admin, leftover WC auth pages, and anything that reads or writes user data).
+
+### Public vs gated routes
+
+**Public (signed-out visitors render the page; sitemap includes them):**
+
+- `/` (landing / workout builder browse)
+- `/about`
+- `/tools` and `/tools/*` (calculators)
+- `/programs` (catalog)
+- `/programs/[slug]` (program detail, no session)
+- `/premium`
+- `/leaderboard`
+- `/legal/*`
+- robots, sitemap, assets, `/auth/signout`, SSO/health/webhooks/`/api/auth/*`
+
+**Gated (signed-out visitors get HTTP 307 to PeptideOS SSO):**
+
+- `/profile`
+- `/statistics`
+- `/programs/[slug]/session/[sessionSlug]`
+- `/onboarding`, `/sponsor/onboarding`
+- `/admin/*`
+- leftover WC auth pages (`/auth/signin`, `/auth/signup`, `/auth/verify-email`, `/auth/verify-request`, `/auth/error`)
+- `/auth/link-peptideos` (not allowlisted; PR #3 is deferred)
+
+`robots.txt` disallows the gated prefixes (including locale variants and `/*/programs/*/session/`). The sitemap omits session, profile, and statistics URLs.
 
 `/auth/link-peptideos` is not on the allowlist.
 

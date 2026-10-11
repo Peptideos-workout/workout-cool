@@ -12,6 +12,7 @@ import { ChangePasswordMenuItem } from "@/features/update-password/ui/change-pas
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
 import { useLogout } from "@/features/auth/model/useLogout";
+import { getConfiguredPeptideOsLoginUrl, getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { useSession } from "@/features/auth/lib/auth-client";
 import { env } from "@/env";
 import { Link } from "@/components/ui/link";
@@ -72,7 +73,17 @@ export const Header = () => {
           <ThemeToggle />
           <LanguageSelector />
 
-          <div className="dropdown dropdown-end ml-1">
+          {!session.data ? (
+            <div className="ml-1 flex items-center gap-1 sm:gap-2">
+              <Link className="!no-underline" href={getConfiguredPeptideOsLoginUrl()} size="sm" variant="nav">
+                {t("commons.login")}
+              </Link>
+              <Link className="!no-underline" href={getConfiguredPeptideOsSignupUrl()} size="sm" variant="button">
+                {t("commons.signup")}
+              </Link>
+            </div>
+          ) : (
+            <div className="dropdown dropdown-end ml-1">
             <div className="tooltip tooltip-bottom" data-tip={t("commons.profile")}>
               <div className="btn btn-ghost btn-circle avatar relative" role="button" tabIndex={0}>
                 <div className="w-8 rounded-full bg-primary text-primary-content !flex items-center justify-center text-sm font-medium">
@@ -142,19 +153,18 @@ export const Header = () => {
 
               <hr className="my-1 border-slate-200 dark:border-gray-800" />
 
-              {session.data ? (
-                <li>
-                  <button
-                    className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {t("commons.logout")}
-                  </button>
-                </li>
-              ) : null}
+              <li>
+                <button
+                  className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4" />
+                  {t("commons.logout")}
+                </button>
+              </li>
             </ul>
           </div>
+          )}
         </div>
       </div>
     </>

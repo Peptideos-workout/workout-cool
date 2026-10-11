@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  isPublicMarketingPath,
   isSignedOutAllowlistedPath,
   peptideOsSignedOutRedirectLocation,
   shouldRedirectSignedOutRequest,
@@ -11,19 +12,65 @@ import {
 const APP = "https://workouts.peptideos.us";
 const ORIGIN = "https://peptideos.us";
 
-test("signed-out visitors are redirected for app pages", () => {
-  for (const path of [
-    "/",
-    "/en",
-    "/en/profile",
-    "/fr/programs",
-    "/tools",
-    "/about",
-    "/auth/signin",
-    "/en/auth/signup",
-    "/zh-cn/auth/signin",
-    "/zh-CN/auth/signup"
-  ]) {
+const PUBLIC_MARKETING_PATHS = [
+  "/",
+  "/en",
+  "/en/",
+  "/zh-cn",
+  "/about",
+  "/en/about",
+  "/zh-CN/about/",
+  "/tools",
+  "/en/tools",
+  "/fr/tools/bmi-calculator",
+  "/zh-cn/tools/calorie-calculator",
+  "/en/tools/calorie-calculator/mifflin-st-jeor-calculator",
+  "/en/tools/heart-rate-zones",
+  "/programs",
+  "/fr/programs",
+  "/en/programs/strength",
+  "/zh-CN/programs/full-body",
+  "/premium",
+  "/en/premium",
+  "/leaderboard",
+  "/pt/leaderboard",
+  "/legal/privacy",
+  "/en/legal/terms"
+];
+
+const GATED_APP_PATHS = [
+  "/profile",
+  "/en/profile",
+  "/zh-cn/profile",
+  "/statistics",
+  "/en/statistics",
+  "/en/programs/strength/session/day-1",
+  "/zh-CN/programs/full-body/session/week-1",
+  "/onboarding",
+  "/en/onboarding",
+  "/sponsor/onboarding",
+  "/en/sponsor/onboarding",
+  "/admin",
+  "/en/admin/dashboard",
+  "/auth/signin",
+  "/en/auth/signup",
+  "/zh-cn/auth/signin",
+  "/zh-CN/auth/signup",
+  "/auth/verify-email",
+  "/en/auth/verify-request",
+  "/auth/link-peptideos"
+];
+
+test("public landing and marketing pages render signed-out (no PeptideOS redirect)", () => {
+  for (const path of PUBLIC_MARKETING_PATHS) {
+    assert.equal(isPublicMarketingPath(path), true, path);
+    assert.equal(shouldRedirectSignedOutRequest(path, false), false, path);
+  }
+});
+
+test("gated app routes redirect signed-out visitors to PeptideOS", () => {
+  for (const path of GATED_APP_PATHS) {
+    assert.equal(isPublicMarketingPath(path), false, path);
     assert.equal(shouldRedirectSignedOutRequest(path, false), true, path);
   }
 });
@@ -68,7 +115,7 @@ test("does not allowlist the deferred PeptideOS account-link page", () => {
 });
 
 test("signed-in users are not redirected to PeptideOS", () => {
-  for (const path of ["/", "/en/profile", "/auth/signin", "/en/programs", "/auth/link-peptideos"]) {
+  for (const path of ["/", "/en/profile", "/auth/signin", "/en/programs", "/auth/link-peptideos", "/en/statistics"]) {
     assert.equal(shouldRedirectSignedOutRequest(path, true), false, path);
   }
 });

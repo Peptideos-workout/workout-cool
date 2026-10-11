@@ -3,16 +3,19 @@ import assert from "node:assert/strict";
 
 import {
   DEFAULT_PEPTIDEOS_ORIGIN,
+  PEPTIDEOS_LOGIN_PATH,
   PEPTIDEOS_SETTINGS_PASSWORD_HASH,
   PEPTIDEOS_SETTINGS_PATH,
   PEPTIDEOS_SIGNUP_PATH,
   PEPTIDEOS_WORKOUTS_SSO_PATH,
   peptideOsOrigin,
   peptideOsForgotPasswordUrl,
+  peptideOsLoginUrl,
   peptideOsSettingsUrl,
   peptideOsSignupUrl,
   peptideOsWorkoutsSsoUrl,
   resolvePeptideOsForgotPasswordUrl,
+  resolvePeptideOsLoginUrl,
   resolvePeptideOsSettingsUrl,
   resolvePeptideOsSignupUrl,
   resolvePeptideOsWorkoutsSsoUrl
@@ -39,6 +42,18 @@ test("signup URL is PeptideOS /signup (the existing PeptideOS auth page)", () =>
   assert.equal(PEPTIDEOS_SIGNUP_PATH, "/signup");
   assert.equal(peptideOsSignupUrl(ORIGIN, APP), `${ORIGIN}/signup`);
   assert.equal(resolvePeptideOsSignupUrl(undefined, APP), `${ORIGIN}/signup`);
+});
+
+test("login URL is PeptideOS /login (the existing PeptideOS auth page)", () => {
+  assert.equal(PEPTIDEOS_LOGIN_PATH, "/login");
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP), `${ORIGIN}/login`);
+  assert.equal(resolvePeptideOsLoginUrl(undefined, APP), `${ORIGIN}/login`);
+  assert.equal(
+    resolvePeptideOsLoginUrl(undefined, APP, "/en/tools"),
+    `${ORIGIN}/login?redirect=${encodeURIComponent(`${APP}/en/tools`)}`
+  );
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/login`);
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/login`);
 });
 
 test("preserves a workout-cool return path as an absolute redirect query", () => {

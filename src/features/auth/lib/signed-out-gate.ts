@@ -26,8 +26,26 @@ const PREFIX_ALLOWLIST = [
   "/legal"
 ];
 
+const PUBLIC_MARKETING_PREFIXES = ["/about", "/tools", "/premium", "/leaderboard", "/legal"];
+
 function pathEqualsOrPrefixed(path: string, base: string): boolean {
   return path === base || path.startsWith(`${base}/`);
+}
+
+/** Program catalog and one-segment detail. Session pages (`.../session/...`) stay gated. */
+function isPublicProgramsPath(path: string): boolean {
+  return path === "/programs" || /^\/programs\/[^/]+$/.test(path);
+}
+
+export function isPublicMarketingPath(pathname: string): boolean {
+  const path = stripLocalePrefix(pathname);
+  if (path === "/") {
+    return true;
+  }
+  if (PUBLIC_MARKETING_PREFIXES.some((base) => pathEqualsOrPrefixed(path, base))) {
+    return true;
+  }
+  return isPublicProgramsPath(path);
 }
 
 export function isSignedOutAllowlistedPath(pathname: string): boolean {
@@ -48,7 +66,7 @@ export function shouldRedirectSignedOutRequest(pathname: string, hasSession: boo
   if (hasSession) {
     return false;
   }
-  return !isSignedOutAllowlistedPath(pathname);
+  return !isSignedOutAllowlistedPath(pathname) && !isPublicMarketingPath(pathname);
 }
 
 export function signedOutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {

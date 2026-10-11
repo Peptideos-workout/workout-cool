@@ -15,7 +15,6 @@ import { defaultLinkJtiStore, insertPeptideosAccountLink, linkPeptideosAccount, 
 
 import type { NextRequest } from "next/server";
 
-
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
@@ -122,9 +121,9 @@ export async function POST(request: NextRequest) {
           ),
         ),
       createSignedSession: async (userId) => {
-        const res = await createTrustedBetterAuthSession(userId);
-        if (res) {
-          sessionHolder.response = res;
+        const signedIn = await createTrustedBetterAuthSession(userId);
+        if (signedIn.ok) {
+          sessionHolder.response = signedIn.response;
           return true;
         }
         return false;

@@ -15,59 +15,23 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
 
+import { configuredWorkoutOrigin } from "./workout-origin";
+import { createTrustedBetterAuthSession } from "./trusted-session";
+import { CREDENTIAL_PROVIDER, PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
 import { deriveWorkoutCoolCredentialFromSupabaseJwtSecret } from "./derive-wc-password";
-import { consumeWorkoutCoolHandoff, lookupUnconsumedHandoffByHash } from "./consume-handoff";
+import { lookupUnconsumedHandoffByHash, releaseHandoffClaimByHash, runWithHandoffClaim } from "./consume-handoff";
+import { completePeptideOsSsoLogin } from "./complete-sso";
 
 import type { NextRequest } from "next/server";
+import type { SsoAccountSnapshot } from "./resolve-sso-account";
 
 import { prisma } from "@/shared/lib/prisma";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
 
-const CREDENTIAL_PROVIDER = "credential";
-
-function isLoopbackOrigin(origin: string): boolean {
-  try {
-    const { hostname } = new URL(origin);
-    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Public origin for Set-Cookie + post-login Location. Prefer Cloudflare forwards; fall back only when tunnel/proxy exposes
- * a loopback Host or request.url is wrong; last resort BETTER_AUTH_URL / NEXT_PUBLIC_APP_URL.
- */
-function workoutOrigin(request: NextRequest): string {
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-
-  if (forwardedProto && forwardedHost) {
-    try {
-      return new URL(`${forwardedProto}://${forwardedHost}`).origin;
-    } catch {
-      /* ignore */
-    }
-  }
-
-  const fromRequest = request.nextUrl.origin;
-
-  if (!isLoopbackOrigin(fromRequest)) {
-    return fromRequest;
-  }
-
-  const publicUrl = process.env.BETTER_AUTH_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (publicUrl) {
-    try {
-      return new URL(publicUrl).origin;
-    } catch {
-      /* ignore */
-    }
-  }
-
-  return fromRequest;
+function workoutOrigin(): string {
+  return configuredWorkoutOrigin(env.BETTER_AUTH_URL, env.NEXT_PUBLIC_APP_URL);
 }
 
 function mergeSetCookies(from: Response, to: NextResponse) {
@@ -98,15 +62,15 @@ async function trySignIn(request: NextRequest, email: string, password: string):
     return (await auth.api.signInEmail({
       body: { email, password },
       asResponse: true,
-      headers: request.headers,
+      headers: request.headers
     })) as Response;
   } catch {
     return null;
   }
 }
 
-async function finalizeSession(request: NextRequest, signInRes: Response): Promise<NextResponse> {
-  const home = `${workoutOrigin(request)}/`;
+function finalizeSession(signInRes: Response): NextResponse {
+  const home = `${workoutOrigin()}/`;
   const redirect = NextResponse.redirect(home);
   mergeSetCookies(signInRes, redirect);
   redirect.headers.set("Cache-Control", "private, no-store");
@@ -144,6 +108,46 @@ function metaDisplayName(meta: unknown): string | undefined {
   return full || undefined;
 }
 
+async function loadSsoAccountSnapshot(email: string): Promise<SsoAccountSnapshot> {
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    include: { accounts: { select: { id: true, providerId: true, accountId: true, password: true } } }
+  });
+
+  if (!existingUser) {
+    return { existingUser: null, existingCredential: null, peptideosAccountId: null };
+  }
+
+  const existingCredential = existingUser.accounts.find((account) => account.providerId === CREDENTIAL_PROVIDER);
+  const peptideosAccount = existingUser.accounts.find((account) => account.providerId === PEPTIDEOS_PROVIDER);
+
+  return {
+    existingUser: { id: existingUser.id },
+    existingCredential: existingCredential
+      ? { id: existingCredential.id, password: existingCredential.password }
+      : null,
+    peptideosAccountId: peptideosAccount?.accountId ?? null
+  };
+}
+
+async function createAccount(data: { accountId: string; providerId: string; userId: string; password?: string }) {
+  await prisma.account.create({
+    data: {
+      id: crypto.randomUUID(),
+      accountId: data.accountId,
+      providerId: data.providerId,
+      userId: data.userId,
+      password: data.password,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  });
+}
+
+function isRedirectResponse(response: NextResponse): boolean {
+  return response.status >= 300 && response.status < 400;
+}
+
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
@@ -156,93 +160,117 @@ export async function GET(request: NextRequest) {
   if (!tokenParam) return NextResponse.json({ error: "missing_token" }, { status: 400 });
 
   try {
-    let hid: string | null;
-    try {
-      hid = await consumeWorkoutCoolHandoff(tokenParam, (tokenHash) => lookupUnconsumedHandoffByHash(prisma, tokenHash));
-    } catch (e) {
-      console.error("[peptideos-wc-sso] workout_cool_handoffs consume:", e);
-      return NextResponse.json({ error: "database_error", ...ssoExplain(e) }, { status: 500 });
-    }
+    const claimed = await runWithHandoffClaim(
+      tokenParam,
+      {
+        claimByHash: (tokenHash) => lookupUnconsumedHandoffByHash(prisma, tokenHash),
+        releaseByHash: (tokenHash) => releaseHandoffClaimByHash(prisma, tokenHash)
+      },
+      async (hid) => {
+        const signInHolder: { response: Response | null } = { response: null };
 
-    if (!hid) return NextResponse.json({ error: "invalid_or_expired_handoff" }, { status: 400 });
-
-    let userRows: { email: string; meta: unknown }[];
-    try {
-      userRows = await prisma.$queryRaw<{ email: string; meta: unknown }[]>`
+        let userRows: { email: string; meta: unknown }[];
+        try {
+          userRows = await prisma.$queryRaw<{ email: string; meta: unknown }[]>`
       SELECT email, raw_user_meta_data AS meta
       FROM auth.users
       WHERE id::text = ${hid}
       LIMIT 1
     `;
-    } catch (e) {
-      console.error("[peptideos-wc-sso] auth.users lookup:", e);
-      return NextResponse.json({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, { status: 500 });
-    }
+        } catch (e) {
+          console.error("[peptideos-wc-sso] auth.users lookup:", e);
+          return NextResponse.json({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, { status: 500 });
+        }
 
-    const email = userRows[0]?.email?.trim().toLowerCase();
-    if (!email) return NextResponse.json({ error: "missing_email" }, { status: 500 });
+        const email = userRows[0]?.email?.trim().toLowerCase();
+        if (!email) return NextResponse.json({ error: "missing_email" }, { status: 500 });
 
-    const displayName = metaDisplayName(userRows[0]?.meta);
-
-    const pw = deriveWorkoutCoolCredentialFromSupabaseJwtSecret({
-      supabaseJwtSecret: jwtSecret,
-      email,
-      supabaseUserId: hid,
-    });
-
-    let res = await trySignIn(request, email, pw);
-    if (res?.ok) return finalizeSession(request, res);
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-
-    if (!existingUser) {
-      const { firstName, lastName, name } = splitName(displayName, email);
-      try {
-        await auth.api.signUpEmail({
-          body: {
-            email,
-            password: pw,
-            name,
-            firstName,
-            lastName,
-            role: UserRole.user,
-          },
-          headers: request.headers,
+        const displayName = metaDisplayName(userRows[0]?.meta);
+        const pw = deriveWorkoutCoolCredentialFromSupabaseJwtSecret({
+          supabaseJwtSecret: jwtSecret,
+          email,
+          supabaseUserId: hid
         });
-      } catch {
-        /* race */
-      }
-      res = await trySignIn(request, email, pw);
-      if (res?.ok) return finalizeSession(request, res);
-      return NextResponse.json({ error: "sso_signup_failed" }, { status: 500 });
-    }
+        const derivedPasswordHash = hashStringWithSalt(pw, env.BETTER_AUTH_SECRET);
+        const snapshot = await loadSsoAccountSnapshot(email);
 
-    const hash = hashStringWithSalt(pw, env.BETTER_AUTH_SECRET);
-    const cred = await prisma.account.findFirst({
-      where: { userId: existingUser.id, providerId: CREDENTIAL_PROVIDER },
-    });
-    if (!cred) {
-      await prisma.account.create({
-        data: {
-          id: crypto.randomUUID(),
-          accountId: email,
-          providerId: CREDENTIAL_PROVIDER,
-          userId: existingUser.id,
-          password: hash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-    } else {
-      await prisma.account.update({
-        where: { id: cred.id },
-        data: { password: hash, updatedAt: new Date() },
-      });
-    }
+        const completed = await completePeptideOsSsoLogin(hid, derivedPasswordHash, snapshot, {
+          signUpNewUser: async () => {
+            const { firstName, lastName, name } = splitName(displayName, email);
+            try {
+              await auth.api.signUpEmail({
+                body: {
+                  email,
+                  password: pw,
+                  name,
+                  firstName,
+                  lastName,
+                  role: UserRole.user
+                },
+                headers: request.headers
+              });
+            } catch {
+              /* race: another request may have created the user */
+            }
+            const created = await prisma.user.findUnique({ where: { email } });
+            if (!created) throw new Error("sso_signup_failed");
+            return { userId: created.id };
+          },
+          createCredential: async (userId) => {
+            await createAccount({
+              accountId: email,
+              providerId: CREDENTIAL_PROVIDER,
+              userId,
+              password: derivedPasswordHash
+            });
+          },
+          createPeptideosAccount: async (userId) => {
+            await createAccount({
+              accountId: hid,
+              providerId: PEPTIDEOS_PROVIDER,
+              userId
+            });
+          },
+          updateCredentialPassword: async () => {
+            throw new Error("SSO must never overwrite an existing credential");
+          },
+          signInWithDerivedPassword: async () => {
+            const res = await trySignIn(request, email, pw);
+            if (res?.ok) {
+              signInHolder.response = res;
+              return true;
+            }
+            return false;
+          },
+          signInWithTrustedSession: async (userId) => {
+            const res = await createTrustedBetterAuthSession(userId);
+            if (res) {
+              signInHolder.response = res;
+              return true;
+            }
+            return false;
+          }
+        });
 
-    res = await trySignIn(request, email, pw);
-    if (!res?.ok) return NextResponse.json({ error: "sso_signin_failed" }, { status: 500 });
-    return finalizeSession(request, res);
+        if (!completed.ok) {
+          return NextResponse.json({ error: completed.error }, { status: completed.status });
+        }
+        if (!signInHolder.response) {
+          return NextResponse.json({ error: "sso_signin_failed" }, { status: 500 });
+        }
+        return finalizeSession(signInHolder.response);
+      },
+      isRedirectResponse,
+    );
+
+    if (claimed.outcome === "invalid_or_expired_handoff") {
+      return NextResponse.json({ error: "invalid_or_expired_handoff" }, { status: 400 });
+    }
+    if (claimed.outcome === "error") {
+      console.error("[peptideos-wc-sso] claimed run:", claimed.error);
+      return NextResponse.json({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, { status: 500 });
+    }
+    return claimed.value;
   } catch (e) {
     console.error("[peptideos-wc-sso] unhandled:", e);
     return NextResponse.json({ error: "sso_internal_error", ...ssoExplain(e) }, { status: 500 });

@@ -1,6 +1,7 @@
 import Link from "next/link";
-
 import { getI18n } from "locales/server";
+
+import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { Button } from "@/components/ui/button";
 
 export const SignUpButton = async () => {
@@ -8,7 +9,7 @@ export const SignUpButton = async () => {
 
   return (
     <Button asChild variant="outline-black">
-      <Link href={"/auth/signup"}>{t("commons.register")}</Link>
+      <Link href={getConfiguredPeptideOsSignupUrl()}>{t("commons.register")}</Link>
     </Button>
   );
 };

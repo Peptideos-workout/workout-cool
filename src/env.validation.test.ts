@@ -59,6 +59,18 @@ test("createEnv does not require SUPABASE_JWT_SECRET after SSO dropped HMAC pass
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 
+test("createEnv does not require NEXT_PUBLIC_PEPTIDEOS_URL", () => {
+  const result = importEnv({ NEXT_PUBLIC_PEPTIDEOS_URL: undefined });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("createEnv names an invalid NEXT_PUBLIC_PEPTIDEOS_URL", () => {
+  const result = importEnv({ NEXT_PUBLIC_PEPTIDEOS_URL: "not-a-url" });
+  assert.notEqual(result.status, 0);
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /NEXT_PUBLIC_PEPTIDEOS_URL:/);
+});
+
 test("createEnv accepts documented enum literals", () => {
   const result = importEnv({
     SMTP_SECURE: "false",

@@ -1,5 +1,6 @@
 import { admin, customSession } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
 import { UserRole } from "@prisma/client";
@@ -7,6 +8,8 @@ import { VerifyEmail } from "@emails/VerifyEmail";
 import { ResetPasswordEmail } from "@emails/ResetPasswordEmail";
 
 import { betterAuthTrustedOrigins } from "./trusted-origins";
+import { isPublicSignupBlocked, isSsoSignupContext, PUBLIC_SIGNUP_DISABLED } from "./public-signup-guard";
+import { isBetterAuthEmailSignUpPath, shouldAllowBetterAuthUserCreate } from "./block-public-signup";
 
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
@@ -14,10 +17,34 @@ import { SiteConfig } from "@/shared/config/site-config";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { env } from "@/env";
 
-
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: betterAuthTrustedOrigins(env.BETTER_AUTH_URL, env.NEXT_PUBLIC_APP_URL),
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (isBetterAuthEmailSignUpPath(ctx.path) && isPublicSignupBlocked()) {
+        throw new APIError("FORBIDDEN", { message: PUBLIC_SIGNUP_DISABLED });
+      }
+    }),
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          if (!shouldAllowBetterAuthUserCreate(isSsoSignupContext())) {
+            throw new APIError("FORBIDDEN", { message: PUBLIC_SIGNUP_DISABLED });
+          }
+          return { data: user };
+        },
+      },
+    },
+  },
+  account: {
+    // PR #1: never attach a new identity to an existing user by email match.
+    accountLinking: {
+      enabled: false,
+    },
+  },
   plugins: [
     admin(),
     customSession(async ({ user, session }) => {
@@ -133,6 +160,8 @@ export const auth = betterAuth({
   socialProviders: {
     google: {
       enabled: true,
+      disableSignUp: true,
+      disableImplicitSignUp: true,
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       mapProfileToUser: async (profile) => {

@@ -3,15 +3,16 @@ import { useForm } from "react-hook-form";
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useI18n } from "locales/client";
 import { Label } from "@radix-ui/react-label";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { useI18n } from "locales/client";
 import { cn } from "@/shared/lib/utils";
 import { paths } from "@/shared/constants/paths";
 import { ProviderButton } from "@/features/auth/ui/ProviderButton";
 import { loginSchema, LoginSchema } from "@/features/auth/signin/schema/signin.schema";
 import { useSignIn } from "@/features/auth/signin/model/useSignIn";
+import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,7 +21,6 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
   const t = useI18n();
   const searchParams = useSearchParams();
   const isResetSuccess = searchParams.get("reset") === "success";
-  const redirectUrl = searchParams.get("redirect");
 
   const { signIn } = useSignIn();
 
@@ -79,9 +79,9 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
 
       <div className="text-center text-sm">
         {t("commons.dont_have_account")}{" "}
-        <Link 
-          className="underline underline-offset-4" 
-          href={`/${paths.signUp}${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ""}`}
+        <Link
+          className="underline underline-offset-4"
+          href={getConfiguredPeptideOsSignupUrl()}
         >
           {t("commons.signup")}
         </Link>

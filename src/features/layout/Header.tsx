@@ -2,15 +2,16 @@
 
 import Image from "next/image";
 import { LogIn, UserPlus, LogOut, User, Crown, Sparkles } from "lucide-react";
-
 import { useI18n } from "locales/client";
 import Logo from "@public/logo.png";
+
 import { LanguageSelector } from "@/widgets/language-selector/language-selector";
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { SiteConfig } from "@/shared/config/site-config";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
 import { useLogout } from "@/features/auth/model/useLogout";
+import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { useSession } from "@/features/auth/lib/auth-client";
 import { env } from "@/env";
 import { Link } from "@/components/ui/link";
@@ -149,7 +150,7 @@ export const Header = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link className="!no-underline" href="/auth/signup" size="base" variant="nav">
+                    <Link className="!no-underline" href={getConfiguredPeptideOsSignupUrl()} size="base" variant="nav">
                       <UserPlus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                       {t("commons.register")}
                     </Link>

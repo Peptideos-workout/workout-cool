@@ -4,6 +4,11 @@ export const DEFAULT_PEPTIDEOS_ORIGIN = "https://peptideos.us";
 /** Existing PeptideOS auth page (`app/(auth)/signup`). */
 export const PEPTIDEOS_SIGNUP_PATH = "/signup";
 
+/** PeptideOS password recovery page. */
+export const PEPTIDEOS_FORGOT_PASSWORD_PATH = "/forgot-password";
+
+const MAX_URI_DECODE_ROUNDS = 8;
+
 /**
  * Resolve the PeptideOS origin already paired with this app's SSO flow.
  *
@@ -29,16 +34,32 @@ export function peptideOsOrigin(explicitUrl?: string, appUrl?: string): string {
   return DEFAULT_PEPTIDEOS_ORIGIN;
 }
 
+function loopDecodeUri(value: string): string | null {
+  let current = value;
+  for (let i = 0; i < MAX_URI_DECODE_ROUNDS; i++) {
+    let next: string;
+    try {
+      next = decodeURIComponent(current);
+    } catch {
+      return null;
+    }
+    if (next === current) {
+      return current;
+    }
+    current = next;
+  }
+  return null;
+}
+
 function containsForbiddenReturnChars(value: string): boolean {
   if (value.includes("\\") || /%5c/i.test(value)) {
     return true;
   }
-  try {
-    const decoded = decodeURIComponent(value);
-    return decoded.includes("\\") || /%5c/i.test(decoded);
-  } catch {
+  const decoded = loopDecodeUri(value);
+  if (decoded === null) {
     return true;
   }
+  return decoded.includes("\\") || /%5c/i.test(decoded);
 }
 
 function absoluteWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
@@ -48,18 +69,27 @@ function absoluteWorkoutReturnTo(returnTo: string | undefined, appUrl: string): 
     return undefined;
   }
 
+  const decoded = loopDecodeUri(dest);
+  if (decoded === null || containsForbiddenReturnChars(decoded)) {
+    return undefined;
+  }
+
   let destUrl: URL;
   try {
-    if (dest.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(dest)) {
-      if (!/^https?:\/\//i.test(dest)) {
+    if (decoded.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
+      if (!/^https?:\/\//i.test(decoded)) {
         return undefined;
       }
-      destUrl = new URL(dest);
+      destUrl = new URL(decoded);
     } else {
-      const path = dest.startsWith("/") ? dest : `/${dest}`;
+      const path = decoded.startsWith("/") ? decoded : `/${decoded}`;
       destUrl = new URL(path, `${new URL(base).origin}/`);
     }
   } catch {
+    return undefined;
+  }
+
+  if (destUrl.username || destUrl.password) {
     return undefined;
   }
 
@@ -68,6 +98,10 @@ function absoluteWorkoutReturnTo(returnTo: string | undefined, appUrl: string): 
   }
 
   return destUrl.toString();
+}
+
+function peptideOsAuthUrl(origin: string, path: string): string {
+  return new URL(path, `${origin.replace(/\/$/, "")}/`).toString();
 }
 
 export function peptideOsSignupUrl(origin: string, appUrl: string, returnTo?: string): string {
@@ -86,4 +120,12 @@ export function resolvePeptideOsSignupUrl(explicitUrl?: string, appUrl?: string,
     return peptideOsSignupUrl(origin, origin);
   }
   return peptideOsSignupUrl(origin, app, returnTo);
+}
+
+export function peptideOsForgotPasswordUrl(origin: string): string {
+  return peptideOsAuthUrl(origin, PEPTIDEOS_FORGOT_PASSWORD_PATH);
+}
+
+export function resolvePeptideOsForgotPasswordUrl(explicitUrl?: string, appUrl?: string): string {
+  return peptideOsForgotPasswordUrl(peptideOsOrigin(explicitUrl, appUrl));
 }

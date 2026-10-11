@@ -12,3 +12,8 @@ export function isPublicSignupBlocked(): boolean {
 export function publicSignupDisabledBody(redirectTo: string) {
   return { error: PUBLIC_SIGNUP_DISABLED, redirectTo };
 }
+
+/** Always the same payload — never include email or whether a user exists. */
+export function passwordResetDisabledBody(redirectTo: string) {
+  return { ok: true as const, redirectTo };
+}

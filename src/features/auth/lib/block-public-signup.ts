@@ -4,12 +4,31 @@ function stripQueryAndHash(path: string): string {
   return path.split("?")[0].split("#")[0];
 }
 
+function resolveDotSegments(path: string): string {
+  const absolute = path.startsWith("/");
+  const stack: string[] = [];
+  for (const segment of path.split("/")) {
+    if (segment === "" || segment === ".") {
+      continue;
+    }
+    if (segment === "..") {
+      stack.pop();
+      continue;
+    }
+    stack.push(segment);
+  }
+  const joined = stack.join("/");
+  return absolute ? `/${joined}` : joined;
+}
+
 export function normalizeBetterAuthPath(path: string): string {
-  let normalized = stripQueryAndHash(path).trim().toLowerCase();
+  let normalized = stripQueryAndHash(path).trim().replace(/%2f/gi, "/").toLowerCase();
+  normalized = normalized.replace(/\/+/g, "/");
+  normalized = resolveDotSegments(normalized);
   if (normalized.length > 1 && normalized.endsWith("/")) {
     normalized = normalized.slice(0, -1);
   }
-  return normalized;
+  return normalized || "/";
 }
 
 function canonicalizeSignupPath(path: string): string {
@@ -43,6 +62,21 @@ export function isPublicBetterAuthSignupRequest(pathname: string): boolean {
   return isBetterAuthEmailSignUpPath(betterAuthRequestPath(pathname));
 }
 
+function pathEqualsOrPrefixed(path: string, base: string): boolean {
+  return path === base || path.startsWith(`${base}/`);
+}
+
+/** Better Auth HTTP paths that send a reset email or write a new credential password. */
+export function isBetterAuthPasswordResetRequest(pathname: string): boolean {
+  const path = betterAuthRequestPath(pathname);
+  return (
+    pathEqualsOrPrefixed(path, "/forget-password") ||
+    pathEqualsOrPrefixed(path, "/forgot-password") ||
+    pathEqualsOrPrefixed(path, "/request-password-reset") ||
+    pathEqualsOrPrefixed(path, "/reset-password")
+  );
+}
+
 /** User rows may be created only by the PeptideOS SSO create-user path. */
 export function shouldAllowBetterAuthUserCreate(isSsoContext: boolean): boolean {
   return isSsoContext;
@@ -54,4 +88,9 @@ export function shouldAllowBetterAuthUserCreate(isSsoContext: boolean): boolean 
  */
 export function shouldAllowOAuthNewUser(isSsoContext: boolean): boolean {
   return isSsoContext;
+}
+
+/** A `credential` account row is only created by in-process SSO `signUpEmail`. */
+export function shouldAllowCredentialAccountCreate(providerId: string, isSsoContext: boolean): boolean {
+  return providerId !== "credential" || isSsoContext;
 }

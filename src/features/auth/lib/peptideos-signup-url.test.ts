@@ -5,7 +5,9 @@ import {
   DEFAULT_PEPTIDEOS_ORIGIN,
   PEPTIDEOS_SIGNUP_PATH,
   peptideOsOrigin,
+  peptideOsForgotPasswordUrl,
   peptideOsSignupUrl,
+  resolvePeptideOsForgotPasswordUrl,
   resolvePeptideOsSignupUrl
 } from "./peptideos-signup-url";
 
@@ -62,10 +64,24 @@ test("rejects backslash and encoded %5c variants in the return URL", () => {
     `${APP}/%5cevil`,
     `${APP}\\@evil.example`,
     "/en/programs%5c..",
-    "/en/programs%5C.."
+    "/en/programs%5C..",
+    "/en/%25255c",
+    "/en/%2525c",
+    `${APP}/%25255cevil`
   ];
   for (const returnTo of rejected) {
     assert.equal(peptideOsSignupUrl(ORIGIN, APP, returnTo), `${ORIGIN}/signup`, returnTo);
     assert.equal(resolvePeptideOsSignupUrl(undefined, APP, returnTo), `${ORIGIN}/signup`, returnTo);
   }
+});
+
+test("rejects return URLs that carry userinfo", () => {
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil@workouts.peptideos.us/phish"), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://user:pass@workouts.peptideos.us/profile"), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://workouts.peptideos.us@evil.example/"), `${ORIGIN}/signup`);
+});
+
+test("PeptideOS forgot-password URL uses the same origin pairing", () => {
+  assert.equal(peptideOsForgotPasswordUrl(ORIGIN), `${ORIGIN}/forgot-password`);
+  assert.equal(resolvePeptideOsForgotPasswordUrl(undefined, APP), `${ORIGIN}/forgot-password`);
 });

@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   isBetterAuthEmailSignUpPath,
+  isBetterAuthPasswordResetRequest,
   isPublicBetterAuthSignupRequest,
+  normalizeBetterAuthPath,
   shouldAllowBetterAuthUserCreate,
+  shouldAllowCredentialAccountCreate,
   shouldAllowOAuthNewUser
 } from "./block-public-signup";
 
@@ -46,4 +49,32 @@ test("user.create is allowed only inside the SSO create-user path", () => {
 test("OAuth must not create a new workout-cool user (no email-match takeover)", () => {
   assert.equal(shouldAllowOAuthNewUser(false), false);
   assert.equal(shouldAllowOAuthNewUser(true), true);
+});
+
+test("credential account rows can be created only inside the SSO wrap", () => {
+  assert.equal(shouldAllowCredentialAccountCreate("credential", false), false);
+  assert.equal(shouldAllowCredentialAccountCreate("credential", true), true);
+  assert.equal(shouldAllowCredentialAccountCreate("peptideos", false), true);
+  assert.equal(shouldAllowCredentialAccountCreate("google", false), true);
+});
+
+test("Better Auth forget/reset paths are public password-reset requests", () => {
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/forget-password"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/forgot-password"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/request-password-reset"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/reset-password"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/reset-password/token-abc"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/API/AUTH/FORGET-PASSWORD/"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/sign-in/email"), false);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/sign-up/email"), false);
+});
+
+test("normalizeBetterAuthPath collapses slashes, decodes %2f, and resolves dot segments", () => {
+  assert.equal(normalizeBetterAuthPath("/api/auth//sign-up//email"), "/api/auth/sign-up/email");
+  assert.equal(normalizeBetterAuthPath("/api/auth/sign-up%2femail"), "/api/auth/sign-up/email");
+  assert.equal(normalizeBetterAuthPath("/api/auth/sign-up%2Femail"), "/api/auth/sign-up/email");
+  assert.equal(normalizeBetterAuthPath("/api/auth/foo/../sign-up/email"), "/api/auth/sign-up/email");
+  assert.equal(normalizeBetterAuthPath("/api/auth/./forget-password"), "/api/auth/forget-password");
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/foo/../sign-up/email"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/bar/../forget-password"), true);
 });

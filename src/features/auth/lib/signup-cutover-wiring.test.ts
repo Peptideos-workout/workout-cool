@@ -31,6 +31,35 @@ test("Better Auth HTTP catch-all blocks public email signup paths", () => {
   const src = read("app/api/auth/[...all]/route.ts");
   assert.match(src, /isPublicBetterAuthSignupRequest/);
   assert.match(src, /publicSignupDisabledBody/);
+  assert.match(src, /isBetterAuthPasswordResetRequest/);
+  assert.match(src, /status:\s*200/);
+  assert.match(src, /passwordResetDisabledBody|ok:\s*true/);
+});
+
+test("Better Auth account.create hook blocks credential rows outside SSO", () => {
+  const src = read("src/features/auth/lib/better-auth.ts");
+  assert.match(src, /account:\s*\{[\s\S]*create:\s*\{[\s\S]*before:/);
+  assert.match(src, /shouldAllowCredentialAccountCreate/);
+  assert.match(src, /providerId/);
+  assert.match(src, /isSsoUserCreateAllowed/);
+});
+
+test("workout-cool forgot/reset UI and routes are removed", () => {
+  assert.throws(() => read("app/[locale]/(app)/auth/(auth-layout)/forgot-password/page.tsx"), /ENOENT/);
+  assert.throws(() => read("app/[locale]/(app)/auth/(auth-layout)/reset-password/page.tsx"), /ENOENT/);
+  assert.throws(() => read("src/features/auth/forgot-password/ui/forgot-password-form.tsx"), /ENOENT/);
+  assert.throws(() => read("src/features/auth/reset-password/ui/reset-password-form.tsx"), /ENOENT/);
+
+  const login = read("src/features/auth/signin/ui/CredentialsLoginForm.tsx");
+  assert.doesNotMatch(login, /paths\.forgotPassword/);
+  assert.doesNotMatch(login, /auth\/forgot-password/);
+});
+
+test("NO_CREDENTIAL_ACCOUNT is defined in every locale", () => {
+  for (const locale of ["en", "fr", "es", "zh-CN", "ru", "pt"]) {
+    const src = read(`locales/${locale}.ts`);
+    assert.match(src, /NO_CREDENTIAL_ACCOUNT:/, locale);
+  }
 });
 
 test("public signup HTTP surfaces are blocked or redirected to PeptideOS", () => {

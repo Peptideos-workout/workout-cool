@@ -1364,6 +1364,7 @@ export default {
   confirm_password: "Confirmar palavra-passe",
   confirm_password_placeholder: "Confirme a palavra-passe",
   password_sign_in_via_peptideos: "Esta conta inicia sessão através do PeptideOS. Não existe uma palavra-passe do workout-cool para alterar.",
+  NO_CREDENTIAL_ACCOUNT: "Esta conta não tem uma palavra-passe do workout-cool. Inicie sessão através do PeptideOS.",
 
   success: {
     feedback_sent: "Feedback enviado",

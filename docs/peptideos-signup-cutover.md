@@ -23,11 +23,14 @@ Revisit after PeptideOS has provisioned `wc.user` / `wc.account` for every legac
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
 | Better Auth HTTP `POST /api/auth/sign-up/email` and `/api/auth/admin/create-user` (catch-all `[...all]`) | **Blocked** `403` + `{ error, redirectTo }` |
+| Better Auth HTTP forget/reset (`/forget-password`, `/forgot-password`, `/request-password-reset`, `/reset-password`) | **Disabled** generic `200` + `{ ok, redirectTo }` (never leaks whether an account exists). Points at PeptideOS `/forgot-password`. |
 | Google OAuth `disableSignUp` / `disableImplicitSignUp` plus `databaseHooks.user.create` | **Blocked** unless the in-process SSO ALS flag is set |
+| `databaseHooks.account.create` for `providerId: "credential"` | **Blocked** unless the in-process SSO ALS flag is set (stops resetPassword from creating a credential row) |
 | Google / email **sign-in** for existing accounts | **Allowed** |
 | `/api/peptideos-wc-sso` create-user (`runWithSsoUserCreate(() => auth.api.signUpEmail(...))`) | **Allowed** — only this wrap is added to the SSO route |
 | Change-password for users with a `credential` account | **Allowed** (lookup/update filtered by `providerId: "credential"`) |
 | Change-password for PeptideOS-only users (no `credential` row) | **Hidden** in UI; server returns `NO_CREDENTIAL_ACCOUNT`. They sign in via PeptideOS. Creating a new local password would reopen a workout-cool login we just closed. |
+| Workout-cool `/auth/forgot-password` and `/auth/reset-password` | **Removed**. Sign-in “Forgot password?” links to PeptideOS. |
 
 After PeptideOS SSO the session still lands on `/` (`finalizeSession` is owned by PR #3). The `redirect` query is best-effort only. Return URLs that contain `\` or `%5c` (any case) are dropped; the parsed origin must equal `new URL(appUrl).origin`.
 

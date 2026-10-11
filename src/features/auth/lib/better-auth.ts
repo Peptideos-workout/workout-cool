@@ -9,7 +9,11 @@ import { ResetPasswordEmail } from "@emails/ResetPasswordEmail";
 import { betterAuthTrustedOrigins } from "./trusted-origins";
 import { isSsoUserCreateAllowed } from "./sso-user-create-context";
 import { PUBLIC_SIGNUP_DISABLED } from "./public-signup-guard";
-import { shouldAllowBetterAuthUserCreate, shouldAllowOAuthNewUser } from "./block-public-signup";
+import {
+  shouldAllowBetterAuthUserCreate,
+  shouldAllowCredentialAccountCreate,
+  shouldAllowOAuthNewUser
+} from "./block-public-signup";
 
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
@@ -35,6 +39,16 @@ export const auth = betterAuth({
             throw new Error(PUBLIC_SIGNUP_DISABLED);
           }
           return { data: user };
+        },
+      },
+    },
+    account: {
+      create: {
+        before: async (account) => {
+          if (!shouldAllowCredentialAccountCreate(account.providerId, isSsoUserCreateAllowed())) {
+            throw new Error(PUBLIC_SIGNUP_DISABLED);
+          }
+          return { data: account };
         },
       },
     },

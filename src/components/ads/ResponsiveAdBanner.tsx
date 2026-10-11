@@ -1,10 +1,10 @@
 "use client";
 
-import { env } from "@/env";
-import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
-
 import { GoogleAdSense } from "./GoogleAdSense";
 import { AdWrapper } from "./AdWrapper";
+
+import { env } from "@/env";
+import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 
 interface ResponsiveAdBannerProps {
   adSlot: string;

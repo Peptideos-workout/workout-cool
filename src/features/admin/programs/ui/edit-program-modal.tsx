@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Plus, Trash2 } from "lucide-react";
+import { useI18n } from "locales/client";
 import { ProgramLevel, ExerciseAttributeValueEnum } from "@prisma/client";
 
-import { useI18n } from "locales/client";
-import { allEquipmentValues, getEquipmentTranslation } from "@/shared/lib/workout-session/equipments";
-
 import { updateProgram } from "../actions/update-program.action";
+
+import { allEquipmentValues, getEquipmentTranslation } from "@/shared/lib/workout-session/equipments";
 
 interface EditProgramModalProps {
   program: {

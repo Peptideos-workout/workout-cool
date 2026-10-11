@@ -3,8 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { CalculatorIcon, ScaleIcon, HeartIcon, DumbbellIcon, RepeatIcon } from "lucide-react";
-
 import { getI18n } from "locales/server";
+
 import { env } from "@/env";
 import { HorizontalBottomBanner, HorizontalTopBanner } from "@/components/ads";
 

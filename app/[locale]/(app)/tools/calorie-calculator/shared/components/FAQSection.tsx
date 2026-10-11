@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { ChevronDownIcon, HelpCircleIcon } from "lucide-react";
-
 import { useI18n } from "locales/client";
 
 export function FAQSection() {

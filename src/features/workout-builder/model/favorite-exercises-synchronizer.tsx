@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 
-import { useSession } from "@/features/auth/lib/auth-client";
-
 import { useSyncFavoriteExercises } from "../hooks/use-sync-favorite-exercises";
+
+import { useSession } from "@/features/auth/lib/auth-client";
 
 export function FavoriteExercisesSynchronizer() {
   const { syncFavoriteExercises } = useSyncFavoriteExercises();

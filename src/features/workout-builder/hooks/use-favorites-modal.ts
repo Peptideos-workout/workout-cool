@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ExerciseAttributeValueEnum } from "@prisma/client";
 
-import { useSession } from "@/features/auth/lib/auth-client";
-
 import { useFavoriteExercisesService } from "./use-favorite-exercises.service";
+
+import { useSession } from "@/features/auth/lib/auth-client";
 
 interface ExerciseWithAttributes {
   id: string;

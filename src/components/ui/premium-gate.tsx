@@ -6,9 +6,9 @@ import { Crown, Sparkles } from "lucide-react";
 import { useI18n } from "locales/client";
 
 import { cn } from "@/shared/lib/utils";
+import { SiteConfig } from "@/shared/config/site-config";
 import { useUserSubscription } from "@/features/ads/hooks/useUserSubscription";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SiteConfig } from "@/shared/config/site-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 

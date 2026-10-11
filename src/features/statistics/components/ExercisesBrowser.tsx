@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, X } from "lucide-react";
 import debounce from "lodash.debounce";
+import { useI18n } from "locales/client";
 import { useQuery } from "@tanstack/react-query";
 import { ExerciseAttributeNameEnum, ExerciseAttributeValueEnum } from "@prisma/client";
 
-import { useI18n } from "locales/client";
 import { getAttributeValueLabel } from "@/shared/lib/attribute-value-translation";
 import { StatisticsTimeframe } from "@/shared/constants/statistics";
+import { SiteConfig } from "@/shared/config/site-config";
 import { ExerciseVideoModal } from "@/features/workout-builder/ui/exercise-video-modal";
 import { WorkoutBuilderExerciseWithAttributes } from "@/features/workout-builder/types";
 import { EQUIPMENT_CONFIG } from "@/features/workout-builder/model/equipment-config";
@@ -21,7 +22,6 @@ import { StatisticsPreviewOverlay } from "@/features/statistics/components/Stati
 import { OneRepMaxChart } from "@/features/statistics/components/OneRepMaxChart";
 import { ExerciseCharts } from "@/features/statistics/components/ExerciseStatisticsTab";
 import { useUserSubscription } from "@/features/ads/hooks/useUserSubscription";
-import { SiteConfig } from "@/shared/config/site-config";
 import { ExerciseWithAttributes } from "@/entities/exercise/types/exercise.types";
 import { getExerciseAttributesValueOf } from "@/entities/exercise/shared/muscles";
 import { SimpleSelect, SelectOption } from "@/components/ui/simple-select";

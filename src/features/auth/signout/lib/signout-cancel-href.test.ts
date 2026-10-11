@@ -52,3 +52,18 @@ test("cancel href is never an open redirect, even with a spoofed home fallback",
   assert.equal(href, "/");
   assertRelativeSafePath(href);
 });
+
+test("cancel rejects protocol-relative paths hidden in a same-origin referer", () => {
+  const rejected = [
+    `${APP}//evil.example/phish`,
+    `${APP}///evil.example`,
+    `${APP}/%2f%2fevil.example`,
+    `${APP}/\\evil.example`
+  ];
+
+  for (const referer of rejected) {
+    const href = signOutCancelHref(referer, APP);
+    assert.equal(href, "/", referer);
+    assertRelativeSafePath(href, referer);
+  }
+});

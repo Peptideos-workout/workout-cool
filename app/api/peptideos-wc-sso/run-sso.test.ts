@@ -90,7 +90,8 @@ function fakeWorld(overrides: {
       accounts.push({ userId, peptideosUserId: hid });
     },
     createSignedSession: overrides.createSignedSession ?? defaultSession,
-    workoutOrigin: "https://workouts.example.test"
+    workoutOrigin: "https://workouts.example.test",
+    betterAuthSecret: "test-secret"
   };
 
   if (!overrides.snapshot?.existingUser && !overrides.signUp) {

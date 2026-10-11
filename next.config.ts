@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
     "/[locale]/legal/sales-terms": ["./content/**/*.mdx"],
   },
   reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        source: "/:locale/auth/link-peptideos",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }]
+      },
+      {
+        source: "/auth/link-peptideos",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }]
+      },
+      {
+        source: "/api/peptideos-wc-sso/link",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }]
+      }
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

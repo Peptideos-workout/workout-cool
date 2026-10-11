@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { ssoJson } from "./sso-response";
 import { logSsoEvent } from "./sso-error-log";
+import { ssoCollisionHandoff } from "./offer-link";
 import { handoffDisposition } from "./handoff-disposition";
 import { runWithHandoffClaim } from "./consume-handoff";
 import { completePeptideOsSsoLogin } from "./complete-sso";
@@ -28,6 +29,7 @@ export interface PeptideOsSsoDeps {
   createPeptideosAccount: (userId: string, peptideosUserId: string) => Promise<void>;
   createSignedSession: (userId: string) => Promise<AttachTrustedSessionResult>;
   workoutOrigin: string;
+  betterAuthSecret: string;
 }
 
 function mergeSetCookies(from: Response, to: NextResponse) {
@@ -136,6 +138,14 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
         });
 
         if (!completed.ok) {
+          if (completed.error === "sso_email_collision") {
+            return ssoCollisionHandoff({
+              completed,
+              peptideosUserId: hid,
+              origin: deps.workoutOrigin,
+              secret: deps.betterAuthSecret
+            });
+          }
           return {
             value: ssoJson({ error: completed.error }, completed.status),
             disposition: handoffDisposition(completed.status, completed.wroteUserState)

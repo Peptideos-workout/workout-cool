@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
     },
     createPeptideosAccount,
     createSignedSession: (userId) => createTrustedBetterAuthSession(userId),
-    workoutOrigin: workoutOrigin()
+    workoutOrigin: workoutOrigin(),
+    betterAuthSecret: env.BETTER_AUTH_SECRET
   });
 }

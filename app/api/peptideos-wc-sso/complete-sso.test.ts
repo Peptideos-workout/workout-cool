@@ -54,7 +54,13 @@ test("email collision does not create a peptideos link or session", async () => 
     deps,
   );
 
-  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, wroteUserState: false });
+  assert.deepEqual(result, {
+    ok: false,
+    error: "sso_email_collision",
+    status: 409,
+    wroteUserState: false,
+    collidingUserId: "victim"
+  });
   assert.deepEqual(calls, []);
 });
 
@@ -70,7 +76,13 @@ test("create_user race that surfaces an existing email returns 409 and writes no
     deps,
   );
 
-  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, wroteUserState: false });
+  assert.deepEqual(result, {
+    ok: false,
+    error: "sso_email_collision",
+    status: 409,
+    wroteUserState: false,
+    collidingUserId: "google-only-victim"
+  });
   assert.ok(!calls.includes("createPeptideosAccount:google-only-victim"));
   assert.ok(!calls.includes("createPeptideosAccount:should-not-be-used"));
 });

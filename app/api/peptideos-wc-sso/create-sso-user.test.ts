@@ -11,7 +11,7 @@ test("rejects when the email already belongs to a workout-cool user", async () =
     }
   });
 
-  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409 });
+  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, collidingUserId: "google-only-victim" });
 });
 
 test("does not adopt a victim user when signup fails or is swallowed", async () => {
@@ -24,7 +24,7 @@ test("does not adopt a victim user when signup fails or is swallowed", async () 
     signUp: async () => null
   });
 
-  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409 });
+  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, collidingUserId: "google-only-victim" });
 });
 
 test("does not adopt a victim user when signup throws (email already taken)", async () => {
@@ -79,7 +79,7 @@ test("rejects when signup returns a different user than the email now resolves t
     signUp: async () => ({ userId: "attacker-created-id" })
   });
 
-  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409 });
+  assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, collidingUserId: "google-only-victim" });
 });
 
 test("accepts only the user id returned by signup when it matches the new email row", async () => {

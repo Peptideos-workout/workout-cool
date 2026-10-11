@@ -17,6 +17,7 @@ export type CompleteSsoLoginResult =
       error: "sso_email_collision" | "sso_signup_failed" | "sso_signin_failed";
       status: number;
       wroteUserState: boolean;
+      collidingUserId?: string;
     };
 
 export async function completePeptideOsSsoLogin(
@@ -27,7 +28,13 @@ export async function completePeptideOsSsoLogin(
   const action = resolveSsoAccountAction(peptideosUserId, snapshot);
 
   if (action.type === "reject") {
-    return { ok: false, error: action.error, status: 409, wroteUserState: false };
+    return {
+      ok: false,
+      error: action.error,
+      status: 409,
+      wroteUserState: false,
+      collidingUserId: snapshot.existingUser?.id
+    };
   }
 
   if (action.type === "create_user") {

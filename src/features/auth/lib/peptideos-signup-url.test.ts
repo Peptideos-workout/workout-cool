@@ -75,6 +75,24 @@ test("rejects backslash and encoded %5c variants in the return URL", () => {
   }
 });
 
+function encodeTimes(value: string, times: number): string {
+  let encoded = value;
+  for (let i = 0; i < times; i++) {
+    encoded = encodeURIComponent(encoded);
+  }
+  return encoded;
+}
+
+test("drops return URLs that stay encoded after 8 decode rounds or are malformed", () => {
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, `/en/programs${encodeTimes("/", 8)}strength`), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%"), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%ZZ"), `${ORIGIN}/signup`);
+  assert.equal(
+    resolvePeptideOsSignupUrl(undefined, APP, "/en/programs/strength"),
+    `${ORIGIN}/signup?redirect=${encodeURIComponent(`${APP}/en/programs/strength`)}`
+  );
+});
+
 test("rejects return URLs that carry userinfo", () => {
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil@workouts.peptideos.us/phish"), `${ORIGIN}/signup`);
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://user:pass@workouts.peptideos.us/profile"), `${ORIGIN}/signup`);

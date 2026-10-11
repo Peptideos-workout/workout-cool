@@ -5,6 +5,7 @@ import {
   isBetterAuthEmailSignUpPath,
   isBetterAuthPasswordResetRequest,
   isPublicBetterAuthSignupRequest,
+  isUndecodableBetterAuthPath,
   normalizeBetterAuthPath,
   shouldAllowBetterAuthUserCreate,
   shouldAllowCredentialAccountCreate,
@@ -93,8 +94,25 @@ test("normalizeBetterAuthPath collapses slashes, decodes %2f, and resolves dot s
   assert.equal(isBetterAuthPasswordResetRequest(`/api/auth/foo/${encodeTimes("..", 1)}/forget-password`), true);
 });
 
-test("path decode stops after 8 rounds so deeper encodings do not match", () => {
+test("8x-encoded signup path is blocked (fail closed)", () => {
   assert.equal(isPublicBetterAuthSignupRequest(`/api/auth/sign-up${encodeTimes("/", 7)}email`), true);
-  assert.equal(isPublicBetterAuthSignupRequest(`/api/auth/sign-up${encodeTimes("/", 8)}email`), false);
-  assert.equal(isBetterAuthPasswordResetRequest(`/api/auth/admin/set-user-password${encodeTimes("/", 8)}extra`), false);
+  assert.equal(isPublicBetterAuthSignupRequest(`/api/auth/sign-up${encodeTimes("/", 8)}email`), true);
+  assert.equal(isUndecodableBetterAuthPath(`/api/auth/sign-up${encodeTimes("/", 8)}email`), true);
+  assert.equal(isBetterAuthPasswordResetRequest(`/api/auth/admin/set-user-password${encodeTimes("/", 8)}extra`), true);
+});
+
+test("malformed percent-encoding is blocked (fail closed)", () => {
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-up/%email"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-in/%ZZ"), true);
+  assert.equal(isUndecodableBetterAuthPath("/api/auth/forget-password/%"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/forget-password/%"), true);
+});
+
+test("normal Better Auth paths are unaffected by fail-closed decode", () => {
+  assert.equal(isUndecodableBetterAuthPath("/api/auth/sign-up/email"), false);
+  assert.equal(isUndecodableBetterAuthPath("/api/auth/sign-in/email"), false);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-up/email"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-in/email"), false);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/forget-password"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/sign-in/email"), false);
 });

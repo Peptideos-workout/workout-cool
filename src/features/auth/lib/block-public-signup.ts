@@ -40,6 +40,11 @@ function loopDecodePath(value: string): string | null {
   return null;
 }
 
+/** True when loop-decode is unstable after the cap or `decodeURIComponent` throws. */
+export function isUndecodableBetterAuthPath(pathname: string): boolean {
+  return loopDecodePath(stripQueryAndHash(pathname).trim().toLowerCase()) === null;
+}
+
 export function normalizeBetterAuthPath(path: string): string {
   const decoded = loopDecodePath(stripQueryAndHash(path).trim().toLowerCase());
   if (decoded === null) {
@@ -84,7 +89,7 @@ export function betterAuthRequestPath(pathname: string, prefix = BETTER_AUTH_HTT
 }
 
 export function isPublicBetterAuthSignupRequest(pathname: string): boolean {
-  return isBetterAuthEmailSignUpPath(betterAuthRequestPath(pathname));
+  return isUndecodableBetterAuthPath(pathname) || isBetterAuthEmailSignUpPath(betterAuthRequestPath(pathname));
 }
 
 function pathEqualsOrPrefixed(path: string, base: string): boolean {
@@ -93,6 +98,9 @@ function pathEqualsOrPrefixed(path: string, base: string): boolean {
 
 /** Better Auth HTTP paths that send a reset email or write a new credential password. */
 export function isBetterAuthPasswordResetRequest(pathname: string): boolean {
+  if (isUndecodableBetterAuthPath(pathname)) {
+    return true;
+  }
   const path = betterAuthRequestPath(pathname);
   return (
     pathEqualsOrPrefixed(path, "/forget-password") ||

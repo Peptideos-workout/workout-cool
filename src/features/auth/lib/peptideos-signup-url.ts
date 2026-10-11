@@ -56,6 +56,7 @@ function containsForbiddenReturnChars(value: string): boolean {
     return true;
   }
   const decoded = loopDecodeUri(value);
+  // Fail closed: unstable after the decode cap, or malformed %, drop the return URL.
   if (decoded === null) {
     return true;
   }

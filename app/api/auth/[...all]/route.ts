@@ -5,7 +5,11 @@ import type { NextRequest } from "next/server";
 
 import { passwordResetDisabledBody, publicSignupDisabledBody } from "@/features/auth/lib/public-signup-guard";
 import { resolvePeptideOsForgotPasswordUrl, resolvePeptideOsSignupUrl } from "@/features/auth/lib/peptideos-signup-url";
-import { isBetterAuthPasswordResetRequest, isPublicBetterAuthSignupRequest } from "@/features/auth/lib/block-public-signup";
+import {
+  isBetterAuthPasswordResetRequest,
+  isPublicBetterAuthSignupRequest,
+  isUndecodableBetterAuthPath
+} from "@/features/auth/lib/block-public-signup";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
 
@@ -26,7 +30,7 @@ function disabledPasswordReset() {
 }
 
 export async function GET(req: NextRequest) {
-  if (isPublicBetterAuthSignupRequest(req.nextUrl.pathname)) {
+  if (isUndecodableBetterAuthPath(req.nextUrl.pathname) || isPublicBetterAuthSignupRequest(req.nextUrl.pathname)) {
     return blockedPublicSignup();
   }
   if (isBetterAuthPasswordResetRequest(req.nextUrl.pathname)) {
@@ -36,7 +40,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (isPublicBetterAuthSignupRequest(req.nextUrl.pathname)) {
+  if (isUndecodableBetterAuthPath(req.nextUrl.pathname) || isPublicBetterAuthSignupRequest(req.nextUrl.pathname)) {
     return blockedPublicSignup();
   }
   if (isBetterAuthPasswordResetRequest(req.nextUrl.pathname)) {

@@ -32,6 +32,7 @@ test("SSO create-user wraps only signUpEmail with the in-process ALS flag", () =
 test("Better Auth HTTP catch-all blocks public email signup paths", () => {
   const src = read("app/api/auth/[...all]/route.ts");
   assert.match(src, /isPublicBetterAuthSignupRequest/);
+  assert.match(src, /isUndecodableBetterAuthPath/);
   assert.match(src, /publicSignupDisabledBody/);
   assert.match(src, /isBetterAuthPasswordResetRequest/);
   assert.match(src, /status:\s*200/);

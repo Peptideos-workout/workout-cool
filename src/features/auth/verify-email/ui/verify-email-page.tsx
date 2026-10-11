@@ -1,8 +1,8 @@
 "use client";
 
 import { Mail } from "lucide-react";
-
 import { useI18n } from "locales/client";
+
 import { cn } from "@/shared/lib/utils";
 import { useResendEmail } from "@/features/auth/verify-email/model/useResendEmail";
 import { useLogout } from "@/features/auth/model/useLogout";

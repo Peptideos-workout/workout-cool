@@ -1339,6 +1339,7 @@ export default {
   email_sent: "Email sent",
   cant_send_email: "Can't send email",
   logout: "Logout",
+  signout_confirm_title: "Sign out?",
   verify_email: "Verify your email. ⚠️ Don't forget to check your spam folder.",
   verify_email_subtitle: "Please verify your email to continue.",
   resend_email: "Resend email",

@@ -1364,6 +1364,7 @@ export default {
   email_sent: "Email envoyé",
   cant_send_email: "Impossible d'envoyer l'email",
   logout: "Déconnexion",
+  signout_confirm_title: "Se déconnecter ?",
   verify_email: "Vérifier votre email. ⚠️ Pensez à vérifier votre dossier SPAM.",
   verify_email_subtitle: "Veuillez vérifier votre email pour continuer.",
   resend_email: "Renvoyer l'email",

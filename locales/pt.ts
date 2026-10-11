@@ -1344,6 +1344,7 @@ export default {
   email_sent: "Email enviado",
   cant_send_email: "Não foi possível enviar o email",
   logout: "Terminar sessão",
+  signout_confirm_title: "Terminar sessão?",
   verify_email: "Verifique o seu email",
   verify_email_subtitle: "Por favor, verifique o seu email para continuar.",
   resend_email: "Reenviar email",

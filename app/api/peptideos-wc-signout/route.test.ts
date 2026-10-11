@@ -6,11 +6,13 @@ function read(path: string) {
   return readFileSync(path, "utf8");
 }
 
-test("hop C route is GET /api/peptideos-wc-signout and clears the WC session", () => {
+test("hop C route is POST-only; GET does not sign out", () => {
   const src = read("app/api/peptideos-wc-signout/route.ts");
+  assert.match(src, /export async function POST/);
   assert.match(src, /export async function GET/);
+  assert.match(src, /405/);
   assert.match(src, /runPeptideOsWcSignout|auth\.api\.signOut/);
-  assert.match(src, /peptideOsOrigin/);
+  assert.doesNotMatch(src, /GET\(request[\s\S]*runPeptideOsWcSignout|GET\(request[\s\S]*auth\.api\.signOut/);
   assert.doesNotMatch(src, /peptideOsWorkoutsSignoutUrl|workouts\/signout\/continue|from-peptideos/);
 });
 

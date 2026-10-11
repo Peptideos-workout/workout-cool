@@ -41,8 +41,8 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
   assert.match(action, /["']use server["']/);
   assert.match(action, /auth\.api\.signOut/);
   assert.match(action, /auth\/signout\/continue/);
-  assert.match(action, /redirect\(/);
-  assert.doesNotMatch(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl/);
+  assert.doesNotMatch(action, /redirect\([^)]*workouts\/signout|redirect\([^)]*peptideOsWorkoutsSignout/);
+  assert.doesNotMatch(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl|api\/workouts\/signout/);
 });
 
 test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-origin page", () => {
@@ -50,21 +50,27 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
   const ui = read("src/features/auth/signout/ui/peptideos-signout-handoff.tsx");
 
   assert.match(page, /PeptideOsSignoutHandoff/);
-  assert.match(page, /getConfiguredPeptideOsWorkoutsSignoutActionUrl|peptideOsWorkoutsSignoutActionUrl|getConfiguredPeptideOsWorkoutsSignoutUrl/);
+  assert.match(
+    page,
+    /getConfiguredPeptideOsWorkoutsSignoutActionUrl|peptideOsWorkoutsSignoutActionUrl|getConfiguredPeptideOsWorkoutsSignoutUrl/
+  );
   assert.match(ui, /method=["']post["']/i);
   assert.match(ui, /type=["']submit["']/);
   assert.match(ui, /useEffect|\.submit\(/);
   assert.doesNotMatch(page, /from-peptideos|peptideos-wc-signout/);
 });
 
-test("PeptideOS-initiated hop C is /api/peptideos-wc-signout and never hops B or WC /auth/signout", () => {
+test("PeptideOS-initiated hop C is POST-only Origin-checked /api/peptideos-wc-signout", () => {
   const route = read("app/api/peptideos-wc-signout/route.ts");
   const runner = read("app/api/peptideos-wc-signout/run-wc-signout.ts");
-  assert.match(route, /auth\.api\.signOut/);
+  assert.match(route, /export async function POST/);
+  assert.match(route, /405/);
+  assert.match(runner, /isTrustedPeptideOsHopCRequest/);
   assert.match(runner, /peptideOsSignoutFinalizeLocation/);
   assert.match(runner, /303/);
   assert.doesNotMatch(runner, /auth\/signout\/continue|from-peptideos/);
   assert.doesNotMatch(route, /peptideOsWorkoutsSignoutUrl|PEPTIDEOS_WORKOUTS_SIGNOUT_PATH/);
+  assert.doesNotMatch(route, /GET\(request[\s\S]*runPeptideOsWcSignout/);
 });
 
 test("sign-out confirm page has a heading and a cancel link that does not sign out", () => {

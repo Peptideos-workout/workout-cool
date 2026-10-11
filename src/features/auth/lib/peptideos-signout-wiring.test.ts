@@ -43,6 +43,23 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
   assert.match(action, /redirect\(/);
 });
 
+test("sign-out confirm page has a heading and a cancel link that does not sign out", () => {
+  const page = read("app/[locale]/(app)/auth/signout/page.tsx");
+
+  assert.match(page, /<h1[\s\S]*signout_confirm_title/);
+  assert.match(page, /signOutCancelHref/);
+  assert.match(page, /<Link\b[\s\S]*commons\.cancel/);
+  assert.doesNotMatch(page, /auth\.api\.signOut|authClient\.signOut/);
+  assert.doesNotMatch(page, /<form[\s\S]*<Link[\s\S]*<\/form>/);
+});
+
+test("signout_confirm_title is defined in every locale", () => {
+  for (const locale of ["en", "fr", "es", "zh-CN", "ru", "pt"]) {
+    const src = read(`locales/${locale}.ts`);
+    assert.match(src, /signout_confirm_title:/, locale);
+  }
+});
+
 test("any Link to /auth/signout disables Next.js prefetch", () => {
   for (const file of [...walkTsx("src"), ...walkTsx("app")]) {
     const src = read(file);

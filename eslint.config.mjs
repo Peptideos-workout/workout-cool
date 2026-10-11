@@ -190,6 +190,7 @@ const config = [
     rules: {
       "@typescript-eslint/no-require-imports": "off",
       "prettier/prettier": "off",
+      quotes: "off",
     },
   },
 ];

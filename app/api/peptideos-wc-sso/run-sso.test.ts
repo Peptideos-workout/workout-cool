@@ -196,6 +196,29 @@ test("cookie failure after createSession cleans up the session and does not rele
   assert.deepEqual(deletedSessions, ["orphaned-session-token"]);
 });
 
+test("createSession throw after persist does not release the handoff", async () => {
+  const { deps, handoff, released } = fakeWorld({
+    snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },
+    createSignedSession: async (userId) =>
+      attachTrustedSession(userId, {
+        findUserById: async (id) => ({ id }),
+        createSession: async () => {
+          throw new Error("session hook failed after insert");
+        },
+        deleteSession: async () => undefined,
+        setSessionCookie: async () => undefined
+      })
+  });
+
+  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const body = await response.json();
+
+  assert.equal(response.status, 500);
+  assert.deepEqual(body, { error: "sso_signin_failed" });
+  assert.ok(handoff.consumed_at);
+  assert.deepEqual(released, []);
+});
+
 test("auth.users lookup failure before any write releases the single-use claim", async () => {
   const { deps, handoff, released } = fakeWorld({
     lookupAuthUser: async () => {

@@ -66,6 +66,23 @@ test("treats a missing set-cookie header as a cookie failure after the session w
   assert.deepEqual(deleted, ["session-token-plain"]);
 });
 
+test("treats a createSession throw as a write so the handoff cannot be released", async () => {
+  const result = await attachTrustedSession("wc-user", {
+    findUserById: async (userId) => ({ id: userId }),
+    createSession: async () => {
+      throw new Error("hook after adapter.create");
+    },
+    deleteSession: async () => {
+      throw new Error("no token to delete");
+    },
+    setSessionCookie: async () => {
+      throw new Error("should not set cookie");
+    }
+  });
+
+  assert.deepEqual(result, { ok: false, wroteSession: true, response: null });
+});
+
 test("does not report a write when createSession never persists a session", async () => {
   const result = await attachTrustedSession("wc-user", {
     findUserById: async (userId) => ({ id: userId }),

@@ -13,6 +13,7 @@ import {
   peptideOsLoginUrl,
   peptideOsOrigin,
   peptideOsSettingsUrl,
+  peptideOsSignoutFinalizeLocation,
   peptideOsSignupUrl,
   peptideOsWorkoutsSignoutActionUrl,
   peptideOsWorkoutsSignoutHomeRedirect,
@@ -224,8 +225,20 @@ test("PeptideOS workouts sign-out URL redirects back to public WC home", () => {
   );
 });
 
-test("PeptideOS workouts sign-out POST action is the path only; redirect field is WC home", () => {
-  assert.equal(peptideOsWorkoutsSignoutActionUrl(ORIGIN), `${ORIGIN}/api/workouts/signout`);
+test("hop B POST action is PeptideOS sign-out with redirect=WC home, never WC /auth/signout", () => {
+  const hopB = `${ORIGIN}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`;
+  assert.equal(peptideOsWorkoutsSignoutActionUrl(ORIGIN, APP), hopB);
   assert.equal(peptideOsWorkoutsSignoutHomeRedirect(APP), `${APP}/`);
-  assert.doesNotMatch(peptideOsWorkoutsSignoutActionUrl(ORIGIN), /[?&]redirect=/);
+  assert.doesNotMatch(peptideOsWorkoutsSignoutActionUrl(ORIGIN, APP), /auth\/signout/);
+});
+
+test("hop C finalize lands on PeptideOS / and never hop B or WC /auth/signout", () => {
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, undefined), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${APP}/auth/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${APP}/`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/api/workouts/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/auth/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, "https://evil.example/"), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/settings`), `${ORIGIN}/settings`);
 });

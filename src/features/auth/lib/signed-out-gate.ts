@@ -15,6 +15,7 @@ const EXACT_ALLOWLIST = new Set([
 const PREFIX_ALLOWLIST = [
   "/auth/signout",
   "/api/peptideos-wc-sso",
+  "/api/peptideos-wc-signout",
   "/api/health",
   "/api/webhooks",
   "/api/auth",

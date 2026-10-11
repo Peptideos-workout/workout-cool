@@ -37,7 +37,10 @@ export function getConfiguredPeptideOsWorkoutsSignoutUrl(): string {
 }
 
 export function getConfiguredPeptideOsWorkoutsSignoutActionUrl(): string {
-  return peptideOsWorkoutsSignoutActionUrl(peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL));
+  return peptideOsWorkoutsSignoutActionUrl(
+    peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL),
+    env.NEXT_PUBLIC_APP_URL
+  );
 }
 
 export function getConfiguredPeptideOsWorkoutsSignoutHomeRedirect(): string {

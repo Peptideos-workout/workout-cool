@@ -27,9 +27,11 @@ After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on
 
 PeptideOS `GET /api/workouts/sso?redirect=<absolute WC URL>` preserves that redirect through login and passes it back on the WC SSO handoff. The proxy 307 for gated routes sends `?redirect=<original absolute WC URL, path+query>` with `Cache-Control: private, no-store`.
 
-WC-initiated sign-out clears the Better Auth session, then renders `/auth/signout/continue`, which auto-submits `POST https://peptideos.us/api/workouts/signout` with form field `redirect=<WC home>` (no-JS submit button as fallback). PeptideOS `/api/workouts/signout` is POST-only and Origin-checked; a GET redirect would fail. After PeptideOS signs out it 302s to WC home, which is public, so it cannot bounce the browser back into `/api/workouts/sso`.
+Cross-app sign-out is two hops (PeptideOS PR #37). Neither hop may land on WC `/auth/signout`.
 
-PeptideOS-initiated sign-out must GET `/auth/signout/from-peptideos` (SameSite=Lax session cookie is sent on top-level GET). That page clears the WC session and redirects to `/` without calling PeptideOS again.
+**Hop B (WC-initiated):** `signOutAction` / `useLogout` end the Better Auth session, then `/auth/signout/continue` (a page on the WC origin) auto-submits `POST https://peptideos.us/api/workouts/signout?redirect=https://workouts.peptideos.us/` (no-JS submit button as fallback). PeptideOS Origin-checks the WC origin, signs out, and 303s to the sanitized WC home. WC home is public, so it cannot bounce into `/api/workouts/sso`.
+
+**Hop C (PeptideOS-initiated):** PeptideOS `POST /auth/signout` 303s to `GET /api/peptideos-wc-signout?redirect=https://peptideos.us/` (SameSite=Lax cookie is sent on that top-level GET). The clearer ends the WC session and 303s to PeptideOS `/`. It must not call hop B.
 
 GET `/auth/signout` only renders a confirmation form. Sign-out runs on the POST server action (Next.js CSRF), so prefetch and a GET render cannot clear the session. `/auth/signout` stays allowlisted; `/dashboard` is gated.
 
@@ -43,6 +45,7 @@ GET `/api/programs/[slug]/sessions/[sessionSlug]` is **gated** (401 without a se
 
 - `/auth/signout` (any locale prefix)
 - `/api/peptideos-wc-sso` and subpaths
+- `/api/peptideos-wc-signout`
 - `/api/health`
 - `/api/webhooks/*`
 - `/api/auth/*` (sign-in/sign-up/reset still blocked in the Better Auth catch-all)
@@ -62,7 +65,7 @@ Landing and marketing/info pages stay **public and indexable**. PeptideOS login 
 - `/premium`
 - `/leaderboard`
 - `/legal/*`
-- robots, sitemap, assets, `/auth/signout`, SSO/health/webhooks/`/api/auth/*`
+- robots, sitemap, assets, `/auth/signout`, SSO/hop C/health/webhooks/`/api/auth/*`
 
 **Gated (signed-out visitors get HTTP 307 to PeptideOS SSO):**
 

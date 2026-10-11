@@ -85,6 +85,7 @@ test("allowlisted signed-out paths pass through", () => {
     "/fr/auth/signout/",
     "/api/peptideos-wc-sso",
     "/api/peptideos-wc-sso/link",
+    "/api/peptideos-wc-signout",
     "/api/health",
     "/api/webhooks/stripe",
     "/api/webhooks/revenuecat",
@@ -146,9 +147,10 @@ test("WC sign-out to PeptideOS does not loop: WC home stays public after Peptide
   assert.equal(shouldRedirectSignedOutRequest(dest.pathname, false), false);
   assert.equal(shouldRedirectSignedOutRequest("/en", false), false);
   assert.doesNotMatch(location, /\/api\/workouts\/sso/);
-  assert.equal(isSignedOutAllowlistedPath("/auth/signout/from-peptideos"), true);
+  assert.doesNotMatch(redirect ?? "", /auth\/signout/);
+  assert.equal(isSignedOutAllowlistedPath("/api/peptideos-wc-signout"), true);
   assert.equal(isSignedOutAllowlistedPath("/en/auth/signout/continue"), true);
-  assert.equal(shouldRedirectSignedOutRequest("/auth/signout/from-peptideos", false), false);
+  assert.equal(shouldRedirectSignedOutRequest("/api/peptideos-wc-signout", false), false);
 });
 
 test("signed-out SSO planner drops leftover WC auth pages so users do not land on logout or 404", () => {

@@ -246,9 +246,12 @@ export function peptideOsWorkoutsSignoutUrl(origin: string, appUrl: string): str
   return url.toString();
 }
 
-/** POST action for PeptideOS `/api/workouts/signout` (no query; redirect is a form field). */
-export function peptideOsWorkoutsSignoutActionUrl(origin: string): string {
-  return new URL(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, `${origin.replace(/\/$/, "")}/`).toString();
+/**
+ * Hop B POST action: `https://peptideos.us/api/workouts/signout?redirect=https://workouts.peptideos.us/`.
+ * Must be submitted from a page on the WC origin so PeptideOS Origin check passes.
+ */
+export function peptideOsWorkoutsSignoutActionUrl(origin: string, appUrl: string): string {
+  return peptideOsWorkoutsSignoutUrl(origin, appUrl);
 }
 
 /** WC home PeptideOS should return to after cross-app sign-out. */
@@ -273,4 +276,27 @@ export function resolvePeptideOsSettingsUrl(explicitUrl?: string, appUrl?: strin
     return peptideOsSettingsUrl(origin, origin);
   }
   return peptideOsSettingsUrl(origin, app, returnTo);
+}
+
+/** Leftover / looping PeptideOS paths hop C must never land on. */
+const DENIED_HOP_C_RETURN_PATHS = ["/api/workouts/signout", "/auth/signout", "/auth/signin", "/auth/signup"] as const;
+
+function isDeniedHopCReturnPath(pathname: string): boolean {
+  return DENIED_HOP_C_RETURN_PATHS.some((denied) => pathname === denied || pathname.startsWith(`${denied}/`));
+}
+
+/**
+ * Hop C landing: honour PeptideOS `redirect` only when it is a safe same-origin PeptideOS URL
+ * and not hop B / leftover auth. Fail closed to `${peptideOsOrigin}/`. Never WC `/auth/signout`.
+ */
+export function peptideOsSignoutFinalizeLocation(peptideOsOriginUrl: string, redirectParam?: string): string {
+  const origin = new URL(peptideOsOriginUrl).origin;
+  const safe = safeWorkoutReturnTo(redirectParam, origin);
+  if (!safe) {
+    return `${origin}/`;
+  }
+  if (isDeniedHopCReturnPath(new URL(safe).pathname)) {
+    return `${origin}/`;
+  }
+  return safe;
 }

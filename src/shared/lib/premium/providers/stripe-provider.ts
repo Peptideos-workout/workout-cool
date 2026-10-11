@@ -15,16 +15,21 @@ import type { CheckoutOptions, PaymentProvider, WebhookResult } from "./base-pro
  */
 export class StripeProvider implements PaymentProvider {
   name = "stripe";
-  private stripe: Stripe;
+  private stripeClient: Stripe | undefined;
 
-  constructor() {
-    if (!env.STRIPE_SECRET_KEY) {
-      throw new Error("STRIPE_SECRET_KEY is required");
+  /** Built on first use so missing optional STRIPE_SECRET_KEY does not fail `next build`. */
+  private get stripe(): Stripe {
+    if (!this.stripeClient) {
+      if (!env.STRIPE_SECRET_KEY) {
+        throw new Error("STRIPE_SECRET_KEY is required");
+      }
+
+      this.stripeClient = new Stripe(env.STRIPE_SECRET_KEY, {
+        apiVersion: "2025-05-28.basil",
+      });
     }
 
-    this.stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-      apiVersion: "2025-05-28.basil",
-    });
+    return this.stripeClient;
   }
 
   /**

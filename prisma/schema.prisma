@@ -8,6 +8,7 @@ generator client {
 
 // Workout.cool objects live in schema `wc` so `db push` / Migrate never reconcile Supabase `auth.*` or PeptideOS `public.*`.
 // Peptide-side SSO handoff stays in `public.workout_cool_handoffs` (see app/api/peptideos-wc-sso/route.ts).
+// PeptideOS PR #22 writes `secret_token` as sha256(rawToken) hex; WC hashes the query token before compare.
 
 datasource db {
   provider = "postgresql"
@@ -105,6 +106,7 @@ model Account {
   createdAt             DateTime
   updatedAt             DateTime
 
+  @@unique([providerId, accountId])
   @@map("account")
   @@schema("wc")
 }

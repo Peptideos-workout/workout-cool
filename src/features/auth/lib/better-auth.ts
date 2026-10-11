@@ -3,19 +3,21 @@ import { nextCookies } from "better-auth/next-js";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
 import { UserRole } from "@prisma/client";
-
 import { VerifyEmail } from "@emails/VerifyEmail";
 import { ResetPasswordEmail } from "@emails/ResetPasswordEmail";
+
+import { betterAuthTrustedOrigins } from "./trusted-origins";
+
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
+import { SiteConfig } from "@/shared/config/site-config";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { env } from "@/env";
-import { SiteConfig } from "@/shared/config/site-config";
+
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
-  // trustedOrigins: [SiteConfig.prodUrl, "localhost:3000", "https://better-auth.com", "http://localhost:3000"],
-  trustedOrigins: ["*", "workoutcool://", "expo://"],
+  trustedOrigins: betterAuthTrustedOrigins(env.BETTER_AUTH_URL, env.NEXT_PUBLIC_APP_URL),
   plugins: [
     admin(),
     customSession(async ({ user, session }) => {

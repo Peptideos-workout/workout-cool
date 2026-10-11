@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createEnv } from "@t3-oss/env-nextjs";
 
+import { formatEnvValidationError } from "@/shared/lib/format-env-validation-error";
+
 const booleanString = z.enum(["true", "false"]).transform((val) => val === "true");
 
 /** Absolute http(s) origin; trims whitespace (common .env typo). PostgREST/Zod `.url()` is pickier than we need here. */
@@ -10,8 +12,8 @@ function preprocessDatabaseUrl(v: unknown): unknown {
   if (typeof v !== "string") return v;
   let s = v.replace(/^\uFEFF/, "").replace(/\r/g, "").trim();
   if (
-    (s.startsWith('"') && s.endsWith('"')) ||
-    (s.startsWith("'") && s.endsWith("'"))
+    (s.startsWith("\"") && s.endsWith("\"")) ||
+    (s.startsWith("\u0027") && s.endsWith("\u0027"))
   ) {
     s = s.slice(1, -1).trim();
   }
@@ -52,8 +54,9 @@ export const env = createEnv({
     process.env.SKIP_ENV_VALIDATION === "true",
   emptyStringAsUndefined: true,
   onValidationError: (issues) => {
-    console.error("[env.ts] Validation failed:", JSON.stringify(issues, null, 2));
-    throw new Error("Invalid environment variables");
+    const message = formatEnvValidationError(issues);
+    console.error("[env.ts]", message);
+    throw new Error(message);
   },
   server: {
     BETTER_AUTH_URL: httpOriginSchema,
@@ -219,7 +222,7 @@ export const env = createEnv({
     NEXT_PUBLIC_IN_ARTICLE_BMI_1_AD_SLOT: process.env.NEXT_PUBLIC_IN_ARTICLE_BMI_1_AD_SLOT,
     NEXT_PUBLIC_IN_ARTICLE_BMI_2_AD_SLOT: process.env.NEXT_PUBLIC_IN_ARTICLE_BMI_2_AD_SLOT,
     NEXT_PUBLIC_TOP_BMI_BANNER_AD_SLOT: process.env.NEXT_PUBLIC_TOP_BMI_BANNER_AD_SLOT,
-    NEXT_PUBLIC_BOTTOM_BMI_BANNER_AD_SLOT: process.env.NEXT_PUBLIC_TOP_BMI_BANNER_AD_SLOT,
+    NEXT_PUBLIC_BOTTOM_BMI_BANNER_AD_SLOT: process.env.NEXT_PUBLIC_BOTTOM_BMI_BANNER_AD_SLOT,
     NEXT_PUBLIC_TOP_HEART_ZONES_BANNER_AD_SLOT: process.env.NEXT_PUBLIC_TOP_HEART_ZONES_BANNER_AD_SLOT,
     NEXT_PUBLIC_BOTTOM_HEART_ZONES_BANNER_AD_SLOT: process.env.NEXT_PUBLIC_BOTTOM_HEART_ZONES_BANNER_AD_SLOT,
     NEXT_PUBLIC_IN_ARTICLE_HEART_ZONES_AD_SLOT_1: process.env.NEXT_PUBLIC_IN_ARTICLE_HEART_ZONES_AD_SLOT_1,

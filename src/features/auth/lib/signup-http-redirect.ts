@@ -1,5 +1,5 @@
-import { stripLocalePrefix } from "./locale-path";
 import { resolvePeptideOsSignupUrl } from "./peptideos-signup-url";
+import { stripLocalePrefix } from "./locale-path";
 
 export function isWorkoutCoolSignupPath(pathname: string): boolean {
   return stripLocalePrefix(pathname) === "/auth/signup";

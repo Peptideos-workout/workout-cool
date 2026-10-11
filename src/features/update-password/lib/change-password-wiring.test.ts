@@ -41,7 +41,7 @@ test("legacy credential password update surfaces are removed", () => {
   assert.throws(() => read("app/api/user/password/route.ts"), /ENOENT/);
 });
 
-test("signup HTTP 307 is issued from proxy using the existing safe-return helper", () => {
+test("signed-out visitors get an HTTP 307 from proxy using the PeptideOS SSO helper", () => {
   const proxy = read("proxy.ts");
   assert.match(proxy, /shouldRedirectSignedOutRequest|peptideOsSignedOutRedirectLocation/);
   assert.match(proxy, /NextResponse\.redirect/);

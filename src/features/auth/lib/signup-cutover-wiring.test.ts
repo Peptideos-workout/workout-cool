@@ -10,6 +10,8 @@ test("Better Auth Google config blocks OAuth new-user creation and email-match l
   const src = read("src/features/auth/lib/better-auth.ts");
   assert.match(src, /disableImplicitSignUp:\s*true/);
   assert.match(src, /disableSignUp:\s*true/);
+  assert.match(src, /google:\s*\{[\s\S]*enabled:\s*false/);
+  assert.match(src, /autoSignInAfterVerification:\s*false/);
   assert.match(src, /accountLinking/);
   assert.match(src, /databaseHooks/);
   assert.match(src, /shouldAllowBetterAuthUserCreate/);

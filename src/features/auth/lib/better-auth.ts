@@ -138,7 +138,7 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    autoSignInAfterVerification: true,
+    autoSignInAfterVerification: false,
     sendOnSignUp: false, // FIXME: TEMPORARY
     sendVerificationEmail: async ({ user, url }, _req) => {
       try {

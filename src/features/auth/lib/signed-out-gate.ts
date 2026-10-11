@@ -1,5 +1,5 @@
-import { stripLocalePrefix } from "./locale-path";
 import { peptideOsOrigin, resolvePeptideOsWorkoutsSsoUrl, safeWorkoutReturnTo } from "./peptideos-signup-url";
+import { stripLocalePrefix } from "./locale-path";
 
 export { stripLocalePrefix };
 

@@ -102,12 +102,16 @@ export function isBetterAuthOAuthCallbackPath(path: string): boolean {
   return pathEqualsOrPrefixed(canonicalizeSignupPath(path), "/callback");
 }
 
+export function isBetterAuthVerifyEmailPath(path: string): boolean {
+  return pathEqualsOrPrefixed(canonicalizeSignupPath(path), "/verify-email");
+}
+
 export function isPublicBetterAuthSigninRequest(pathname: string): boolean {
   if (isUndecodableBetterAuthPath(pathname)) {
     return true;
   }
   const path = betterAuthRequestPath(pathname);
-  return isBetterAuthEmailSignInPath(path) || isBetterAuthOAuthCallbackPath(path);
+  return isBetterAuthEmailSignInPath(path) || isBetterAuthOAuthCallbackPath(path) || isBetterAuthVerifyEmailPath(path);
 }
 
 function pathEqualsOrPrefixed(path: string, base: string): boolean {

@@ -116,6 +116,7 @@ test("HTTP email and Google sign-in endpoints are public sign-in requests", () =
   assert.equal(isPublicBetterAuthSigninRequest("/API/AUTH/SIGN-IN/EMAIL/"), true);
   assert.equal(isPublicBetterAuthSigninRequest("/api/auth/callback/google"), true);
   assert.equal(isPublicBetterAuthSigninRequest("/api/auth/callback/google/"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/verify-email"), true);
   assert.equal(isPublicBetterAuthSigninRequest("/api/auth/get-session"), false);
   assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-out"), false);
   assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-up/email"), false);

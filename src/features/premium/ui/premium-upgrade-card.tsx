@@ -17,8 +17,8 @@ import { usePremiumRedirect } from "@/shared/lib/premium/use-premium-redirect";
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { usePendingCheckout } from "@/shared/lib/premium/use-pending-checkout";
 import { usePremiumPlans } from "@/shared/hooks/use-premium-plans";
-import { useSession } from "@/features/auth/lib/auth-client";
 import { getConfiguredPeptideOsWorkoutsSsoUrl } from "@/features/auth/lib/configured-peptideos-signup";
+import { useSession } from "@/features/auth/lib/auth-client";
 import { Button } from "@/components/ui/button";
 
 export function PremiumUpgradeCard() {

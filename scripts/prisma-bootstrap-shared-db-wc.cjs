@@ -32,7 +32,7 @@ function run(cmdLine) {
 
 console.log("\n→ prisma db execute (0_init migration.sql, schema wc only) …\n");
 try {
-  // UTF-8 BOM breaks Postgres ("syntax error near ﻿"); strip before send. Stdin avoids PowerShell BOM on --file reads.
+  // UTF-8 BOM breaks Postgres ("syntax error near U+FEFF"); strip before send. Stdin avoids PowerShell BOM on --file reads.
   const sqlStripped = fs
     .readFileSync(migrationSql, "utf8")
     .replace(/^\uFEFF/, "")

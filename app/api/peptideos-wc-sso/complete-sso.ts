@@ -43,7 +43,7 @@ export async function completePeptideOsSsoLogin(
       return { ...created, wroteUserState: false };
     }
 
-    let linked: void | CreatePeptideosAccountResult;
+    let linked: void | CreatePeptideosAccountResult | undefined;
     try {
       linked = await deps.createPeptideosAccount(created.userId);
     } catch (error) {

@@ -21,6 +21,7 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
   const t = useI18n();
   const searchParams = useSearchParams();
   const isResetSuccess = searchParams.get("reset") === "success";
+  const redirectUrl = searchParams.get("redirect");
 
   const { signIn } = useSignIn();
 
@@ -81,7 +82,7 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
         {t("commons.dont_have_account")}{" "}
         <Link
           className="underline underline-offset-4"
-          href={getConfiguredPeptideOsSignupUrl()}
+          href={getConfiguredPeptideOsSignupUrl(redirectUrl ?? undefined)}
         >
           {t("commons.signup")}
         </Link>

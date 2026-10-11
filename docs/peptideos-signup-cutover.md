@@ -19,13 +19,15 @@ Revisit after PeptideOS has provisioned `wc.user` / `wc.account` for every legac
 
 | Surface | Behavior |
 |---|---|
-| `/auth/signup` page, header/register, sign-in “Sign up”, profile alert, program “signup to continue” | **Redirect / link** to PeptideOS `/signup` |
+| `/auth/signup` page, header/register, sign-in “Sign up”, profile alert, program “signup to continue” | **Redirect / link** to PeptideOS `/signup` (optional `?redirect=` same-origin workout-cool URL; PeptideOS may ignore it) |
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
-| Better Auth HTTP `POST /api/auth/sign-up/email` (catch-all `[...all]`) | **Blocked** `403` + `{ error, redirectTo }` |
+| Better Auth HTTP `POST /api/auth/sign-up/email` and `/api/auth/admin/create-user` (catch-all `[...all]`) | **Blocked** `403` + `{ error, redirectTo }` |
 | Google OAuth `disableSignUp` / `disableImplicitSignUp` | **Blocked** new-user creation |
 | Google / email **sign-in** for existing accounts | **Allowed** |
 | `/api/peptideos-wc-sso` create-user (`auth.api.signUpEmail` in-process + `peptideos` account + signed session) | **Allowed** — this PR does **not** edit that route |
+
+After PeptideOS SSO the session still lands on `/` (`finalizeSession` is owned by PR #3). The `redirect` query is best-effort only.
 
 PR #3 (account-link) owns `app/api/peptideos-wc-sso` and `/auth/link-peptideos`. This cutover does not touch those files. `/auth/link-peptideos` is not redirected to PeptideOS.
 

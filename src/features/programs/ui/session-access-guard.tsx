@@ -74,7 +74,10 @@ export function SessionAccessGuard({
             <Button
               className="w-full bg-green-600 hover:bg-green-700 text-white"
               onClick={() => {
-                window.location.assign(getConfiguredPeptideOsSignupUrl());
+                const redirectUrl = sessionSlug
+                  ? `/${locale}/programs/${programSlug}/session/${sessionSlug}`
+                  : `/${locale}/programs/${programSlug}`;
+                window.location.assign(getConfiguredPeptideOsSignupUrl(redirectUrl));
               }}
               size="large"
             >

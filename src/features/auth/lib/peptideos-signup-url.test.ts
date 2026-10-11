@@ -31,3 +31,25 @@ test("signup URL is PeptideOS /signup (the existing PeptideOS auth page)", () =>
   assert.equal(peptideOsSignupUrl("https://peptideos.us"), "https://peptideos.us/signup");
   assert.equal(resolvePeptideOsSignupUrl(undefined, "https://workouts.peptideos.us"), "https://peptideos.us/signup");
 });
+
+test("preserves a workout-cool return path as an absolute redirect query", () => {
+  assert.equal(
+    resolvePeptideOsSignupUrl(undefined, "https://workouts.peptideos.us", "/en/programs/strength"),
+    "https://peptideos.us/signup?redirect=https%3A%2F%2Fworkouts.peptideos.us%2Fen%2Fprograms%2Fstrength"
+  );
+  assert.equal(
+    peptideOsSignupUrl("https://peptideos.us", "https://workouts.peptideos.us/profile"),
+    "https://peptideos.us/signup?redirect=https%3A%2F%2Fworkouts.peptideos.us%2Fprofile"
+  );
+});
+
+test("drops off-origin and protocol-relative return URLs", () => {
+  assert.equal(
+    resolvePeptideOsSignupUrl(undefined, "https://workouts.peptideos.us", "https://evil.example/phish"),
+    "https://peptideos.us/signup"
+  );
+  assert.equal(
+    resolvePeptideOsSignupUrl(undefined, "https://workouts.peptideos.us", "//evil.example/phish"),
+    "https://peptideos.us/signup"
+  );
+});

@@ -36,13 +36,13 @@ test("public signup HTTP surfaces are blocked or redirected to PeptideOS", () =>
   const api = read("app/api/auth/signup/route.ts");
   const page = read("app/[locale]/(app)/auth/(auth-layout)/signup/page.tsx");
 
-  assert.match(action, /isPublicSignupBlocked/);
   assert.match(action, /PUBLIC_SIGNUP_DISABLED/);
   assert.doesNotMatch(action, /auth\.api\.signUpEmail/);
+  assert.doesNotMatch(action, /isPublicSignupBlocked/);
 
-  assert.match(api, /isPublicSignupBlocked/);
-  assert.match(api, /PUBLIC_SIGNUP_DISABLED/);
+  assert.match(api, /PUBLIC_SIGNUP_DISABLED|publicSignupDisabledBody/);
   assert.doesNotMatch(api, /auth\.api\.signUpEmail/);
+  assert.doesNotMatch(api, /isPublicSignupBlocked/);
 
   assert.match(page, /redirect\(/);
   assert.match(page, /resolvePeptideOsSignupUrl/);

@@ -29,10 +29,48 @@ export function peptideOsOrigin(explicitUrl?: string, appUrl?: string): string {
   return DEFAULT_PEPTIDEOS_ORIGIN;
 }
 
-export function peptideOsSignupUrl(origin: string): string {
-  return `${origin.replace(/\/$/, "")}${PEPTIDEOS_SIGNUP_PATH}`;
+function absoluteWorkoutReturnTo(returnTo: string | undefined, appUrl?: string): string | undefined {
+  const dest = returnTo?.trim();
+  if (!dest) {
+    return undefined;
+  }
+
+  if (dest.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(dest)) {
+    if (!/^https?:\/\//i.test(dest)) {
+      return undefined;
+    }
+    try {
+      const destUrl = new URL(dest);
+      if (!appUrl?.trim()) {
+        return destUrl.toString();
+      }
+      if (destUrl.origin === new URL(appUrl).origin) {
+        return destUrl.toString();
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  }
+
+  const path = dest.startsWith("/") ? dest : `/${dest}`;
+  const base = appUrl?.trim();
+  if (!base) {
+    return path;
+  }
+  return new URL(path, `${new URL(base).origin}/`).toString();
 }
 
-export function resolvePeptideOsSignupUrl(explicitUrl?: string, appUrl?: string): string {
-  return peptideOsSignupUrl(peptideOsOrigin(explicitUrl, appUrl));
+export function peptideOsSignupUrl(origin: string, returnTo?: string): string {
+  const url = new URL(PEPTIDEOS_SIGNUP_PATH, `${origin.replace(/\/$/, "")}/`);
+  const redirect = absoluteWorkoutReturnTo(returnTo);
+  if (redirect) {
+    url.searchParams.set("redirect", redirect);
+  }
+  return url.toString();
+}
+
+export function resolvePeptideOsSignupUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {
+  const origin = peptideOsOrigin(explicitUrl, appUrl);
+  return peptideOsSignupUrl(origin, absoluteWorkoutReturnTo(returnTo, appUrl));
 }

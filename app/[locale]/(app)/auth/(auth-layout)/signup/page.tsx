@@ -8,6 +8,12 @@ export const metadata = {
   description: "Create your account on PeptideOS"
 };
 
-export default function AuthSignUpPage() {
-  redirect(resolvePeptideOsSignupUrl(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL));
+interface AuthSignUpPageParams {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function AuthSignUpPage({ searchParams }: AuthSignUpPageParams) {
+  const params = await searchParams;
+  const returnTo = typeof params.redirect === "string" ? params.redirect : undefined;
+  redirect(resolvePeptideOsSignupUrl(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL, returnTo));
 }

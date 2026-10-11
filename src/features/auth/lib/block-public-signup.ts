@@ -2,7 +2,7 @@ const BETTER_AUTH_HTTP_PREFIX = "/api/auth";
 
 /** Better Auth HTTP paths that create an email/password user. */
 export function isBetterAuthEmailSignUpPath(path: string): boolean {
-  return path === "/sign-up/email" || path === "/sign-up";
+  return path === "/sign-up/email" || path === "/sign-up" || path === "/admin/create-user";
 }
 
 /** Map `/api/auth/sign-up/email` → `/sign-up/email` (Better Auth endpoint path). */

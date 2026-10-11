@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next/types";
 
 import { getSitemapData } from "@/features/programs/actions/get-sitemap-data.action";
-import { resolvePeptideOsSignupUrl } from "@/features/auth/lib/peptideos-signup-url";
+import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.workout.cool";
@@ -84,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     {
-      url: resolvePeptideOsSignupUrl(),
+      url: getConfiguredPeptideOsSignupUrl(),
       lastModified: currentDate,
       changeFrequency: "monthly" as const,
       priority: 0.3,

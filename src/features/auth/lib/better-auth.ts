@@ -8,6 +8,7 @@ import { VerifyEmail } from "@emails/VerifyEmail";
 import { betterAuthTrustedOrigins } from "./trusted-origins";
 import { isSsoUserCreateAllowed } from "./sso-user-create-context";
 import { PUBLIC_SIGNUP_DISABLED } from "./public-signup-guard";
+import { getConfiguredPeptideOsSettingsUrl } from "./configured-peptideos-signup";
 import {
   shouldAllowBetterAuthUserCreate,
   shouldAllowCredentialAccountCreate,
@@ -17,6 +18,8 @@ import {
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
 import { SiteConfig } from "@/shared/config/site-config";
+import { queryPeptideosHasEmailIdentity, peptideosHasEmailIdentity } from "@/features/update-password/lib/peptideos-has-email-identity";
+import { PEPTIDEOS_PROVIDER_ID, resolvePasswordChangeKind } from "@/features/update-password/lib/password-change-entry";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { env } from "@/env";
 
@@ -75,16 +78,32 @@ export const auth = betterAuth({
           banExpires: true,
           isPremium: true,
           accounts: {
-            select: { providerId: true },
+            select: { providerId: true, accountId: true },
           },
         },
       });
 
+      if (userFromDB == null) {
+        return { user: null, session };
+      }
+
+      const peptideosAccount = userFromDB.accounts.find((account) => account.providerId === PEPTIDEOS_PROVIDER_ID);
+      const hasEmailIdentity = peptideosAccount
+        ? await peptideosHasEmailIdentity(peptideosAccount.accountId, queryPeptideosHasEmailIdentity)
+        : null;
+      const passwordChange = resolvePasswordChangeKind({
+        accounts: userFromDB.accounts,
+        hasEmailIdentity,
+        peptideosSettingsUrl: getConfiguredPeptideOsSettingsUrl("/profile")
+      });
+
       return {
-        user:
-          userFromDB != null
-            ? { ...userFromDB, isPremium: SiteConfig.allPremiumFeaturesFree ? true : userFromDB.isPremium }
-            : null,
+        user: {
+          ...userFromDB,
+          isPremium: SiteConfig.allPremiumFeaturesFree ? true : userFromDB.isPremium,
+          accounts: userFromDB.accounts.map((account) => ({ providerId: account.providerId })),
+          passwordChange
+        },
         session,
       };
     }),

@@ -1350,6 +1350,9 @@ export default {
   confirm_password: "Подтвердить пароль",
   confirm_password_placeholder: "Подтвердите ваш пароль",
   password_sign_in_via_peptideos: "Этот аккаунт входит через PeptideOS. Пароля workout-cool для смены нет.",
+  change_peptideos_password_description:
+    "Это меняет ваш пароль PeptideOS. Тот же пароль используется для входа в workouts.",
+  change_peptideos_password_cta: "Открыть настройки PeptideOS",
   NO_CREDENTIAL_ACCOUNT: "У этого аккаунта нет пароля workout-cool. Войдите через PeptideOS.",
 
   success: {
@@ -1837,6 +1840,7 @@ export default {
     close: "Закрыть",
     subscription: "Подписка",
     manage_subscription: "Управление подпиской",
+    change_password: "Сменить пароль",
     become_premium: "Стань Премиум",
     remove_ads: "Убрать рекламу",
     coming_soon: "Скоро",

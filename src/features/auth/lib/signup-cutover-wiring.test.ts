@@ -92,6 +92,6 @@ test("password update only touches the credential account", () => {
   const ui = read("src/features/update-password/ui/password-form.tsx");
   assert.match(action, /updateCredentialPassword/);
   assert.doesNotMatch(action, /findFirstOrThrow/);
-  assert.match(ui, /hasCredentialPasswordAccount/);
-  assert.match(ui, /password_sign_in_via_peptideos/);
+  assert.match(ui, /PASSWORD_CHANGE_KIND|resolvePasswordChangeKind/);
+  assert.match(ui, /change_peptideos_password/);
 });

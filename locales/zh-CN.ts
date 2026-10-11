@@ -492,6 +492,8 @@ export default {
   confirm_password: "确认密码",
   confirm_password_placeholder: "确认您的密码",
   password_sign_in_via_peptideos: "此账户通过 PeptideOS 登录。没有可修改的 workout-cool 密码。",
+  change_peptideos_password_description: "这将更改你的 PeptideOS 密码。同一密码也用于登录 workouts。",
+  change_peptideos_password_cta: "打开 PeptideOS 设置",
   NO_CREDENTIAL_ACCOUNT: "此账户没有 workout-cool 密码。请通过 PeptideOS 登录。",
 
   success: {
@@ -966,6 +968,7 @@ export default {
     change_language: "更改语言",
     subscription: "订阅",
     manage_subscription: "管理订阅",
+    change_password: "更改密码",
     become_premium: "成为高级",
     remove_ads: "移除广告",
     coming_soon: "即将推出",

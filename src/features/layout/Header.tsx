@@ -8,6 +8,7 @@ import Logo from "@public/logo.png";
 import { LanguageSelector } from "@/widgets/language-selector/language-selector";
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { SiteConfig } from "@/shared/config/site-config";
+import { ChangePasswordMenuItem } from "@/features/update-password/ui/change-password-menu-item";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
 import { useLogout } from "@/features/auth/model/useLogout";
@@ -97,6 +98,7 @@ export const Header = () => {
                   {t("commons.profile")}
                 </Link>
               </li>
+              <ChangePasswordMenuItem />
 
               {!allFeaturesFree && (
                 <li>

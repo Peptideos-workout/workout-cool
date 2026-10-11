@@ -1359,6 +1359,9 @@ export default {
   confirm_password: "Confirm password",
   confirm_password_placeholder: "Confirm your password",
   password_sign_in_via_peptideos: "This account signs in through PeptideOS. There is no workout-cool password to change.",
+  change_peptideos_password_description:
+    "This changes your PeptideOS password. The same password is used to sign in to workouts.",
+  change_peptideos_password_cta: "Open PeptideOS settings",
   NO_CREDENTIAL_ACCOUNT: "This account has no workout-cool password. Sign in through PeptideOS.",
 
   success: {
@@ -1835,6 +1838,7 @@ export default {
     send_me_link: "Send me a link",
     subscription: "Subscription",
     manage_subscription: "Manage subscription",
+    change_password: "Change password",
     become_premium: "Become Premium",
     remove_ads: "Remove Ads",
     extremely_dissatisfied: "Extremely dissatisfied",

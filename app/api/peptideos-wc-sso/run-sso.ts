@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { ssoJson } from "./sso-response";
+import { logSsoEvent } from "./sso-error-log";
 import { handoffDisposition } from "./handoff-disposition";
 import { runWithHandoffClaim } from "./consume-handoff";
 import { completePeptideOsSsoLogin } from "./complete-sso";
@@ -102,7 +103,7 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
         try {
           authUser = await deps.lookupAuthUser(hid);
         } catch (e) {
-          console.error("[peptideos-wc-sso] auth.users lookup:", e);
+          logSsoEvent("auth_users_lookup", e);
           return {
             value: ssoJson({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, 500),
             disposition: "release" as const
@@ -154,12 +155,12 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
       return ssoJson({ error: "invalid_or_expired_handoff" }, 400);
     }
     if (claimed.outcome === "error") {
-      console.error("[peptideos-wc-sso] claimed run:", claimed.error);
+      logSsoEvent("claimed_run", claimed.error);
       return ssoJson({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, 500);
     }
     return claimed.value;
   } catch (e) {
-    console.error("[peptideos-wc-sso] unhandled:", e);
+    logSsoEvent("unhandled", e);
     return ssoJson({ error: "sso_internal_error", ...ssoExplain(e) }, 500);
   }
 }

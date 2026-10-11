@@ -83,6 +83,28 @@ test("treats a createSession throw as a write so the handoff cannot be released"
   assert.deepEqual(result, { ok: false, wroteSession: true, response: null });
 });
 
+test("outer catch still reports a write if logging throws after persist", async () => {
+  const original = console.error;
+  console.error = () => {
+    throw new Error("logger exploded");
+  };
+
+  try {
+    const result = await attachTrustedSession("wc-user", {
+      findUserById: async (userId) => ({ id: userId }),
+      createSession: async () => session,
+      deleteSession: async () => undefined,
+      setSessionCookie: async () => {
+        throw new Error("cookie signing failed");
+      }
+    });
+
+    assert.deepEqual(result, { ok: false, wroteSession: true, response: null });
+  } finally {
+    console.error = original;
+  }
+});
+
 test("does not report a write when createSession never persists a session", async () => {
   const result = await attachTrustedSession("wc-user", {
     findUserById: async (userId) => ({ id: userId }),

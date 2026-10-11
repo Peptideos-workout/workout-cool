@@ -1,22 +1,39 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { logSsoEmailCollision, sanitizeSsoErrorForLog } from "./sso-error-log";
+import { logSsoEmailCollision, logSsoEvent, sanitizeSsoErrorForLog } from "./sso-error-log";
 
-test("redacts email, JWT, hex tokens, and secret assignments from collision logs", () => {
+function captureErrorLogs(run: () => void): string[] {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  try {
+    run();
+  } finally {
+    console.error = original;
+  }
+  return lines;
+}
+
+test("logs only name, code, and allowlisted messages — never passwords, hashes, or tokens", () => {
   const sanitized = sanitizeSsoErrorForLog(
-    new Error("User already exists: victim@example.com token=abc.def.ghi secret=supersecret eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+    new Error("password=hunter2 $2b$10$abcdefghijklmnopqrstuv bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig session_token=sess_live_abc"),
   );
 
+  const serialized = JSON.stringify(sanitized);
   assert.equal(sanitized.name, "Error");
-  assert.doesNotMatch(sanitized.message, /victim@example.com/i);
-  assert.doesNotMatch(sanitized.message, /supersecret/);
-  assert.doesNotMatch(sanitized.message, /eyJhbGciOiJIUzI1NiJ9/);
-  assert.doesNotMatch(sanitized.message, /0123456789abcdef0123456789abcdef/);
-  assert.match(sanitized.message, /\[email\]|\[token\]|\[hex\]|\[redacted\]/);
+  assert.equal(sanitized.code, "");
+  assert.equal(sanitized.message, undefined);
+  assert.doesNotMatch(serialized, /hunter2/);
+  assert.doesNotMatch(serialized, /\$2b\$10\$/);
+  assert.doesNotMatch(serialized, /eyJhbGciOiJIUzI1NiJ9/);
+  assert.doesNotMatch(serialized, /sess_live_abc/);
+  assert.doesNotMatch(serialized, /password=/);
 });
 
-test("keeps prisma-style codes and omits nested meta that can hold PII", () => {
+test("keeps prisma-style codes and an allowlisted unique-constraint message, never meta PII", () => {
   const sanitized = sanitizeSsoErrorForLog({
     name: "PrismaClientKnownRequestError",
     code: "P2002",
@@ -24,27 +41,39 @@ test("keeps prisma-style codes and omits nested meta that can hold PII", () => {
     meta: { target: ["email"], email: "victim@example.com" }
   });
 
+  assert.equal(sanitized.name, "PrismaClientKnownRequestError");
   assert.equal(sanitized.code, "P2002");
-  assert.match(sanitized.message, /Unique constraint failed/);
+  assert.equal(sanitized.message, "Unique constraint failed on the fields: (`email`)");
   assert.doesNotMatch(JSON.stringify(sanitized), /victim@example.com/);
   assert.ok(!("meta" in sanitized));
 });
 
-test("logSsoEmailCollision writes a generic 409 reason and never prints the raw token", () => {
-  const lines: string[] = [];
-  const original = console.error;
-  console.error = (...args: unknown[]) => {
-    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
-  };
+test("drops a collision message that is not on the allowlist", () => {
+  const sanitized = sanitizeSsoErrorForLog(new Error("User already exists: victim@example.com"));
+  assert.equal(sanitized.message, undefined);
+  assert.doesNotMatch(JSON.stringify(sanitized), /victim@example.com/);
+});
 
-  try {
+test("logSsoEmailCollision writes reason plus safe fields and never the raw token", () => {
+  const lines = captureErrorLogs(() => {
     logSsoEmailCollision("signup_threw", new Error("handoff token=plaintext-handoff-from-query-string"));
-  } finally {
-    console.error = original;
-  }
+  });
 
   assert.equal(lines.length, 1);
-  assert.match(lines[0] ?? "", /\[peptideos-wc-sso\] sso_email_collision/);
+  assert.match(lines[0] ?? "", /\[peptideos-wc-sso\]/);
+  assert.match(lines[0] ?? "", /sso_email_collision/);
   assert.match(lines[0] ?? "", /signup_threw/);
   assert.doesNotMatch(lines[0] ?? "", /plaintext-handoff-from-query-string/);
+});
+
+test("logSsoEvent never prints stacks or raw Error objects", () => {
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("auth_users_lookup", Object.assign(new Error("relation auth.users does not exist"), { code: "42P01" }));
+  });
+
+  assert.equal(lines.length, 1);
+  assert.match(lines[0] ?? "", /auth_users_lookup/);
+  assert.match(lines[0] ?? "", /42P01/);
+  assert.doesNotMatch(lines[0] ?? "", /at Object\./);
+  assert.doesNotMatch(lines[0] ?? "", /Error: relation/);
 });

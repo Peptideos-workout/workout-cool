@@ -1,4 +1,4 @@
-import { sanitizeSsoErrorForLog } from "./sso-error-log";
+import { logSsoEvent } from "./sso-error-log";
 import { serializeBetterAuthSignedCookie } from "./signed-cookie";
 
 interface SessionCookieOptions {
@@ -61,6 +61,7 @@ export async function attachTrustedSession(
   userId: string,
   deps: AttachTrustedSessionDeps,
 ): Promise<AttachTrustedSessionResult> {
+  let wroteSession = false;
   try {
     const user = await deps.findUserById(userId);
     if (!user) return { ok: false, wroteSession: false, response: null };
@@ -88,10 +89,12 @@ export async function attachTrustedSession(
       session = await deps.createSession(userId, ctx);
     } catch (error) {
       // Better Auth can persist the row then throw in a hook. Unknown = a write; never release.
-      console.error("[peptideos-wc-sso] createSession:", sanitizeSsoErrorForLog(error));
+      wroteSession = true;
+      logSsoEvent("createSession", error);
       return { ok: false, wroteSession: true, response: null };
     }
     if (!session?.token) return { ok: false, wroteSession: false, response: null };
+    wroteSession = true;
 
     try {
       await deps.setSessionCookie(ctx, { session, user });
@@ -101,11 +104,11 @@ export async function attachTrustedSession(
       }
       return { ok: true, wroteSession: true, response: new Response(null, { status: 200, headers: responseHeaders }) };
     } catch (error) {
-      console.error("[peptideos-wc-sso] setSessionCookie:", sanitizeSsoErrorForLog(error));
+      logSsoEvent("setSessionCookie", error);
       await deleteCreatedSession(deps.deleteSession, session.token);
       return { ok: false, wroteSession: true, response: null };
     }
   } catch {
-    return { ok: false, wroteSession: false, response: null };
+    return { ok: false, wroteSession, response: null };
   }
 }

@@ -196,6 +196,65 @@ test("cookie failure after createSession cleans up the session and does not rele
   assert.deepEqual(deletedSessions, ["orphaned-session-token"]);
 });
 
+test("deleteSession throw after a session write keeps the handoff consumed", async () => {
+  const { deps, handoff, released, deletedSessions } = fakeWorld({
+    snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },
+    createSignedSession: async (userId) =>
+      attachTrustedSession(userId, {
+        findUserById: async (id) => ({ id }),
+        createSession: async () => ({
+          id: "sess-1",
+          token: "orphaned-session-token",
+          userId,
+          expiresAt: new Date("2026-11-11T00:00:00.000Z"),
+          createdAt: claimedAt,
+          updatedAt: claimedAt
+        }),
+        deleteSession: async () => {
+          throw new Error("deleteSession failed");
+        },
+        setSessionCookie: async () => {
+          throw new Error("setSessionCookie exploded");
+        }
+      })
+  });
+
+  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const body = await response.json();
+
+  assert.equal(response.status, 500);
+  assert.deepEqual(body, { error: "sso_signin_failed" });
+  assert.ok(handoff.consumed_at);
+  assert.deepEqual(released, []);
+  assert.deepEqual(deletedSessions, []);
+});
+
+test("auth.users lookup logs stay allowlisted and never dump the raw stack", async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+
+  try {
+    const { deps } = fakeWorld({
+      lookupAuthUser: async () => {
+        throw Object.assign(new Error("relation auth.users does not exist"), { code: "42P01" });
+      }
+    });
+
+    const response = await runPeptideOsSso(ssoRequest(), deps);
+    assert.equal(response.status, 500);
+    const joined = lines.join("\n");
+    assert.match(joined, /auth_users_lookup/);
+    assert.match(joined, /42P01/);
+    assert.doesNotMatch(joined, /at Object\.lookupAuthUser/);
+    assert.doesNotMatch(joined, /run-sso\.test\.ts/);
+  } finally {
+    console.error = original;
+  }
+});
+
 test("createSession throw after persist does not release the handoff", async () => {
   const { deps, handoff, released } = fakeWorld({
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },

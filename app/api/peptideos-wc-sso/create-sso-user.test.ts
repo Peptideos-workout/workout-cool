@@ -59,7 +59,9 @@ test("logs the real signup error on 409 without putting email or tokens in the c
     assert.equal("dev_detail" in result, false);
     assert.equal(lines.length, 1);
     assert.match(lines[0] ?? "", /sso_email_collision/);
-    assert.match(lines[0] ?? "", /signup_threw|P2002|User already exists/);
+    assert.match(lines[0] ?? "", /signup_threw/);
+    assert.match(lines[0] ?? "", /P2002/);
+    assert.doesNotMatch(lines[0] ?? "", /User already exists/);
     assert.doesNotMatch(lines[0] ?? "", /victim@example.com/);
     assert.doesNotMatch(lines[0] ?? "", /eyJhbGciOiJIUzI1NiJ9/);
   } finally {

@@ -78,9 +78,11 @@ Locale prefixes are matched case-insensitively (`/zh-cn`, `/zh-CN`, `/ZH-CN`).
 
 ## Unique `(userId, providerId)`
 
-`wc.account` already has `@@unique([providerId, accountId])` (one PeptideOS user cannot link to two WC users). It does **not** have `@@unique([userId, providerId])`, so one WC user could still get two `peptideos` rows.
+`wc.account` has `@@unique([providerId, accountId])` (one PeptideOS user cannot link to two WC users) and a schema-only `@@unique([userId, providerId], map: "account_userId_providerId_key")` so one WC user cannot have two rows for the same provider.
 
-Proposed, **not applied**: `docs/sql/account-user-provider-unique.sql` (pre-check for duplicates, then unique index). Rollback: `docs/sql/account-user-provider-unique.rollback.sql`.
+The index name matches PeptideOS PR #35 / `docs/sql/account-user-provider-unique.sql`. **No Prisma migration is added** — `prisma migrate` must not recreate the live index. If you run `prisma migrate deploy` (`.github/workflows/migrate-wc.yml` / `pnpm db:migrate:direct`), baseline or `prisma migrate resolve` the drift so migrate does not try to `CREATE UNIQUE INDEX "account_userId_providerId_key"`.
+
+Standalone SQL (already applied on PeptideOS, kept for rollback/docs): `docs/sql/account-user-provider-unique.sql`. Rollback: `docs/sql/account-user-provider-unique.rollback.sql`.
 
 ## PeptideOS #32 provisioning / sync
 
@@ -98,6 +100,6 @@ SSO launcher path is `/api/workouts/sso` (PeptideOS then sends signed-out users 
 
 - No account takeover by email match: SSO still rejects unless a `peptideos` account already links that PeptideOS user id. Google account linking by email is disabled.
 - New SSO users still get a random unused password; sign-in is a Better Auth signed session (`createTrustedBetterAuthSession`).
-- `@@unique([providerId, accountId])` remains the DB backstop. The extra `(userId, providerId)` unique is proposed in `docs/sql/` only.
+- `@@unique([providerId, accountId])` remains the DB backstop. `(userId, providerId)` is in the Prisma schema only (`map: "account_userId_providerId_key"`); no WC migration recreates it.
 
 `app/api/peptideos-wc-sso` honours a same-origin `redirect` on success and returns a localized HTML error page (with a PeptideOS `/api/workouts/sso` try-again link, plus a support note on 409 collisions) for browser navigations. API callers still get JSON.

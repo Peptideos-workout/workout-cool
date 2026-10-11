@@ -26,6 +26,18 @@ test("HTTP /api/auth/sign-up/* is a public signup request; sign-in and OAuth cal
   assert.equal(isPublicBetterAuthSignupRequest("/api/auth/callback/google"), false);
 });
 
+test("normalizes signup path case, trailing slash, and admin createUser variants", () => {
+  assert.equal(isPublicBetterAuthSignupRequest("/API/AUTH/SIGN-UP/EMAIL"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-up/email/"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-up/"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/admin/create-user/"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/admin/createUser"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/admin/createuser"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/admin/CreateUser"), true);
+  assert.equal(isBetterAuthEmailSignUpPath("/admin/createUser"), true);
+  assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-in/email/"), false);
+});
+
 test("user.create is allowed only inside the SSO create-user path", () => {
   assert.equal(shouldAllowBetterAuthUserCreate(false), false);
   assert.equal(shouldAllowBetterAuthUserCreate(true), true);

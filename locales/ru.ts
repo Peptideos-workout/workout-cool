@@ -1349,6 +1349,7 @@ export default {
   current_password_placeholder: "Введите ваш текущий пароль",
   confirm_password: "Подтвердить пароль",
   confirm_password_placeholder: "Подтвердите ваш пароль",
+  password_sign_in_via_peptideos: "Этот аккаунт входит через PeptideOS. Пароля workout-cool для смены нет.",
 
   success: {
     feedback_sent: "Отзыв отправлен",

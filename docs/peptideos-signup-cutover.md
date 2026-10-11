@@ -23,13 +23,15 @@ Revisit after PeptideOS has provisioned `wc.user` / `wc.account` for every legac
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
 | Better Auth HTTP `POST /api/auth/sign-up/email` and `/api/auth/admin/create-user` (catch-all `[...all]`) | **Blocked** `403` + `{ error, redirectTo }` |
-| Google OAuth `disableSignUp` / `disableImplicitSignUp` | **Blocked** new-user creation |
+| Google OAuth `disableSignUp` / `disableImplicitSignUp` plus `databaseHooks.user.create` | **Blocked** unless the in-process SSO ALS flag is set |
 | Google / email **sign-in** for existing accounts | **Allowed** |
-| `/api/peptideos-wc-sso` create-user (`auth.api.signUpEmail` in-process + `peptideos` account + signed session) | **Allowed** — this PR does **not** edit that route |
+| `/api/peptideos-wc-sso` create-user (`runWithSsoUserCreate(() => auth.api.signUpEmail(...))`) | **Allowed** — only this wrap is added to the SSO route |
+| Change-password for users with a `credential` account | **Allowed** (lookup/update filtered by `providerId: "credential"`) |
+| Change-password for PeptideOS-only users (no `credential` row) | **Hidden** in UI; server returns `NO_CREDENTIAL_ACCOUNT`. They sign in via PeptideOS. Creating a new local password would reopen a workout-cool login we just closed. |
 
-After PeptideOS SSO the session still lands on `/` (`finalizeSession` is owned by PR #3). The `redirect` query is best-effort only.
+After PeptideOS SSO the session still lands on `/` (`finalizeSession` is owned by PR #3). The `redirect` query is best-effort only. Return URLs that contain `\` or `%5c` (any case) are dropped; the parsed origin must equal `new URL(appUrl).origin`.
 
-PR #3 (account-link) owns `app/api/peptideos-wc-sso` and `/auth/link-peptideos`. This cutover does not touch those files. `/auth/link-peptideos` is not redirected to PeptideOS.
+PR #3 (account-link) owns most of `app/api/peptideos-wc-sso` and `/auth/link-peptideos`. This cutover’s only SSO-route edit is wrapping `auth.api.signUpEmail` in `runWithSsoUserCreate` (helper lives in `src/features/auth/lib/sso-user-create-context.ts`). `/auth/link-peptideos` is not redirected to PeptideOS. Sequence that wrap with #3.
 
 ## PeptideOS URL
 

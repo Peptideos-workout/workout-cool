@@ -1,19 +1,42 @@
 const BETTER_AUTH_HTTP_PREFIX = "/api/auth";
 
+function stripQueryAndHash(path: string): string {
+  return path.split("?")[0].split("#")[0];
+}
+
+export function normalizeBetterAuthPath(path: string): string {
+  let normalized = stripQueryAndHash(path).trim().toLowerCase();
+  if (normalized.length > 1 && normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
+function canonicalizeSignupPath(path: string): string {
+  const normalized = normalizeBetterAuthPath(path);
+  if (normalized === "/admin/createuser" || normalized === "/admin/create-user") {
+    return "/admin/create-user";
+  }
+  return normalized;
+}
+
 /** Better Auth HTTP paths that create an email/password user. */
 export function isBetterAuthEmailSignUpPath(path: string): boolean {
-  return path === "/sign-up/email" || path === "/sign-up" || path === "/admin/create-user";
+  const normalized = canonicalizeSignupPath(path);
+  return normalized === "/sign-up/email" || normalized === "/sign-up" || normalized === "/admin/create-user";
 }
 
 /** Map `/api/auth/sign-up/email` → `/sign-up/email` (Better Auth endpoint path). */
 export function betterAuthRequestPath(pathname: string, prefix = BETTER_AUTH_HTTP_PREFIX): string {
-  if (pathname === prefix || pathname === `${prefix}/`) {
+  const normalizedPrefix = normalizeBetterAuthPath(prefix);
+  const normalizedPath = normalizeBetterAuthPath(pathname);
+  if (normalizedPath === normalizedPrefix) {
     return "/";
   }
-  if (pathname.startsWith(`${prefix}/`)) {
-    return pathname.slice(prefix.length);
+  if (normalizedPath.startsWith(`${normalizedPrefix}/`)) {
+    return canonicalizeSignupPath(normalizedPath.slice(normalizedPrefix.length));
   }
-  return pathname;
+  return canonicalizeSignupPath(normalizedPath);
 }
 
 export function isPublicBetterAuthSignupRequest(pathname: string): boolean {

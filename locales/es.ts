@@ -489,6 +489,7 @@ export default {
   current_password_placeholder: "Ingresa tu contraseña actual",
   confirm_password: "Confirmar contraseña",
   confirm_password_placeholder: "Confirma tu contraseña",
+  password_sign_in_via_peptideos: "Esta cuenta inicia sesión a través de PeptideOS. No hay una contraseña de workout-cool que cambiar.",
 
   success: {
     feedback_sent: "Comentario enviado",

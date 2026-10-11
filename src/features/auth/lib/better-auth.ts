@@ -7,6 +7,9 @@ import { VerifyEmail } from "@emails/VerifyEmail";
 import { ResetPasswordEmail } from "@emails/ResetPasswordEmail";
 
 import { betterAuthTrustedOrigins } from "./trusted-origins";
+import { isSsoUserCreateAllowed } from "./sso-user-create-context";
+import { PUBLIC_SIGNUP_DISABLED } from "./public-signup-guard";
+import { shouldAllowBetterAuthUserCreate, shouldAllowOAuthNewUser } from "./block-public-signup";
 
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
@@ -21,6 +24,19 @@ export const auth = betterAuth({
     // PR #1: never attach a new identity to an existing user by email match.
     accountLinking: {
       enabled: false,
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const isSsoContext = isSsoUserCreateAllowed();
+          if (!shouldAllowBetterAuthUserCreate(isSsoContext) || !shouldAllowOAuthNewUser(isSsoContext)) {
+            throw new Error(PUBLIC_SIGNUP_DISABLED);
+          }
+          return { data: user };
+        },
+      },
     },
   },
   plugins: [

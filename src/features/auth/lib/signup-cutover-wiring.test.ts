@@ -11,18 +11,20 @@ test("Better Auth Google config blocks OAuth new-user creation and email-match l
   assert.match(src, /disableImplicitSignUp:\s*true/);
   assert.match(src, /disableSignUp:\s*true/);
   assert.match(src, /accountLinking/);
+  assert.match(src, /databaseHooks/);
+  assert.match(src, /shouldAllowBetterAuthUserCreate/);
+  assert.match(src, /shouldAllowOAuthNewUser/);
+  assert.match(src, /allowBetterAuthUserCreate|isSsoUserCreateAllowed/);
   assert.doesNotMatch(src, /trustedProviders:\s*\[["']google["']\]/);
-  assert.doesNotMatch(src, /databaseHooks/);
-  assert.doesNotMatch(src, /runWithSsoSignupAllowed/);
 });
 
-test("SSO create-user path is unchanged and not wrapped by this cutover", () => {
+test("SSO create-user wraps only signUpEmail with the in-process ALS flag", () => {
   const src = read("app/api/peptideos-wc-sso/route.ts");
-  assert.match(src, /auth\.api\.signUpEmail/);
+  assert.match(src, /runWithSsoUserCreate\s*\(\s*\(\s*\)\s*=>\s*auth\.api\.signUpEmail/);
   assert.match(src, /createPeptideosAccount/);
   assert.match(src, /newUnusedSsoPassword/);
-  assert.doesNotMatch(src, /runWithSsoSignupAllowed/);
   assert.doesNotMatch(src, /public-signup-guard/);
+  assert.doesNotMatch(src, /x-sso|x-allow-signup/i);
 });
 
 test("Better Auth HTTP catch-all blocks public email signup paths", () => {
@@ -47,4 +49,17 @@ test("public signup HTTP surfaces are blocked or redirected to PeptideOS", () =>
   assert.match(page, /redirect\(/);
   assert.match(page, /resolvePeptideOsSignupUrl/);
   assert.doesNotMatch(page, /SignUpForm/);
+});
+
+test("dead SignUpForm source is removed", () => {
+  assert.throws(() => read("src/features/auth/signup/ui/signup-form.tsx"), /ENOENT/);
+});
+
+test("password update only touches the credential account", () => {
+  const action = read("src/features/update-password/model/update-password.action.ts");
+  const ui = read("src/features/update-password/ui/password-form.tsx");
+  assert.match(action, /updateCredentialPassword/);
+  assert.doesNotMatch(action, /findFirstOrThrow/);
+  assert.match(ui, /hasCredentialPasswordAccount/);
+  assert.match(ui, /password_sign_in_via_peptideos/);
 });

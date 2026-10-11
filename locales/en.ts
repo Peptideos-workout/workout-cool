@@ -1358,6 +1358,7 @@ export default {
   current_password_placeholder: "Enter your current password",
   confirm_password: "Confirm password",
   confirm_password_placeholder: "Confirm your password",
+  password_sign_in_via_peptideos: "This account signs in through PeptideOS. There is no workout-cool password to change.",
 
   success: {
     feedback_sent: "Feedback sent",

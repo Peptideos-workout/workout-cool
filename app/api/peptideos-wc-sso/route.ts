@@ -22,6 +22,7 @@ import type { NextRequest } from "next/server";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
 
 import { prisma } from "@/shared/lib/prisma";
+import { runWithSsoUserCreate } from "@/features/auth/lib/sso-user-create-context";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
 
@@ -79,17 +80,19 @@ export async function GET(request: NextRequest) {
     findUserByEmail: async (email) => prisma.user.findUnique({ where: { email }, select: { id: true } }),
     signUp: async ({ email, firstName, lastName, name, headers }) => {
       const unusedPassword = newUnusedSsoPassword();
-      const created = await auth.api.signUpEmail({
-        body: {
-          email,
-          password: unusedPassword,
-          name,
-          firstName,
-          lastName,
-          role: UserRole.user
-        },
-        headers
-      });
+      const created = await runWithSsoUserCreate(() =>
+        auth.api.signUpEmail({
+          body: {
+            email,
+            password: unusedPassword,
+            name,
+            firstName,
+            lastName,
+            role: UserRole.user
+          },
+          headers
+        })
+      );
       const userId = created?.user?.id;
       return userId ? { userId } : null;
     },

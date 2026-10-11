@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ArrowRight, ExternalLink, Megaphone } from "lucide-react";
 import { useI18n } from "locales/client";
 
@@ -35,10 +36,12 @@ export function SponsorCard({ sponsor, variant = "sidebar" }: SponsorCardProps) 
         {variant === "sidebar" ? (
           <div className="flex flex-col items-center text-center gap-2.5">
             <div className="relative">
-              <img
+              <Image
                 alt={sponsor.name}
                 className="w-14 h-14 rounded-xl object-contain ring-2 ring-slate-100 dark:ring-slate-700 group-hover:ring-[#4F8EF7]/20 transition-all"
+                height={56}
                 src={sponsor.logoUrl}
+                width={56}
               />
             </div>
             <div className="space-y-1">
@@ -55,10 +58,12 @@ export function SponsorCard({ sponsor, variant = "sidebar" }: SponsorCardProps) 
           </div>
         ) : (
           <>
-            <img
+            <Image
               alt={sponsor.name}
               className="w-10 h-10 rounded-xl object-contain ring-2 ring-slate-100 dark:ring-slate-700 shrink-0"
+              height={40}
               src={sponsor.logoUrl}
+              width={40}
             />
             <div className="flex-1 min-w-0">
               <span className="font-bold text-sm text-slate-800 dark:text-slate-200 block truncate">{sponsor.name}</span>

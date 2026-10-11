@@ -1,6 +1,7 @@
 "use client";
 
 import { Drawer } from "vaul";
+import Image from "next/image";
 import { ExternalLink, Globe, MapPin, Monitor, PieChart, Search, Smartphone, Sparkles, Target, TrendingUp, X } from "lucide-react";
 import { useI18n } from "locales/client";
 
@@ -197,7 +198,14 @@ export function SponsorDialog({ open, onOpenChange }: SponsorDialogProps) {
               </span>
             </div>
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <img alt={t("ads.similarweb_placeholder")} className="w-full h-auto" src="/images/countries.png" />
+              <Image
+                alt={t("ads.similarweb_placeholder")}
+                className="w-full h-auto"
+                height={760}
+                sizes="(max-width: 640px) 100vw, 32rem"
+                src="/images/countries.png"
+                width={1578}
+              />
             </div>
 
             {/* 8. VALUE PROP + CTA — Benefits reframed as outcomes */}

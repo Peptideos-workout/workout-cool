@@ -1,8 +1,10 @@
-import * as React from "react";
+import Image from "next/image";
+
+import type { ComponentProps } from "react";
 
 // On utilise l'image SVG du dossier public
-export const CalendlyIcon: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = (props) => (
-  <img
+export const CalendlyIcon = (props: Omit<ComponentProps<typeof Image>, "alt" | "src">) => (
+  <Image
     alt="Calendly"
     height={20}
     src="/icons/calendly.svg"

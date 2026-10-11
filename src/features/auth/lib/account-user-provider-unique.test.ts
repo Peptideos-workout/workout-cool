@@ -7,7 +7,7 @@ function read(path: string) {
   return readFileSync(path, "utf8");
 }
 
-test("Prisma Account has a schema-only unique (userId, providerId) matching the PeptideOS index name", () => {
+test("Prisma Account unique (userId, providerId) matches the PeptideOS index name with a no-op migration", () => {
   const sql = read("docs/sql/account-user-provider-unique.sql");
   const rollback = read("docs/sql/account-user-provider-unique.rollback.sql");
 
@@ -22,18 +22,12 @@ test("Prisma Account has a schema-only unique (userId, providerId) matching the 
   assert.match(schema, /@@unique\(\[providerId, accountId\]\)/);
   assert.match(schema, /@@unique\(\[userId, providerId\],\s*map:\s*"account_userId_providerId_key"\)/);
 
-  for (const entry of readdirSync("prisma/migrations", { withFileTypes: true })) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-    const migrationSql = join("prisma/migrations", entry.name, "migration.sql");
-    try {
-      assert.doesNotMatch(read(migrationSql), /account_userId_providerId_key/, migrationSql);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-    }
-  }
-  assert.throws(() => read("prisma/migrations/20261011220000_account_user_provider_unique/migration.sql"), /ENOENT/);
+  const migrationDirs = readdirSync("prisma/migrations", { withFileTypes: true }).filter(
+    (entry) => entry.isDirectory() && entry.name.includes("account_user_provider_unique")
+  );
+  assert.equal(migrationDirs.length, 1);
+  const migrationSql = read(join("prisma/migrations", migrationDirs[0].name, "migration.sql"));
+  assert.match(migrationSql, /CREATE UNIQUE INDEX IF NOT EXISTS "account_userId_providerId_key"/);
+  assert.match(migrationSql, /ON "wc"\."account"\("userId", "providerId"\)/);
+  assert.doesNotMatch(migrationSql, /CREATE UNIQUE INDEX "account_userId_providerId_key"/);
 });

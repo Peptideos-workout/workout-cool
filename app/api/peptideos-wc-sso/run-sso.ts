@@ -8,6 +8,7 @@ import { completePeptideOsSsoLogin } from "./complete-sso";
 
 import type { NextRequest } from "next/server";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
+import type { CreatePeptideosAccountResult } from "./create-peptideos-account";
 import type { HandoffClaimRow } from "./consume-handoff";
 import type { AttachTrustedSessionResult } from "./attach-trusted-session";
 
@@ -27,7 +28,7 @@ export interface PeptideOsSsoDeps {
     name: string;
     headers: Headers;
   }) => Promise<{ userId: string } | null>;
-  createPeptideosAccount: (userId: string, peptideosUserId: string) => Promise<void>;
+  createPeptideosAccount: (userId: string, peptideosUserId: string) => Promise<void | CreatePeptideosAccountResult>;
   createSignedSession: (userId: string) => Promise<AttachTrustedSessionResult>;
   workoutOrigin: string;
 }
@@ -129,9 +130,7 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
             const { firstName, lastName, name } = splitName(displayName, email);
             return deps.signUp({ email, displayName, firstName, lastName, name, headers: request.headers });
           },
-          createPeptideosAccount: async (userId) => {
-            await deps.createPeptideosAccount(userId, hid);
-          },
+          createPeptideosAccount: async (userId) => deps.createPeptideosAccount(userId, hid),
           createSignedSession: async (userId) => {
             const result = await deps.createSignedSession(userId);
             if (result.ok) sessionResponse = result.response;

@@ -1,12 +1,15 @@
+import { logSsoEmailCollision } from "./sso-error-log";
 import { resolveSsoAccountAction } from "./resolve-sso-account";
 import { createSsoUserIfAbsent } from "./create-sso-user";
+import { isAccountUniqueViolation } from "./account-unique-violation";
 
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
+import type { CreatePeptideosAccountResult } from "./create-peptideos-account";
 
 export interface CompleteSsoLoginDeps {
   findUserByEmail: () => Promise<{ id: string } | null>;
   signUp: () => Promise<{ userId: string } | null>;
-  createPeptideosAccount: (userId: string) => Promise<void>;
+  createPeptideosAccount: (userId: string) => Promise<void | CreatePeptideosAccountResult>;
   createSignedSession: (userId: string) => Promise<{ ok: boolean; wroteSession: boolean }>;
 }
 
@@ -39,7 +42,19 @@ export async function completePeptideOsSsoLogin(
       return { ...created, wroteUserState: false };
     }
 
-    await deps.createPeptideosAccount(created.userId);
+    let linked: void | CreatePeptideosAccountResult;
+    try {
+      linked = await deps.createPeptideosAccount(created.userId);
+    } catch (error) {
+      if (isAccountUniqueViolation(error)) {
+        logSsoEmailCollision("peptideos_account_unique", error);
+        return { ok: false, error: "sso_email_collision", status: 409, wroteUserState: true };
+      }
+      throw error;
+    }
+    if (linked && linked.ok === false) {
+      return { ok: false, error: linked.error, status: linked.status, wroteUserState: true };
+    }
     const signedIn = await deps.createSignedSession(created.userId);
     if (!signedIn.ok) {
       return { ok: false, error: "sso_signup_failed", status: 500, wroteUserState: true };

@@ -128,6 +128,26 @@ test("new PeptideOS user: consume, create user, session, and signed cookie; toke
   assert.deepEqual(accounts, [{ userId: "new-user", peptideosUserId }]);
 });
 
+test("peptideos account unique violation after create-user is a 409, not a 500", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+  try {
+    const { deps, handoff } = fakeWorld();
+    deps.createPeptideosAccount = async () => {
+      throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "P2002" });
+    };
+
+    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const body = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(body, { error: "sso_email_collision" });
+    assert.ok(handoff.consumed_at);
+  } finally {
+    console.error = original;
+  }
+});
+
 test("finalizeSession honours a same-origin WC redirect from PeptideOS", async () => {
   const { deps } = fakeWorld();
   const dest = "https://workouts.example.test/en/profile?tab=history";

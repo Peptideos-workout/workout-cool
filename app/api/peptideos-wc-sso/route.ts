@@ -16,6 +16,7 @@ import { newUnusedSsoPassword } from "./unused-sso-password";
 import { createTrustedBetterAuthSession } from "./trusted-session";
 import { runPeptideOsSso } from "./run-sso";
 import { PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
+import { createPeptideosAccountLink } from "./create-peptideos-account";
 import { lookupUnconsumedHandoffByHash, releaseHandoffClaimByHash } from "./consume-handoff";
 
 import type { NextRequest } from "next/server";
@@ -48,14 +49,20 @@ async function loadSsoAccountSnapshot(email: string): Promise<SsoAccountSnapshot
 }
 
 async function createPeptideosAccount(userId: string, peptideosUserId: string) {
-  await prisma.account.create({
-    data: {
-      id: crypto.randomUUID(),
-      accountId: peptideosUserId,
-      providerId: PEPTIDEOS_PROVIDER,
-      userId,
-      createdAt: new Date(),
-      updatedAt: new Date()
+  return createPeptideosAccountLink({
+    userId,
+    peptideosUserId,
+    insert: async () => {
+      await prisma.account.create({
+        data: {
+          id: crypto.randomUUID(),
+          accountId: peptideosUserId,
+          providerId: PEPTIDEOS_PROVIDER,
+          userId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
     }
   });
 }

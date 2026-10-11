@@ -20,7 +20,7 @@ function trackingDeps(overrides: Partial<Parameters<typeof completePeptideOsSsoL
       },
       createSignedSession: async (userId: string) => {
         calls.push(`createSignedSession:${userId}`);
-        return true;
+        return { ok: true, wroteSession: true };
       },
       ...overrides
     }
@@ -73,6 +73,24 @@ test("create_user race that surfaces an existing email returns 409 and writes no
   assert.deepEqual(result, { ok: false, error: "sso_email_collision", status: 409, wroteUserState: false });
   assert.ok(!calls.includes("createPeptideosAccount:google-only-victim"));
   assert.ok(!calls.includes("createPeptideosAccount:should-not-be-used"));
+});
+
+test("cookie failure after createSession marks wroteUserState so the handoff is not released", async () => {
+  const { calls, deps } = trackingDeps({
+    createSignedSession: async (userId: string) => {
+      calls.push(`createSignedSession:${userId}`);
+      return { ok: false, wroteSession: true };
+    }
+  });
+
+  const result = await completePeptideOsSsoLogin(
+    peptideosUserId,
+    { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },
+    deps,
+  );
+
+  assert.deepEqual(result, { ok: false, error: "sso_signin_failed", status: 500, wroteUserState: true });
+  assert.deepEqual(calls, ["createSignedSession:wc-user"]);
 });
 
 test("linked PeptideOS identity signs in with a signed session and never touches credentials", async () => {

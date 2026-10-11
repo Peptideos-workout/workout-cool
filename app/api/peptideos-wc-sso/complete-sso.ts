@@ -7,7 +7,7 @@ export interface CompleteSsoLoginDeps {
   findUserByEmail: () => Promise<{ id: string } | null>;
   signUp: () => Promise<{ userId: string } | null>;
   createPeptideosAccount: (userId: string) => Promise<void>;
-  createSignedSession: (userId: string) => Promise<boolean>;
+  createSignedSession: (userId: string) => Promise<{ ok: boolean; wroteSession: boolean }>;
 }
 
 export type CompleteSsoLoginResult =
@@ -41,15 +41,15 @@ export async function completePeptideOsSsoLogin(
 
     await deps.createPeptideosAccount(created.userId);
     const signedIn = await deps.createSignedSession(created.userId);
-    if (!signedIn) {
+    if (!signedIn.ok) {
       return { ok: false, error: "sso_signup_failed", status: 500, wroteUserState: true };
     }
     return { ok: true, userId: created.userId, wroteUserState: true };
   }
 
   const signedIn = await deps.createSignedSession(action.userId);
-  if (!signedIn) {
-    return { ok: false, error: "sso_signin_failed", status: 500, wroteUserState: false };
+  if (!signedIn.ok) {
+    return { ok: false, error: "sso_signin_failed", status: 500, wroteUserState: signedIn.wroteSession };
   }
   return { ok: true, userId: action.userId, wroteUserState: true };
 }

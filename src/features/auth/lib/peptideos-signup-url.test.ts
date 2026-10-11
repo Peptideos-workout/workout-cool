@@ -14,6 +14,8 @@ import {
   peptideOsOrigin,
   peptideOsSettingsUrl,
   peptideOsSignupUrl,
+  peptideOsWorkoutsSignoutActionUrl,
+  peptideOsWorkoutsSignoutHomeRedirect,
   peptideOsWorkoutsSignoutUrl,
   peptideOsWorkoutsSsoUrl,
   resolvePeptideOsForgotPasswordUrl,
@@ -220,4 +222,10 @@ test("PeptideOS workouts sign-out URL redirects back to public WC home", () => {
     resolvePeptideOsWorkoutsSignoutUrl(undefined, APP),
     `${ORIGIN}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`
   );
+});
+
+test("PeptideOS workouts sign-out POST action is the path only; redirect field is WC home", () => {
+  assert.equal(peptideOsWorkoutsSignoutActionUrl(ORIGIN), `${ORIGIN}/api/workouts/signout`);
+  assert.equal(peptideOsWorkoutsSignoutHomeRedirect(APP), `${APP}/`);
+  assert.doesNotMatch(peptideOsWorkoutsSignoutActionUrl(ORIGIN), /[?&]redirect=/);
 });

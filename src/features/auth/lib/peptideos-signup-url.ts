@@ -239,11 +239,22 @@ export function ssoFinalizeLocation(workoutOrigin: string, redirectParam?: strin
 
 export function peptideOsWorkoutsSignoutUrl(origin: string, appUrl: string): string {
   const url = new URL(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, `${origin.replace(/\/$/, "")}/`);
-  const home = safeWorkoutReturnTo("/", appUrl);
+  const home = peptideOsWorkoutsSignoutHomeRedirect(appUrl);
   if (home) {
     url.searchParams.set("redirect", home);
   }
   return url.toString();
+}
+
+/** POST action for PeptideOS `/api/workouts/signout` (no query; redirect is a form field). */
+export function peptideOsWorkoutsSignoutActionUrl(origin: string): string {
+  return new URL(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, `${origin.replace(/\/$/, "")}/`).toString();
+}
+
+/** WC home PeptideOS should return to after cross-app sign-out. */
+export function peptideOsWorkoutsSignoutHomeRedirect(appUrl: string): string {
+  const origin = new URL(appUrl).origin;
+  return safeWorkoutReturnTo("/", origin) ?? `${origin}/`;
 }
 
 export function resolvePeptideOsWorkoutsSignoutUrl(explicitUrl?: string, appUrl?: string): string {

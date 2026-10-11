@@ -27,7 +27,9 @@ After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on
 
 PeptideOS `GET /api/workouts/sso?redirect=<absolute WC URL>` preserves that redirect through login and passes it back on the WC SSO handoff. The proxy 307 for gated routes sends `?redirect=<original absolute WC URL, path+query>` with `Cache-Control: private, no-store`.
 
-WC sign-out clears the Better Auth session, then redirects to PeptideOS `GET /api/workouts/signout?redirect=<WC home>`. WC home is public, so PeptideOS cannot bounce the browser back into `/api/workouts/sso`.
+WC-initiated sign-out clears the Better Auth session, then renders `/auth/signout/continue`, which auto-submits `POST https://peptideos.us/api/workouts/signout` with form field `redirect=<WC home>` (no-JS submit button as fallback). PeptideOS `/api/workouts/signout` is POST-only and Origin-checked; a GET redirect would fail. After PeptideOS signs out it 302s to WC home, which is public, so it cannot bounce the browser back into `/api/workouts/sso`.
+
+PeptideOS-initiated sign-out must GET `/auth/signout/from-peptideos` (SameSite=Lax session cookie is sent on top-level GET). That page clears the WC session and redirects to `/` without calling PeptideOS again.
 
 GET `/auth/signout` only renders a confirmation form. Sign-out runs on the POST server action (Next.js CSRF), so prefetch and a GET render cannot clear the session. `/auth/signout` stays allowlisted; `/dashboard` is gated.
 

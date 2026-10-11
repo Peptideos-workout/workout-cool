@@ -22,11 +22,12 @@ function walkTsx(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-test("client logout clears the WC session then redirects to PeptideOS sign-out", () => {
+test("client logout clears the WC session then opens the PeptideOS POST handoff page", () => {
   const src = read("src/features/auth/model/useLogout.ts");
   assert.match(src, /authClient\.signOut/);
-  assert.match(src, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl/);
+  assert.match(src, /auth\/signout\/continue/);
   assert.match(src, /location\.assign|location\.href/);
+  assert.doesNotMatch(src, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl/);
   assert.doesNotMatch(src, /router\.push\(redirectUrl\)/);
 });
 
@@ -39,8 +40,29 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
   assert.match(page, /<form/);
   assert.match(action, /["']use server["']/);
   assert.match(action, /auth\.api\.signOut/);
-  assert.match(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl/);
+  assert.match(action, /auth\/signout\/continue/);
   assert.match(action, /redirect\(/);
+  assert.doesNotMatch(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl/);
+});
+
+test("WC-initiated handoff POSTs to PeptideOS sign-out with WC home as redirect", () => {
+  const page = read("app/[locale]/(app)/auth/signout/continue/page.tsx");
+  const ui = read("src/features/auth/signout/ui/peptideos-signout-handoff.tsx");
+
+  assert.match(page, /PeptideOsSignoutHandoff/);
+  assert.match(page, /getConfiguredPeptideOsWorkoutsSignoutActionUrl|peptideOsWorkoutsSignoutActionUrl/);
+  assert.match(page, /getConfiguredPeptideOsWorkoutsSignoutHomeRedirect|peptideOsWorkoutsSignoutHomeRedirect/);
+  assert.match(ui, /method=["']post["']/i);
+  assert.match(ui, /name=["']redirect["']/);
+  assert.match(ui, /type=["']submit["']/);
+  assert.match(ui, /useEffect|\.submit\(/);
+});
+
+test("PeptideOS-initiated WC sign-out clears the session and goes home without bouncing back", () => {
+  const page = read("app/[locale]/(app)/auth/signout/from-peptideos/page.tsx");
+  assert.match(page, /auth\.api\.signOut/);
+  assert.match(page, /redirect\(["']\/["']\)/);
+  assert.doesNotMatch(page, /workouts\/signout|signout\/continue/);
 });
 
 test("sign-out confirm page has a heading and a cancel link that does not sign out", () => {

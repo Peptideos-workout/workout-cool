@@ -7,6 +7,12 @@ export const PEPTIDEOS_SIGNUP_PATH = "/signup";
 /** PeptideOS password recovery page. */
 export const PEPTIDEOS_FORGOT_PASSWORD_PATH = "/forgot-password";
 
+/** PeptideOS account settings (Change Password lives on this page). */
+export const PEPTIDEOS_SETTINGS_PATH = "/settings";
+
+/** In-page password section on PeptideOS `/settings`. */
+export const PEPTIDEOS_SETTINGS_PASSWORD_HASH = "password";
+
 const MAX_URI_DECODE_ROUNDS = 8;
 
 /**
@@ -129,4 +135,23 @@ export function peptideOsForgotPasswordUrl(origin: string): string {
 
 export function resolvePeptideOsForgotPasswordUrl(explicitUrl?: string, appUrl?: string): string {
   return peptideOsForgotPasswordUrl(peptideOsOrigin(explicitUrl, appUrl));
+}
+
+export function peptideOsSettingsUrl(origin: string, appUrl: string, returnTo?: string): string {
+  const url = new URL(PEPTIDEOS_SETTINGS_PATH, `${origin.replace(/\/$/, "")}/`);
+  const redirect = absoluteWorkoutReturnTo(returnTo, appUrl);
+  if (redirect) {
+    url.searchParams.set("redirect", redirect);
+  }
+  url.hash = PEPTIDEOS_SETTINGS_PASSWORD_HASH;
+  return url.toString();
+}
+
+export function resolvePeptideOsSettingsUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {
+  const origin = peptideOsOrigin(explicitUrl, appUrl);
+  const app = appUrl?.trim();
+  if (!app) {
+    return peptideOsSettingsUrl(origin, origin);
+  }
+  return peptideOsSettingsUrl(origin, app, returnTo);
 }

@@ -490,6 +490,9 @@ export default {
   confirm_password: "Confirmar contraseña",
   confirm_password_placeholder: "Confirma tu contraseña",
   password_sign_in_via_peptideos: "Esta cuenta inicia sesión a través de PeptideOS. No hay una contraseña de workout-cool que cambiar.",
+  change_peptideos_password_description:
+    "Esto cambia tu contraseña de PeptideOS. La misma contraseña se usa para iniciar sesión en workouts.",
+  change_peptideos_password_cta: "Abrir la configuración de PeptideOS",
   NO_CREDENTIAL_ACCOUNT: "Esta cuenta no tiene una contraseña de workout-cool. Inicia sesión a través de PeptideOS.",
 
   success: {
@@ -971,6 +974,7 @@ export default {
     change_language: "Cambiar idioma",
     subscription: "Suscripción",
     manage_subscription: "Gestionar suscripción",
+    change_password: "Cambiar contraseña",
     become_premium: "Torne-se Premium",
     remove_ads: "Eliminar anuncios",
     in_progress: "En progreso",

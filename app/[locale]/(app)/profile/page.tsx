@@ -1,10 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-
 import { useI18n } from "locales/client";
+
 import { WorkoutSessionList } from "@/features/workout-session/ui/workout-session-list";
 import { WorkoutSessionHeatmap } from "@/features/workout-session/ui/workout-session-heatmap";
 import { useWorkoutSessions } from "@/features/workout-session/model/use-workout-sessions";
+import { ChangePasswordSection } from "@/features/update-password/ui/change-password-section";
 import { env } from "@/env";
 import { useCurrentSession } from "@/entities/user/model/useCurrentSession";
 import { LocalAlert } from "@/components/ui/local-alert";
@@ -37,6 +38,7 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-2xl font-bold">Hello, {session.user?.name} 👋</h2>
           </div>
+          <ChangePasswordSection />
         </div>
       )}
 

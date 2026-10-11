@@ -8,9 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/workoutcool/components/ui/input";
 import { Button } from "@/workoutcool/components/ui/button";
 import { updatePasswordAction } from "@/features/update-password/model/update-password.action";
-import { hasCredentialPasswordAccount } from "@/features/update-password/lib/update-credential-password";
+import { PASSWORD_CHANGE_KIND, passwordChangeFromUnknown } from "@/features/update-password/lib/password-change-entry";
+import { getConfiguredPeptideOsSettingsUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { useSession } from "@/features/auth/lib/auth-client";
 import { brandedToast } from "@/components/ui/toast";
+import { Link } from "@/components/ui/link";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const passwordFormSchema = z
@@ -29,7 +31,9 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 export function PasswordForm() {
   const t = useI18n();
   const session = useSession();
-  const accounts = (session.data?.user as { accounts?: { providerId: string }[] } | undefined)?.accounts;
+  const passwordChange = passwordChangeFromUnknown(
+    (session.data?.user as { passwordChange?: unknown } | undefined)?.passwordChange
+  );
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
@@ -57,8 +61,20 @@ export function PasswordForm() {
     }
   };
 
-  if (accounts && !hasCredentialPasswordAccount(accounts)) {
-    return <p className="p-4 text-sm text-slate-600 dark:text-slate-300">{t("password_sign_in_via_peptideos")}</p>;
+  if (passwordChange.kind === PASSWORD_CHANGE_KIND.hidden) {
+    return null;
+  }
+
+  if (passwordChange.kind === PASSWORD_CHANGE_KIND.peptideosSettings) {
+    const href = passwordChange.href || getConfiguredPeptideOsSettingsUrl("/profile");
+    return (
+      <div className="space-y-3 p-4">
+        <p className="text-sm text-slate-600 dark:text-slate-300">{t("change_peptideos_password_description")}</p>
+        <Link className="inline-flex !no-underline" href={href} size="base" variant="button">
+          {t("change_peptideos_password_cta")}
+        </Link>
+      </div>
+    );
   }
 
   return (

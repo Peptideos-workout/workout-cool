@@ -3,6 +3,8 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
+import { isWorkoutCoolSignupPath, peptideOsSignupRedirectLocation } from "@/features/auth/lib/signup-http-redirect";
+
 function detectUserLocale(request: NextRequest): string {
   const acceptLanguage = request.headers.get("accept-language");
 
@@ -50,6 +52,16 @@ const I18nMiddleware = createI18nMiddleware({
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const detectedLocale = detectUserLocale(request);
+
+  if (isWorkoutCoolSignupPath(pathname)) {
+    const returnTo = request.nextUrl.searchParams.get("redirect") ?? undefined;
+    const location = peptideOsSignupRedirectLocation(
+      process.env.NEXT_PUBLIC_PEPTIDEOS_URL,
+      process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL,
+      returnTo
+    );
+    return NextResponse.redirect(location, 307);
+  }
 
   // If on root path and no locale detected yet, redirect to detected locale
   if (pathname === "/" && !request.cookies.get("detected-locale")) {

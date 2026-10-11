@@ -1364,6 +1364,9 @@ export default {
   confirm_password: "Confirmar palavra-passe",
   confirm_password_placeholder: "Confirme a palavra-passe",
   password_sign_in_via_peptideos: "Esta conta inicia sessão através do PeptideOS. Não existe uma palavra-passe do workout-cool para alterar.",
+  change_peptideos_password_description:
+    "Isto altera a sua palavra-passe PeptideOS. A mesma palavra-passe também é usada para iniciar sessão nos workouts.",
+  change_peptideos_password_cta: "Abrir as definições PeptideOS",
   NO_CREDENTIAL_ACCOUNT: "Esta conta não tem uma palavra-passe do workout-cool. Inicie sessão através do PeptideOS.",
 
   success: {
@@ -1848,6 +1851,7 @@ export default {
     premium: "Premium",
     subscription: "Abonamento",
     manage_subscription: "Gerir abonamento",
+    change_password: "Alterar palavra-passe",
     become_premium: "Torne-se Premium",
     remove_ads: "Remover anúncios",
     coming_soon: "Em breve",

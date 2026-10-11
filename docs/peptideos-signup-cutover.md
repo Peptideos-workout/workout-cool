@@ -31,6 +31,7 @@ Revisit after PeptideOS has provisioned `wc.user` / `wc.account` for every legac
 | `/api/peptideos-wc-sso` create-user (`runWithSsoUserCreate(() => auth.api.signUpEmail(...))`) | **Allowed** — only this wrap is added to the SSO route |
 | Change-password for users with a `credential` account | **Allowed** (lookup/update filtered by `providerId: "credential"`) |
 | Change-password for PeptideOS-only users (no `credential` row) | **Hidden** in UI; server returns `NO_CREDENTIAL_ACCOUNT`. They sign in via PeptideOS. Creating a new local password would reopen a workout-cool login we just closed. |
+| Change-password for PeptideOS-linked users with an email identity | **Shown** as a link to PeptideOS `/settings#password` (see `docs/peptideos-change-password.md`). Google/OAuth-only and unknown identity stay hidden. |
 | Workout-cool `/auth/forgot-password` and `/auth/reset-password` | **Removed**. Sign-in “Forgot password?” links to PeptideOS. |
 
 After PeptideOS SSO the session still lands on `/` (`finalizeSession` is owned by PR #3). The `redirect` query is best-effort only. Return URLs that contain `\`, `%5c` (any case), stay encoded after 8 decode rounds, or have malformed `%` are dropped; the parsed origin must equal `new URL(appUrl).origin`.

@@ -3,11 +3,15 @@ import assert from "node:assert/strict";
 
 import {
   DEFAULT_PEPTIDEOS_ORIGIN,
+  PEPTIDEOS_SETTINGS_PASSWORD_HASH,
+  PEPTIDEOS_SETTINGS_PATH,
   PEPTIDEOS_SIGNUP_PATH,
   peptideOsOrigin,
   peptideOsForgotPasswordUrl,
+  peptideOsSettingsUrl,
   peptideOsSignupUrl,
   resolvePeptideOsForgotPasswordUrl,
+  resolvePeptideOsSettingsUrl,
   resolvePeptideOsSignupUrl
 } from "./peptideos-signup-url";
 
@@ -102,4 +106,20 @@ test("rejects return URLs that carry userinfo", () => {
 test("PeptideOS forgot-password URL uses the same origin pairing", () => {
   assert.equal(peptideOsForgotPasswordUrl(ORIGIN), `${ORIGIN}/forgot-password`);
   assert.equal(resolvePeptideOsForgotPasswordUrl(undefined, APP), `${ORIGIN}/forgot-password`);
+});
+
+test("PeptideOS settings URL points at /settings#password and keeps a safe return", () => {
+  assert.equal(PEPTIDEOS_SETTINGS_PATH, "/settings");
+  assert.equal(PEPTIDEOS_SETTINGS_PASSWORD_HASH, "password");
+  assert.equal(peptideOsSettingsUrl(ORIGIN, APP), `${ORIGIN}/settings#password`);
+  assert.equal(
+    resolvePeptideOsSettingsUrl(undefined, APP, "/profile"),
+    `${ORIGIN}/settings?redirect=${encodeURIComponent(`${APP}/profile`)}#password`
+  );
+});
+
+test("drops unsafe PeptideOS settings return URLs", () => {
+  assert.equal(peptideOsSettingsUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/settings#password`);
+  assert.equal(peptideOsSettingsUrl(ORIGIN, APP, "//evil.example/phish"), `${ORIGIN}/settings#password`);
+  assert.equal(peptideOsSettingsUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/settings#password`);
 });

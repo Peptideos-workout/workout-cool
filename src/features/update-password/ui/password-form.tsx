@@ -2,12 +2,14 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { LockKeyhole, LockKeyholeOpen } from "lucide-react";
+import { useI18n } from "locales/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { useI18n } from "locales/client";
 import { Input } from "@/workoutcool/components/ui/input";
 import { Button } from "@/workoutcool/components/ui/button";
 import { updatePasswordAction } from "@/features/update-password/model/update-password.action";
+import { hasCredentialPasswordAccount } from "@/features/update-password/lib/update-credential-password";
+import { useSession } from "@/features/auth/lib/auth-client";
 import { brandedToast } from "@/components/ui/toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
@@ -26,6 +28,8 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 export function PasswordForm() {
   const t = useI18n();
+  const session = useSession();
+  const accounts = (session.data?.user as { accounts?: { providerId: string }[] } | undefined)?.accounts;
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
@@ -52,6 +56,10 @@ export function PasswordForm() {
       console.error(error);
     }
   };
+
+  if (accounts && !hasCredentialPasswordAccount(accounts)) {
+    return <p className="p-4 text-sm text-slate-600 dark:text-slate-300">{t("password_sign_in_via_peptideos")}</p>;
+  }
 
   return (
     <Form form={form} onSubmit={handleSubmit}>

@@ -3,23 +3,21 @@ import { useForm } from "react-hook-form";
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useI18n } from "locales/client";
 import { Label } from "@radix-ui/react-label";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { useI18n } from "locales/client";
 import { cn } from "@/shared/lib/utils";
-import { paths } from "@/shared/constants/paths";
 import { ProviderButton } from "@/features/auth/ui/ProviderButton";
 import { loginSchema, LoginSchema } from "@/features/auth/signin/schema/signin.schema";
 import { useSignIn } from "@/features/auth/signin/model/useSignIn";
+import { getConfiguredPeptideOsForgotPasswordUrl, getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function CredentialsLoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"form">) {
   const t = useI18n();
   const searchParams = useSearchParams();
-  const isResetSuccess = searchParams.get("reset") === "success";
   const redirectUrl = searchParams.get("redirect");
 
   const { signIn } = useSignIn();
@@ -33,12 +31,6 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
 
   return (
     <div className="space-y-6">
-      {isResetSuccess && (
-        <Alert variant="success">
-          <AlertDescription>{t("commons.password_reset_success")}</AlertDescription>
-        </Alert>
-      )}
-
       <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit(onSubmit)} {...props}>
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="text-2xl font-bold">{t("commons.login_to_your_account_title")}</h1>
@@ -53,7 +45,7 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
           <div className="grid gap-2">
             <div className="flex items-center">
               <Label htmlFor="password">{t("commons.password")}</Label>
-              <a className="ml-auto text-sm underline-offset-4 hover:underline" href={`/${paths.forgotPassword}`}>
+              <a className="ml-auto text-sm underline-offset-4 hover:underline" href={getConfiguredPeptideOsForgotPasswordUrl()}>
                 {t("commons.password_forgot")}
               </a>
             </div>
@@ -79,9 +71,9 @@ export function CredentialsLoginForm({ className, ...props }: React.ComponentPro
 
       <div className="text-center text-sm">
         {t("commons.dont_have_account")}{" "}
-        <Link 
-          className="underline underline-offset-4" 
-          href={`/${paths.signUp}${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ""}`}
+        <Link
+          className="underline underline-offset-4"
+          href={getConfiguredPeptideOsSignupUrl(redirectUrl ?? undefined)}
         >
           {t("commons.signup")}
         </Link>

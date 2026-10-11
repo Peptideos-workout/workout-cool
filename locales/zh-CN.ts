@@ -491,6 +491,8 @@ export default {
   current_password_placeholder: "输入您当前的密码",
   confirm_password: "确认密码",
   confirm_password_placeholder: "确认您的密码",
+  password_sign_in_via_peptideos: "此账户通过 PeptideOS 登录。没有可修改的 workout-cool 密码。",
+  NO_CREDENTIAL_ACCOUNT: "此账户没有 workout-cool 密码。请通过 PeptideOS 登录。",
 
   success: {
     feedback_sent: "反馈已发送",

@@ -4,9 +4,15 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
 import { UserRole } from "@prisma/client";
 import { VerifyEmail } from "@emails/VerifyEmail";
-import { ResetPasswordEmail } from "@emails/ResetPasswordEmail";
 
 import { betterAuthTrustedOrigins } from "./trusted-origins";
+import { isSsoUserCreateAllowed } from "./sso-user-create-context";
+import { PUBLIC_SIGNUP_DISABLED } from "./public-signup-guard";
+import {
+  shouldAllowBetterAuthUserCreate,
+  shouldAllowCredentialAccountCreate,
+  shouldAllowOAuthNewUser
+} from "./block-public-signup";
 
 import { prisma } from "@/shared/lib/prisma";
 import { sendEmail } from "@/shared/lib/mail/sendEmail";
@@ -14,10 +20,38 @@ import { SiteConfig } from "@/shared/config/site-config";
 import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { env } from "@/env";
 
-
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: betterAuthTrustedOrigins(env.BETTER_AUTH_URL, env.NEXT_PUBLIC_APP_URL),
+  account: {
+    // PR #1: never attach a new identity to an existing user by email match.
+    accountLinking: {
+      enabled: false,
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const isSsoContext = isSsoUserCreateAllowed();
+          if (!shouldAllowBetterAuthUserCreate(isSsoContext) || !shouldAllowOAuthNewUser(isSsoContext)) {
+            throw new Error(PUBLIC_SIGNUP_DISABLED);
+          }
+          return { data: user };
+        },
+      },
+    },
+    account: {
+      create: {
+        before: async (account) => {
+          if (!shouldAllowCredentialAccountCreate(account.providerId, isSsoUserCreateAllowed())) {
+            throw new Error(PUBLIC_SIGNUP_DISABLED);
+          }
+          return { data: account };
+        },
+      },
+    },
+  },
   plugins: [
     admin(),
     customSession(async ({ user, session }) => {
@@ -110,14 +144,6 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     requireEmailVerification: false, // FIXME: TEMPORARY
-    sendResetPassword: async ({ user, url }) => {
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your password",
-        text: `Click the link to reset your password: ${url}`,
-        react: ResetPasswordEmail({ url }),
-      });
-    },
     password: {
       hash: async (password: string) => {
         const hashedPassword = hashStringWithSalt(password, env.BETTER_AUTH_SECRET);
@@ -133,6 +159,8 @@ export const auth = betterAuth({
   socialProviders: {
     google: {
       enabled: true,
+      disableSignUp: true,
+      disableImplicitSignUp: true,
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       mapProfileToUser: async (profile) => {

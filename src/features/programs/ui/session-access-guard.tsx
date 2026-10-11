@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-
 import { useCurrentLocale, useI18n } from "locales/client";
+
 import { getSessionAccess, type AccessControlContext } from "@/shared/lib/access-control";
+import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { Button } from "@/components/ui/button";
 
 interface SessionAccessGuardProps {
@@ -76,7 +77,7 @@ export function SessionAccessGuard({
                 const redirectUrl = sessionSlug
                   ? `/${locale}/programs/${programSlug}/session/${sessionSlug}`
                   : `/${locale}/programs/${programSlug}`;
-                router.push(`/auth/signup?redirect=${encodeURIComponent(redirectUrl)}`);
+                window.location.assign(getConfiguredPeptideOsSignupUrl(redirectUrl));
               }}
               size="large"
             >

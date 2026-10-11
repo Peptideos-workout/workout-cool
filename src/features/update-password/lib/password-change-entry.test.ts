@@ -46,18 +46,15 @@ test("fails closed when the email-identity check is unknown", () => {
   );
 });
 
-test("keeps a legacy workout-cool credential row on the local change-password form", () => {
+test("does not offer a local workout-cool password form for leftover credential rows", () => {
   assert.deepEqual(
     resolvePasswordChangeKind({
       accounts: [{ providerId: "credential" }],
       hasEmailIdentity: null,
       peptideosSettingsUrl: SETTINGS
     }),
-    { kind: PASSWORD_CHANGE_KIND.legacyWc }
+    { kind: PASSWORD_CHANGE_KIND.hidden }
   );
-});
-
-test("does not treat an unused SSO credential row as a legacy workout-cool password", () => {
   assert.deepEqual(
     resolvePasswordChangeKind({
       accounts: [{ providerId: "peptideos" }, { providerId: "credential" }],
@@ -65,14 +62,6 @@ test("does not treat an unused SSO credential row as a legacy workout-cool passw
       peptideosSettingsUrl: SETTINGS
     }),
     { kind: PASSWORD_CHANGE_KIND.peptideosSettings, href: SETTINGS }
-  );
-  assert.deepEqual(
-    resolvePasswordChangeKind({
-      accounts: [{ providerId: "peptideos" }, { providerId: "credential" }],
-      hasEmailIdentity: false,
-      peptideosSettingsUrl: SETTINGS
-    }),
-    { kind: PASSWORD_CHANGE_KIND.hidden }
   );
 });
 

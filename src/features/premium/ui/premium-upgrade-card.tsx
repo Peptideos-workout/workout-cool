@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Crown, Zap, Heart, Check, ArrowRight, LogIn, Github, Users, RefreshCw, Lock, ShieldCheck, GiftIcon } from "lucide-react";
 import { useI18n, useCurrentLocale } from "locales/client";
@@ -18,13 +17,13 @@ import { usePremiumRedirect } from "@/shared/lib/premium/use-premium-redirect";
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { usePendingCheckout } from "@/shared/lib/premium/use-pending-checkout";
 import { usePremiumPlans } from "@/shared/hooks/use-premium-plans";
+import { getConfiguredPeptideOsWorkoutsSsoUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { useSession } from "@/features/auth/lib/auth-client";
 import { Button } from "@/components/ui/button";
 
 export function PremiumUpgradeCard() {
   const t = useI18n();
   const locale = useCurrentLocale();
-  const router = useRouter();
   const isPremium = useIsPremium();
   const { data: session, isPending: isAuthLoading } = useSession();
   const isAuthenticated = !!session?.user;
@@ -84,9 +83,8 @@ export function PremiumUpgradeCard() {
       // Store the selected plan for after authentication
       storePendingCheckout(planId);
 
-      // Redirect to sign-in with return URL to premium page
       const returnUrl = `/${locale}/premium`;
-      router.push(`/auth/signin?redirect=${encodeURIComponent(returnUrl)}`);
+      window.location.assign(getConfiguredPeptideOsWorkoutsSsoUrl(returnUrl));
       return;
     }
 

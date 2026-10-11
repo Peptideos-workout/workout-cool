@@ -76,19 +76,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.85,
       })),
     ),
-    // Auth pages (lower priority as they're functional pages)
-    {
-      url: `${baseUrl}/auth/signin`,
-      lastModified: currentDate,
-      changeFrequency: "monthly" as const,
-      priority: 0.3,
-    },
     {
       url: getConfiguredPeptideOsSignupUrl(),
       lastModified: currentDate,
       changeFrequency: "monthly" as const,
       priority: 0.3,
     },
+    // Premium marketing pages
+    ...locales.map((locale) => ({
+      url: `${baseUrl}/${locale}/premium`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+    // Leaderboard
+    ...locales.map((locale) => ({
+      url: `${baseUrl}/${locale}/leaderboard`,
+      lastModified: currentDate,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    })),
     // About pages for all locales
     {
       url: `${baseUrl}/about`,
@@ -182,37 +189,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     Object.entries(programSlugs).forEach(([locale, slug]) => {
       if (slug) {
-        // Program detail page
+        // Program detail page (session routes are gated and omitted)
         dynamicRoutes.push({
           url: `${baseUrl}/${locale}/programs/${slug}`,
           lastModified: program.updatedAt.toISOString(),
           changeFrequency: "weekly" as const,
           priority: 0.9,
-        });
-
-        // Program weeks and sessions
-        program.weeks.forEach((week) => {
-          week.sessions.forEach((session) => {
-            const sessionSlugs = {
-              fr: session.slug,
-              en: session.slugEn,
-              es: session.slugEs,
-              pt: session.slugPt,
-              ru: session.slugRu,
-              "zh-CN": session.slugZhCn,
-            };
-
-            const sessionSlug = sessionSlugs[locale as keyof typeof sessionSlugs];
-            if (sessionSlug) {
-              dynamicRoutes.push({
-                url: `${baseUrl}/${locale}/programs/${slug}/session/${sessionSlug}`,
-                // lastModified: session.updatedAt.toISOString(),
-                lastModified: new Date().toISOString(), // TODO: add this back in when we have a way to update the sitemap
-                changeFrequency: "monthly" as const,
-                priority: 0.7,
-              });
-            }
-          });
         });
       }
     });

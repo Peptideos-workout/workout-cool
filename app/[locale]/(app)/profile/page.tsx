@@ -8,7 +8,6 @@ import { useWorkoutSessions } from "@/features/workout-session/model/use-workout
 import { ChangePasswordSection } from "@/features/update-password/ui/change-password-section";
 import { env } from "@/env";
 import { useCurrentSession } from "@/entities/user/model/useCurrentSession";
-import { LocalAlert } from "@/components/ui/local-alert";
 import { Button } from "@/components/ui/button";
 import { HorizontalTopBanner } from "@/components/ads";
 
@@ -32,7 +31,6 @@ export default function ProfilePage() {
   return (
     <div className="px-2 sm:px-6">
       {env.NEXT_PUBLIC_TOP_PROFILE_BANNER_AD_SLOT && <HorizontalTopBanner adSlot={env.NEXT_PUBLIC_TOP_PROFILE_BANNER_AD_SLOT} />}
-      {!session && <LocalAlert className="my-4" />}
       {session && (
         <div className="mt-4">
           <div>

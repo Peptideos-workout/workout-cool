@@ -13,6 +13,13 @@ export function publicSignupDisabledBody(redirectTo: string) {
   return { error: PUBLIC_SIGNUP_DISABLED, redirectTo };
 }
 
+export const PUBLIC_SIGNIN_DISABLED = "public_signin_disabled";
+
+/** Same generic `{ error, redirectTo }` shape as public signup. */
+export function publicSigninDisabledBody(redirectTo: string) {
+  return { error: PUBLIC_SIGNIN_DISABLED, redirectTo };
+}
+
 /** Always the same payload — never include email or whether a user exists. */
 export function passwordResetDisabledBody(redirectTo: string) {
   return { ok: true as const, redirectTo };

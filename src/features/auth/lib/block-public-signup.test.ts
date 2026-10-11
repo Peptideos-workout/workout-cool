@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   isBetterAuthEmailSignUpPath,
   isBetterAuthPasswordResetRequest,
+  isPublicBetterAuthSigninRequest,
   isPublicBetterAuthSignupRequest,
   isUndecodableBetterAuthPath,
   normalizeBetterAuthPath,
@@ -106,6 +107,19 @@ test("malformed percent-encoding is blocked (fail closed)", () => {
   assert.equal(isPublicBetterAuthSignupRequest("/api/auth/sign-in/%ZZ"), true);
   assert.equal(isUndecodableBetterAuthPath("/api/auth/forget-password/%"), true);
   assert.equal(isBetterAuthPasswordResetRequest("/api/auth/forget-password/%"), true);
+});
+
+test("HTTP email and Google sign-in endpoints are public sign-in requests", () => {
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-in/email"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-in/social"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-in"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/API/AUTH/SIGN-IN/EMAIL/"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/callback/google"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/callback/google/"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/verify-email"), true);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/get-session"), false);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-out"), false);
+  assert.equal(isPublicBetterAuthSigninRequest("/api/auth/sign-up/email"), false);
 });
 
 test("normal Better Auth paths are unaffected by fail-closed decode", () => {

@@ -1,9 +1,12 @@
 import { resolvePeptideOsSignupUrl } from "./peptideos-signup-url";
-
-const SIGNUP_PATH = /^\/(?:(?:en|fr|es|pt|ru|zh-CN)\/)?auth\/signup\/?$/;
+import { stripLocalePrefix } from "./locale-path";
 
 export function isWorkoutCoolSignupPath(pathname: string): boolean {
-  return SIGNUP_PATH.test(pathname);
+  return stripLocalePrefix(pathname) === "/auth/signup";
+}
+
+export function isWorkoutCoolSigninPath(pathname: string): boolean {
+  return stripLocalePrefix(pathname) === "/auth/signin";
 }
 
 export function peptideOsSignupRedirectLocation(

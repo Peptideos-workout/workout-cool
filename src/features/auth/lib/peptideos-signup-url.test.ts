@@ -3,16 +3,22 @@ import assert from "node:assert/strict";
 
 import {
   DEFAULT_PEPTIDEOS_ORIGIN,
+  PEPTIDEOS_LOGIN_PATH,
   PEPTIDEOS_SETTINGS_PASSWORD_HASH,
   PEPTIDEOS_SETTINGS_PATH,
   PEPTIDEOS_SIGNUP_PATH,
+  PEPTIDEOS_WORKOUTS_SSO_PATH,
   peptideOsOrigin,
   peptideOsForgotPasswordUrl,
+  peptideOsLoginUrl,
   peptideOsSettingsUrl,
   peptideOsSignupUrl,
+  peptideOsWorkoutsSsoUrl,
   resolvePeptideOsForgotPasswordUrl,
+  resolvePeptideOsLoginUrl,
   resolvePeptideOsSettingsUrl,
-  resolvePeptideOsSignupUrl
+  resolvePeptideOsSignupUrl,
+  resolvePeptideOsWorkoutsSsoUrl
 } from "./peptideos-signup-url";
 
 const APP = "https://workouts.peptideos.us";
@@ -36,6 +42,18 @@ test("signup URL is PeptideOS /signup (the existing PeptideOS auth page)", () =>
   assert.equal(PEPTIDEOS_SIGNUP_PATH, "/signup");
   assert.equal(peptideOsSignupUrl(ORIGIN, APP), `${ORIGIN}/signup`);
   assert.equal(resolvePeptideOsSignupUrl(undefined, APP), `${ORIGIN}/signup`);
+});
+
+test("login URL is PeptideOS /login (the existing PeptideOS auth page)", () => {
+  assert.equal(PEPTIDEOS_LOGIN_PATH, "/login");
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP), `${ORIGIN}/login`);
+  assert.equal(resolvePeptideOsLoginUrl(undefined, APP), `${ORIGIN}/login`);
+  assert.equal(
+    resolvePeptideOsLoginUrl(undefined, APP, "/en/tools"),
+    `${ORIGIN}/login?redirect=${encodeURIComponent(`${APP}/en/tools`)}`
+  );
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/login`);
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/login`);
 });
 
 test("preserves a workout-cool return path as an absolute redirect query", () => {
@@ -101,6 +119,21 @@ test("rejects return URLs that carry userinfo", () => {
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil@workouts.peptideos.us/phish"), `${ORIGIN}/signup`);
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://user:pass@workouts.peptideos.us/profile"), `${ORIGIN}/signup`);
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://workouts.peptideos.us@evil.example/"), `${ORIGIN}/signup`);
+});
+
+test("PeptideOS workouts SSO URL is the existing /api/workouts/sso launcher", () => {
+  assert.equal(PEPTIDEOS_WORKOUTS_SSO_PATH, "/api/workouts/sso");
+  assert.equal(peptideOsWorkoutsSsoUrl(ORIGIN, APP), `${ORIGIN}/api/workouts/sso`);
+  assert.equal(
+    resolvePeptideOsWorkoutsSsoUrl(undefined, APP, "/en/profile"),
+    `${ORIGIN}/api/workouts/sso?redirect=${encodeURIComponent(`${APP}/en/profile`)}`
+  );
+});
+
+test("drops malicious return URLs from the PeptideOS workouts SSO launcher", () => {
+  assert.equal(peptideOsWorkoutsSsoUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/api/workouts/sso`);
+  assert.equal(peptideOsWorkoutsSsoUrl(ORIGIN, APP, "//evil.example/phish"), `${ORIGIN}/api/workouts/sso`);
+  assert.equal(peptideOsWorkoutsSsoUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/api/workouts/sso`);
 });
 
 test("PeptideOS forgot-password URL uses the same origin pairing", () => {

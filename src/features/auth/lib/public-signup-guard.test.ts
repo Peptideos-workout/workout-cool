@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { isPublicSignupBlocked, passwordResetDisabledBody, PUBLIC_SIGNUP_DISABLED, publicSignupDisabledBody } from "./public-signup-guard";
+import {
+  isPublicSignupBlocked,
+  passwordResetDisabledBody,
+  PUBLIC_SIGNIN_DISABLED,
+  PUBLIC_SIGNUP_DISABLED,
+  publicSigninDisabledBody,
+  publicSignupDisabledBody
+} from "./public-signup-guard";
 
 test("public signup surfaces are always blocked", () => {
   assert.equal(isPublicSignupBlocked(), true);
@@ -11,6 +18,13 @@ test("blocked signup payload points callers at PeptideOS signup", () => {
   assert.deepEqual(publicSignupDisabledBody("https://peptideos.us/signup"), {
     error: PUBLIC_SIGNUP_DISABLED,
     redirectTo: "https://peptideos.us/signup"
+  });
+});
+
+test("blocked sign-in payload uses the same generic error + redirectTo shape as signup", () => {
+  assert.deepEqual(publicSigninDisabledBody("https://peptideos.us/api/workouts/sso"), {
+    error: PUBLIC_SIGNIN_DISABLED,
+    redirectTo: "https://peptideos.us/api/workouts/sso"
   });
 });
 

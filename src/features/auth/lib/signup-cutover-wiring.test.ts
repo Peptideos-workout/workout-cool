@@ -10,6 +10,8 @@ test("Better Auth Google config blocks OAuth new-user creation and email-match l
   const src = read("src/features/auth/lib/better-auth.ts");
   assert.match(src, /disableImplicitSignUp:\s*true/);
   assert.match(src, /disableSignUp:\s*true/);
+  assert.match(src, /google:\s*\{[\s\S]*enabled:\s*false/);
+  assert.match(src, /autoSignInAfterVerification:\s*false/);
   assert.match(src, /accountLinking/);
   assert.match(src, /databaseHooks/);
   assert.match(src, /shouldAllowBetterAuthUserCreate/);
@@ -52,10 +54,7 @@ test("workout-cool forgot/reset UI and routes are removed", () => {
   assert.throws(() => read("app/[locale]/(app)/auth/(auth-layout)/reset-password/page.tsx"), /ENOENT/);
   assert.throws(() => read("src/features/auth/forgot-password/ui/forgot-password-form.tsx"), /ENOENT/);
   assert.throws(() => read("src/features/auth/reset-password/ui/reset-password-form.tsx"), /ENOENT/);
-
-  const login = read("src/features/auth/signin/ui/CredentialsLoginForm.tsx");
-  assert.doesNotMatch(login, /paths\.forgotPassword/);
-  assert.doesNotMatch(login, /auth\/forgot-password/);
+  assert.throws(() => read("src/features/auth/signin/ui/CredentialsLoginForm.tsx"), /ENOENT/);
 });
 
 test("NO_CREDENTIAL_ACCOUNT is defined in every locale", () => {
@@ -68,7 +67,6 @@ test("NO_CREDENTIAL_ACCOUNT is defined in every locale", () => {
 test("public signup HTTP surfaces are blocked or redirected to PeptideOS", () => {
   const action = read("src/features/auth/signup/model/signup.action.ts");
   const api = read("app/api/auth/signup/route.ts");
-  const page = read("app/[locale]/(app)/auth/(auth-layout)/signup/page.tsx");
 
   assert.match(action, /PUBLIC_SIGNUP_DISABLED/);
   assert.doesNotMatch(action, /auth\.api\.signUpEmail/);
@@ -78,20 +76,15 @@ test("public signup HTTP surfaces are blocked or redirected to PeptideOS", () =>
   assert.doesNotMatch(api, /auth\.api\.signUpEmail/);
   assert.doesNotMatch(api, /isPublicSignupBlocked/);
 
-  assert.match(page, /redirect\(/);
-  assert.match(page, /resolvePeptideOsSignupUrl/);
-  assert.doesNotMatch(page, /SignUpForm/);
+  assert.throws(() => read("app/[locale]/(app)/auth/(auth-layout)/signup/page.tsx"), /ENOENT/);
 });
 
 test("dead SignUpForm source is removed", () => {
   assert.throws(() => read("src/features/auth/signup/ui/signup-form.tsx"), /ENOENT/);
 });
 
-test("password update only touches the credential account", () => {
-  const action = read("src/features/update-password/model/update-password.action.ts");
-  const ui = read("src/features/update-password/ui/password-form.tsx");
-  assert.match(action, /updateCredentialPassword/);
-  assert.doesNotMatch(action, /findFirstOrThrow/);
-  assert.match(ui, /PASSWORD_CHANGE_KIND|resolvePasswordChangeKind/);
-  assert.match(ui, /change_peptideos_password/);
+test("legacy local password update is removed", () => {
+  assert.throws(() => read("src/features/update-password/model/update-password.action.ts"), /ENOENT/);
+  assert.throws(() => read("src/features/update-password/ui/password-form.tsx"), /ENOENT/);
+  assert.throws(() => read("app/api/user/password/route.ts"), /ENOENT/);
 });

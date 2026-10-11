@@ -138,7 +138,7 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    autoSignInAfterVerification: true,
+    autoSignInAfterVerification: false,
     sendOnSignUp: false, // FIXME: TEMPORARY
     sendVerificationEmail: async ({ user, url }, _req) => {
       try {
@@ -177,7 +177,7 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      enabled: true,
+      enabled: false,
       disableSignUp: true,
       disableImplicitSignUp: true,
       clientId: env.GOOGLE_CLIENT_ID,

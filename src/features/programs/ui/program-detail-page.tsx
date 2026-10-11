@@ -35,6 +35,7 @@ import {
   getWeekDescription,
   getWeekTitle,
 } from "@/features/programs/lib/translations-mapper";
+import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { env } from "@/env";
 import { SiteConfig } from "@/shared/config/site-config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
@@ -136,7 +137,11 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
   };
 
   const handleCTAClick = () => {
-    if (isAuthenticated && hasJoinedProgram) {
+    if (!isAuthenticated) {
+      window.location.assign(getConfiguredPeptideOsSignupUrl(`/${currentLocale}/programs/${program.slug}`));
+      return;
+    }
+    if (hasJoinedProgram) {
       router.push(`/programs/${program.slug}/?tab=sessions`);
     } else {
       setShowWelcomeModal(true);
@@ -145,6 +150,11 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
 
   const handleJoinProgram = async () => {
     setShowWelcomeModal(false);
+
+    if (!isAuthenticated) {
+      window.location.assign(getConfiguredPeptideOsSignupUrl(`/${currentLocale}/programs/${program.slug}`));
+      return;
+    }
 
     router.push(`/programs/${program.slug}/?tab=sessions`);
 

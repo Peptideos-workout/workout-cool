@@ -1,10 +1,7 @@
-import { CREDENTIAL_PROVIDER_ID } from "./update-credential-password";
-
 export const PEPTIDEOS_PROVIDER_ID = "peptideos";
 
 export const PASSWORD_CHANGE_KIND = {
   hidden: "hidden",
-  legacyWc: "legacy_wc",
   peptideosSettings: "peptideos_settings"
 } as const;
 
@@ -12,7 +9,6 @@ export type PasswordChangeKind = (typeof PASSWORD_CHANGE_KIND)[keyof typeof PASS
 
 export type PasswordChangeEntry =
   | { kind: typeof PASSWORD_CHANGE_KIND.hidden }
-  | { kind: typeof PASSWORD_CHANGE_KIND.legacyWc }
   | { kind: typeof PASSWORD_CHANGE_KIND.peptideosSettings; href: string };
 
 export interface ResolvePasswordChangeKindInput {
@@ -24,17 +20,9 @@ export interface ResolvePasswordChangeKindInput {
 export function resolvePasswordChangeKind(input: ResolvePasswordChangeKindInput): PasswordChangeEntry {
   const accounts = input.accounts ?? [];
   const hasPeptideos = accounts.some((account) => account.providerId === PEPTIDEOS_PROVIDER_ID);
-  const hasCredential = accounts.some((account) => account.providerId === CREDENTIAL_PROVIDER_ID);
 
-  if (hasPeptideos) {
-    if (input.hasEmailIdentity === true && input.peptideosSettingsUrl) {
-      return { kind: PASSWORD_CHANGE_KIND.peptideosSettings, href: input.peptideosSettingsUrl };
-    }
-    return { kind: PASSWORD_CHANGE_KIND.hidden };
-  }
-
-  if (hasCredential) {
-    return { kind: PASSWORD_CHANGE_KIND.legacyWc };
+  if (hasPeptideos && input.hasEmailIdentity === true && input.peptideosSettingsUrl) {
+    return { kind: PASSWORD_CHANGE_KIND.peptideosSettings, href: input.peptideosSettingsUrl };
   }
 
   return { kind: PASSWORD_CHANGE_KIND.hidden };
@@ -46,10 +34,6 @@ export function passwordChangeFromUnknown(value: unknown): PasswordChangeEntry {
   }
 
   const kind = "kind" in value ? value.kind : null;
-  if (kind === PASSWORD_CHANGE_KIND.legacyWc) {
-    return { kind: PASSWORD_CHANGE_KIND.legacyWc };
-  }
-
   if (kind === PASSWORD_CHANGE_KIND.peptideosSettings) {
     const href = "href" in value && typeof value.href === "string" ? value.href : "";
     if (href) {

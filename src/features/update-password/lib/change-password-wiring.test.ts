@@ -18,28 +18,34 @@ test("session password-change kind is computed in customSession, not via auth ad
 test("change-password UI is mounted for header and profile, gated by kind", () => {
   const header = read("src/features/layout/Header.tsx");
   const profile = read("app/[locale]/(app)/profile/page.tsx");
-  const form = read("src/features/update-password/ui/password-form.tsx");
+  const section = read("src/features/update-password/ui/change-password-section.tsx");
+  const menu = read("src/features/update-password/ui/change-password-menu-item.tsx");
 
   assert.match(header, /ChangePasswordMenuItem|resolvePasswordChangeKind|passwordChange/);
-  assert.match(profile, /ChangePasswordSection|passwordChange|PasswordForm/);
-  assert.match(form, /resolvePasswordChangeKind|PASSWORD_CHANGE_KIND/);
-  assert.match(form, /change_peptideos_password/);
+  assert.match(profile, /ChangePasswordSection|passwordChange/);
+  assert.match(section, /trustedPeptideOsHref/);
+  assert.match(menu, /trustedPeptideOsHref/);
+  assert.match(section, /change_peptideos_password/);
+  assert.throws(() => read("src/features/update-password/ui/password-form.tsx"), /ENOENT/);
 });
 
 test("does not add auth-admin or service-role usage anywhere in the password feature", () => {
-  const action = read("src/features/update-password/model/update-password.action.ts");
   const lookup = read("src/features/update-password/lib/peptideos-has-email-identity.ts");
-  assert.doesNotMatch(action, /service[_-]?role|supabase\.auth\.admin|auth\.admin/i);
   assert.doesNotMatch(lookup, /service[_-]?role|supabase\.auth\.admin|auth\.admin|\.updateUser\b/i);
   assert.match(lookup, /peptideos_has_email_identity/);
 });
 
-test("signup HTTP 307 is issued from proxy using the existing safe-return helper", () => {
+test("legacy credential password update surfaces are removed", () => {
+  assert.throws(() => read("src/features/update-password/model/update-password.action.ts"), /ENOENT/);
+  assert.throws(() => read("src/features/update-password/lib/update-credential-password.ts"), /ENOENT/);
+  assert.throws(() => read("app/api/user/password/route.ts"), /ENOENT/);
+});
+
+test("signed-out visitors get an HTTP 307 from proxy using the PeptideOS SSO helper", () => {
   const proxy = read("proxy.ts");
-  assert.match(proxy, /isWorkoutCoolSignupPath/);
+  assert.match(proxy, /shouldRedirectSignedOutRequest|peptideOsSignedOutRedirectLocation/);
   assert.match(proxy, /NextResponse\.redirect/);
   assert.match(proxy, /307/);
-  assert.match(proxy, /resolvePeptideOsSignupUrl|peptideOsSignupRedirectLocation/);
 });
 
 test("PeptideOS settings URL reuses the existing origin pairing and password hash", () => {
@@ -62,15 +68,15 @@ test("locale copy explains that the PeptideOS password is also used for workouts
   assert.match(en, /workouts/);
 });
 
-test("SQL helper is boolean-only, SECURITY DEFINER, and not applied from Prisma migrate", () => {
+test("SQL helper is boolean-only, SECURITY DEFINER, empty search_path, and not applied from Prisma migrate", () => {
   const sql = read("docs/sql/peptideos-has-email-identity.sql");
   const rollback = read("docs/sql/peptideos-has-email-identity.rollback.sql");
   assert.match(sql, /SECURITY DEFINER/);
-  assert.match(sql, /search_path/);
+  assert.match(sql, /SET search_path = ''/);
+  assert.match(sql, /FROM auth\.identities/);
   assert.match(sql, /provider\s*=\s*'email'/);
-  assert.match(sql, /REVOKE ALL[\s\S]*FROM PUBLIC/);
-  assert.match(sql, /GRANT EXECUTE/);
-  assert.doesNotMatch(sql, /service_role/);
+  assert.match(sql, /REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon, authenticated, service_role/);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION[\s\S]*TO postgres/);
   assert.match(rollback, /DROP FUNCTION/);
 
   assert.throws(() => read("prisma/migrations/20261011211500_peptideos_has_email_identity/migration.sql"), /ENOENT/);

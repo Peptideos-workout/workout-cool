@@ -3,10 +3,15 @@ import { toNextJsHandler } from "better-auth/next-js";
 
 import type { NextRequest } from "next/server";
 
-import { passwordResetDisabledBody, publicSignupDisabledBody } from "@/features/auth/lib/public-signup-guard";
-import { resolvePeptideOsForgotPasswordUrl, resolvePeptideOsSignupUrl } from "@/features/auth/lib/peptideos-signup-url";
+import { passwordResetDisabledBody, publicSigninDisabledBody, publicSignupDisabledBody } from "@/features/auth/lib/public-signup-guard";
+import {
+  resolvePeptideOsForgotPasswordUrl,
+  resolvePeptideOsSignupUrl,
+  resolvePeptideOsWorkoutsSsoUrl
+} from "@/features/auth/lib/peptideos-signup-url";
 import {
   isBetterAuthPasswordResetRequest,
+  isPublicBetterAuthSigninRequest,
   isPublicBetterAuthSignupRequest,
   isUndecodableBetterAuthPath
 } from "@/features/auth/lib/block-public-signup";
@@ -29,9 +34,19 @@ function disabledPasswordReset() {
   );
 }
 
+function blockedPublicSignin() {
+  return NextResponse.json(
+    publicSigninDisabledBody(resolvePeptideOsWorkoutsSsoUrl(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL)),
+    { status: 403, headers: { "Cache-Control": "private, no-store" } }
+  );
+}
+
 export async function GET(req: NextRequest) {
   if (isUndecodableBetterAuthPath(req.nextUrl.pathname) || isPublicBetterAuthSignupRequest(req.nextUrl.pathname)) {
     return blockedPublicSignup();
+  }
+  if (isPublicBetterAuthSigninRequest(req.nextUrl.pathname)) {
+    return blockedPublicSignin();
   }
   if (isBetterAuthPasswordResetRequest(req.nextUrl.pathname)) {
     return disabledPasswordReset();
@@ -42,6 +57,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (isUndecodableBetterAuthPath(req.nextUrl.pathname) || isPublicBetterAuthSignupRequest(req.nextUrl.pathname)) {
     return blockedPublicSignup();
+  }
+  if (isPublicBetterAuthSigninRequest(req.nextUrl.pathname)) {
+    return blockedPublicSignin();
   }
   if (isBetterAuthPasswordResetRequest(req.nextUrl.pathname)) {
     return disabledPasswordReset();

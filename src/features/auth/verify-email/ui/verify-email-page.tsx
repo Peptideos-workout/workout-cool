@@ -1,10 +1,9 @@
 "use client";
 
 import { Mail } from "lucide-react";
-
 import { useI18n } from "locales/client";
+
 import { cn } from "@/shared/lib/utils";
-import { paths } from "@/shared/constants/paths";
 import { useResendEmail } from "@/features/auth/verify-email/model/useResendEmail";
 import { useLogout } from "@/features/auth/model/useLogout";
 import { useCurrentUser } from "@/entities/user/model/useCurrentUser";
@@ -14,7 +13,7 @@ import { Button } from "@/components/ui/button";
 export const VerifyEmailPage = () => {
   const t = useI18n();
   const user = useCurrentUser();
-  const logout = useLogout(`/${paths.signIn}`);
+  const logout = useLogout("/");
 
   const { resend, isDisabled, countdown } = useResendEmail(user?.email ?? "");
 

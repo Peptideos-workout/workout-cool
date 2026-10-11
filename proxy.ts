@@ -61,7 +61,9 @@ export async function proxy(request: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL,
       returnTo
     );
-    return NextResponse.redirect(location, 307);
+    const response = NextResponse.redirect(location, 307);
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   }
 
   // If on root path and no locale detected yet, redirect to detected locale
@@ -101,14 +103,6 @@ export async function proxy(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams.toString();
   response.headers.set("searchParams", searchParams);
-
-  if (request.nextUrl.pathname.includes("/dashboard")) {
-    const session = getSessionCookie(request);
-
-    if (!session) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-  }
 
   return response;
 }

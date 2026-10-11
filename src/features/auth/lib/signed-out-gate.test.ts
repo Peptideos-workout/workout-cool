@@ -8,6 +8,7 @@ import {
   shouldRedirectSignedOutRequest,
   signedOutReturnTo
 } from "./signed-out-gate";
+import { peptideOsWorkoutsSignoutUrl } from "./peptideos-signup-url";
 
 const APP = "https://workouts.peptideos.us";
 const ORIGIN = "https://peptideos.us";
@@ -125,7 +126,24 @@ test("signed-out redirect targets PeptideOS /api/workouts/sso with a safe same-o
     peptideOsSignedOutRedirectLocation(undefined, APP, "/en/programs/strength"),
     `${ORIGIN}/api/workouts/sso?redirect=${encodeURIComponent(`${APP}/en/programs/strength`)}`
   );
+  assert.equal(
+    peptideOsSignedOutRedirectLocation(undefined, APP, "/en/profile?tab=history"),
+    `${ORIGIN}/api/workouts/sso?redirect=${encodeURIComponent(`${APP}/en/profile?tab=history`)}`
+  );
   assert.equal(peptideOsSignedOutRedirectLocation(undefined, APP), `${ORIGIN}/api/workouts/sso`);
+});
+
+test("WC sign-out to PeptideOS does not loop: WC home stays public after PeptideOS signs out", () => {
+  const location = peptideOsWorkoutsSignoutUrl(ORIGIN, APP);
+  const redirect = new URL(location).searchParams.get("redirect");
+  assert.equal(redirect, `${APP}/`);
+  const dest = new URL(redirect ?? "https://invalid.example/");
+  assert.equal(dest.origin, APP);
+  assert.equal(dest.pathname, "/");
+  assert.equal(isPublicMarketingPath(dest.pathname), true);
+  assert.equal(shouldRedirectSignedOutRequest(dest.pathname, false), false);
+  assert.equal(shouldRedirectSignedOutRequest("/en", false), false);
+  assert.doesNotMatch(location, /\/api\/workouts\/sso/);
 });
 
 test("malicious return URLs are dropped from the PeptideOS SSO redirect", () => {

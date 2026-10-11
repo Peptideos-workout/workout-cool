@@ -13,7 +13,10 @@ test("proxy issues a real HTTP 307 to PeptideOS SSO for signed-out visitors", ()
   assert.match(proxy, /getSessionCookie/);
   assert.match(proxy, /NextResponse\.redirect/);
   assert.match(proxy, /307/);
+  assert.match(proxy, /Cache-Control/);
+  assert.match(proxy, /private,\s*no-store/);
   assert.doesNotMatch(proxy, /link-peptideos/);
+  assert.doesNotMatch(proxy, /includes\(["']\/dashboard["']\)/);
 });
 
 test("Better Auth catch-all blocks email and Google sign-in with the generic blocked body", () => {
@@ -59,19 +62,19 @@ test("header, profile, and program prompts no longer offer workout-cool sign-in 
   assert.doesNotMatch(premium, /\/auth\/signin/);
 });
 
-test("robots.txt indexes public pages and disallows gated app routes", () => {
-  const robots = read("app/robots.txt");
-  assert.match(robots, /Allow:\s*\//);
-  assert.match(robots, /Disallow:\s*\/profile/);
-  assert.match(robots, /Disallow:\s*\/statistics/);
-  assert.match(robots, /Disallow:\s*\/onboarding/);
-  assert.match(robots, /Disallow:\s*\/admin/);
-  assert.match(robots, /Disallow:\s*\/auth/);
-  assert.match(robots, /Disallow:\s*\/sponsor/);
-  assert.match(robots, /session/);
-  assert.doesNotMatch(robots, /Disallow:\s*\/about/);
-  assert.doesNotMatch(robots, /Disallow:\s*\/tools/);
-  assert.doesNotMatch(robots, /Disallow:\s*\/programs\/?$/m);
+test("robots uses the configured WC origin and disallows locale and unprefixed session paths", () => {
+  const robots = read("app/robots.ts");
+  assert.match(robots, /workoutCoolPublicOrigin|workouts\.peptideos\.us/);
+  assert.match(robots, /allow:\s*["']\/["']/);
+  assert.match(robots, /\/profile/);
+  assert.match(robots, /\/statistics/);
+  assert.match(robots, /\/onboarding/);
+  assert.match(robots, /\/admin/);
+  assert.match(robots, /\/auth/);
+  assert.match(robots, /\/sponsor/);
+  assert.match(robots, /\/programs\/\*\/session\//);
+  assert.match(robots, /\/\*\/programs\/\*\/session\//);
+  assert.doesNotMatch(robots, /www\.workout\.cool/);
 });
 
 test("public pages tolerate a missing session (no session-dependent crash)", () => {
@@ -95,14 +98,17 @@ test("public pages tolerate a missing session (no session-dependent crash)", () 
   assert.doesNotMatch(about, /auth\.api\.getSession|redirect\(/);
 });
 
-test("sitemap includes public marketing pages and excludes gated session routes", () => {
+test("sitemap uses the configured WC origin, includes unprefixed public pages, and omits session routes", () => {
   const sitemap = read("app/sitemap.ts");
+  assert.match(sitemap, /workoutCoolPublicOrigin|NEXT_PUBLIC_APP_URL/);
   assert.match(sitemap, /\/about/);
   assert.match(sitemap, /\/tools/);
   assert.match(sitemap, /\/programs/);
+  assert.match(sitemap, /\$\{baseUrl\}\/programs/);
   assert.match(sitemap, /\/premium/);
   assert.match(sitemap, /\/leaderboard/);
   assert.match(sitemap, /\/legal\/privacy/);
+  assert.doesNotMatch(sitemap, /www\.workout\.cool/);
   assert.doesNotMatch(sitemap, /\/session\//);
   assert.doesNotMatch(sitemap, /\/profile/);
   assert.doesNotMatch(sitemap, /\/statistics/);

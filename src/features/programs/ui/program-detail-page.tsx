@@ -19,11 +19,15 @@ import {
   Unlock,
   ArrowRight,
 } from "lucide-react";
-
 import { useCurrentLocale, useI18n } from "locales/client";
+
+import { getProgramProgress } from "../actions/get-program-progress.action";
+import { ProgramDetail } from "../actions/get-program-by-slug.action";
+
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { getSlugForLocale } from "@/shared/lib/locale-slug";
 import { ATTRIBUTE_VALUE_TRANSLATION_KEYS, getAttributeValueLabel } from "@/shared/lib/attribute-value-translation";
+import { SiteConfig } from "@/shared/config/site-config";
 import { WelcomeModal } from "@/features/programs/ui/welcome-modal";
 import { ShareButton } from "@/features/programs/ui/share-button";
 import { ProgramProgress } from "@/features/programs/ui/program-progress";
@@ -37,12 +41,9 @@ import {
 } from "@/features/programs/lib/translations-mapper";
 import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { env } from "@/env";
-import { SiteConfig } from "@/shared/config/site-config";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { HorizontalBottomBanner, HorizontalTopBanner } from "@/components/ads";
 
-import { getProgramProgress } from "../actions/get-program-progress.action";
-import { ProgramDetail } from "../actions/get-program-by-slug.action";
 
 interface ProgramDetailPageProps {
   program: ProgramDetail;

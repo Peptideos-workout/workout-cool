@@ -1,10 +1,11 @@
 import { MetadataRoute } from "next/types";
 
+import { workoutCoolPublicOrigin } from "@/shared/lib/workout-cool-public-origin";
 import { getSitemapData } from "@/features/programs/actions/get-sitemap-data.action";
 import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.workout.cool";
+  const baseUrl = workoutCoolPublicOrigin(process.env.NEXT_PUBLIC_APP_URL);
   const currentDate = new Date().toISOString();
 
   // Static routes with locale support
@@ -165,6 +166,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Generate dynamic routes
   const dynamicRoutes: MetadataRoute.Sitemap = [];
 
+  dynamicRoutes.push({
+    url: `${baseUrl}/programs`,
+    lastModified: new Date().toISOString(),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  });
+
   // Add programs index pages for each locale
   locales.forEach((locale) => {
     dynamicRoutes.push({
@@ -187,9 +195,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "zh-CN": program.slugZhCn,
     };
 
+    if (program.slug) {
+      dynamicRoutes.push({
+        url: `${baseUrl}/programs/${program.slug}`,
+        lastModified: program.updatedAt.toISOString(),
+        changeFrequency: "weekly" as const,
+        priority: 0.9,
+      });
+    }
+
     Object.entries(programSlugs).forEach(([locale, slug]) => {
       if (slug) {
-        // Program detail page (session routes are gated and omitted)
+        // Program detail page (session routes are gated and omitted, including unprefixed)
         dynamicRoutes.push({
           url: `${baseUrl}/${locale}/programs/${slug}`,
           lastModified: program.updatedAt.toISOString(),

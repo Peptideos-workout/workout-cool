@@ -13,6 +13,9 @@ export const PEPTIDEOS_FORGOT_PASSWORD_PATH = "/forgot-password";
 /** PeptideOS launcher that mints a WC SSO handoff (`/api/workouts/sso` → `/login?next=/workouts` when signed out). */
 export const PEPTIDEOS_WORKOUTS_SSO_PATH = "/api/workouts/sso";
 
+/** PeptideOS sign-out that then redirects back to a workout-cool URL. */
+export const PEPTIDEOS_WORKOUTS_SIGNOUT_PATH = "/api/workouts/signout";
+
 /** PeptideOS account settings (Change Password lives on this page). */
 export const PEPTIDEOS_SETTINGS_PATH = "/settings";
 
@@ -63,8 +66,18 @@ function loopDecodeUri(value: string): string | null {
   return null;
 }
 
+function containsControlChars(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code <= 31 || code === 127) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function containsForbiddenReturnChars(value: string): boolean {
-  if (value.includes("\\") || /%5c/i.test(value)) {
+  if (containsControlChars(value) || value.includes("\\") || /%5c/i.test(value)) {
     return true;
   }
   const decoded = loopDecodeUri(value);
@@ -72,7 +85,7 @@ function containsForbiddenReturnChars(value: string): boolean {
   if (decoded === null) {
     return true;
   }
-  return decoded.includes("\\") || /%5c/i.test(decoded);
+  return containsControlChars(decoded) || decoded.includes("\\") || /%5c/i.test(decoded);
 }
 
 /** Same-origin workout-cool return URL. Fail closed (undefined) on anything unsafe. */
@@ -187,6 +200,30 @@ export function resolvePeptideOsWorkoutsSsoUrl(explicitUrl?: string, appUrl?: st
     return peptideOsWorkoutsSsoUrl(origin, origin);
   }
   return peptideOsWorkoutsSsoUrl(origin, app, returnTo);
+}
+
+/** Honour PeptideOS `redirect` only when it is a safe same-origin WC URL. Fail closed to `/`. */
+export function ssoFinalizeLocation(workoutOrigin: string, redirectParam?: string): string {
+  const origin = new URL(workoutOrigin).origin;
+  return safeWorkoutReturnTo(redirectParam, origin) ?? `${origin}/`;
+}
+
+export function peptideOsWorkoutsSignoutUrl(origin: string, appUrl: string): string {
+  const url = new URL(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, `${origin.replace(/\/$/, "")}/`);
+  const home = safeWorkoutReturnTo("/", appUrl);
+  if (home) {
+    url.searchParams.set("redirect", home);
+  }
+  return url.toString();
+}
+
+export function resolvePeptideOsWorkoutsSignoutUrl(explicitUrl?: string, appUrl?: string): string {
+  const origin = peptideOsOrigin(explicitUrl, appUrl);
+  const app = appUrl?.trim();
+  if (!app) {
+    return peptideOsWorkoutsSignoutUrl(origin, origin);
+  }
+  return peptideOsWorkoutsSignoutUrl(origin, app);
 }
 
 export function resolvePeptideOsSettingsUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {

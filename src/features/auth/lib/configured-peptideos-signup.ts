@@ -4,6 +4,7 @@ import {
   resolvePeptideOsLoginUrl,
   resolvePeptideOsSettingsUrl,
   resolvePeptideOsSignupUrl,
+  resolvePeptideOsWorkoutsSignoutUrl,
   resolvePeptideOsWorkoutsSsoUrl
 } from "./peptideos-signup-url";
 
@@ -27,6 +28,10 @@ export function getConfiguredPeptideOsSettingsUrl(returnTo?: string): string {
 
 export function getConfiguredPeptideOsWorkoutsSsoUrl(returnTo?: string): string {
   return resolvePeptideOsWorkoutsSsoUrl(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL, returnTo);
+}
+
+export function getConfiguredPeptideOsWorkoutsSignoutUrl(): string {
+  return resolvePeptideOsWorkoutsSignoutUrl(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL);
 }
 
 export function getConfiguredPeptideOsOrigin(): string {

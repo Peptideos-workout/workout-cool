@@ -23,7 +23,15 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 | Change-password | PeptideOS `/settings#password` only, when the linked account has an email identity. Legacy local `PasswordForm` and `PUT /api/user/password` are removed. |
 | `/auth/link-peptideos` | **Not allowlisted.** PR #3 is deferred; email collisions in SSO stay `409` and go to support. |
 
-After PeptideOS SSO the session still lands on `/` (`finalizeSession`). The `redirect` query on the PeptideOS SSO URL is best-effort only. Return URLs that contain `\`, `%5c` (any case), stay encoded after 8 decode rounds, or have malformed `%` are dropped; the parsed origin must equal `new URL(appUrl).origin`.
+After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars). Anything else fails closed to `/`.
+
+PeptideOS `GET /api/workouts/sso?redirect=<absolute WC URL>` preserves that redirect through login and passes it back on the WC SSO handoff. The proxy 307 for gated routes sends `?redirect=<original absolute WC URL, path+query>` with `Cache-Control: private, no-store`.
+
+WC sign-out clears the Better Auth session, then redirects to PeptideOS `GET /api/workouts/signout?redirect=<WC home>`. WC home is public, so PeptideOS cannot bounce the browser back into `/api/workouts/sso`.
+
+GET `/api/programs/[slug]/sessions/[sessionSlug]` is **gated** (401 without a session). It returns published program session catalog (exercises, videos, suggested sets), not user progress. The matching page is already gated.
+
+`robots.ts` and `sitemap.ts` use `https://workouts.peptideos.us` from `NEXT_PUBLIC_APP_URL` (`workoutCoolPublicOrigin`). Robots disallows both `/programs/*/session/` and `/*/programs/*/session/`. The sitemap includes unprefixed `/programs` and `/programs/[slug]` and still omits session URLs.
 
 ## Signed-out allowlist
 
@@ -62,7 +70,7 @@ Landing and marketing/info pages stay **public and indexable**. PeptideOS login 
 - leftover WC auth pages (`/auth/signin`, `/auth/signup`, `/auth/verify-email`, `/auth/verify-request`, `/auth/error`)
 - `/auth/link-peptideos` (not allowlisted; PR #3 is deferred)
 
-`robots.txt` disallows the gated prefixes (including locale variants and `/*/programs/*/session/`). The sitemap omits session, profile, and statistics URLs.
+`robots.ts` disallows the gated prefixes (including locale variants, unprefixed `/programs/*/session/`, and `/*/programs/*/session/`). The sitemap omits session, profile, and statistics URLs.
 
 `/auth/link-peptideos` is not on the allowlist.
 
@@ -92,4 +100,4 @@ SSO launcher path is `/api/workouts/sso` (PeptideOS then sends signed-out users 
 - New SSO users still get a random unused password; sign-in is a Better Auth signed session (`createTrustedBetterAuthSession`).
 - `@@unique([providerId, accountId])` remains the DB backstop. The extra `(userId, providerId)` unique is proposed in `docs/sql/` only.
 
-This PR does not edit `app/api/peptideos-wc-sso`.
+`app/api/peptideos-wc-sso` honours a same-origin `redirect` on success and returns a localized HTML error page (with a PeptideOS `/api/workouts/sso` try-again link, plus a support note on 409 collisions) for browser navigations. API callers still get JSON.

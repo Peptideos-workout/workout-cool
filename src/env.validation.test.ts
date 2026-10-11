@@ -54,6 +54,11 @@ test("createEnv names an invalid optional enum var", () => {
   assert.match(output, /adsense/);
 });
 
+test("createEnv does not require SUPABASE_JWT_SECRET after SSO dropped HMAC passwords", () => {
+  const result = importEnv({ SUPABASE_JWT_SECRET: undefined });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
 test("createEnv accepts documented enum literals", () => {
   const result = importEnv({
     SMTP_SECURE: "false",

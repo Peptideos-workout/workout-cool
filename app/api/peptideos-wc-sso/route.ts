@@ -1,14 +1,11 @@
 /**
- * PeptideOS → Workout.cool SSO (MIT drop-in): `app/api/peptideos-wc-sso/route.ts`
+ * PeptideOS → Workout.cool SSO
  *
  * Routed **outside** `/api/auth/` so Better Auth’s `app/api/auth/[...all]/route.ts`
  * cannot intercept this path (production often 404 otherwise).
  *
- * Requirements:
- *   • DATABASE_URL = same Supabase Postgres as PeptideOS (pooler/direct URI from Dashboard → Database).
- *   • SUPABASE_JWT_SECRET = same value as PeptideOS (Dashboard → Settings → API → JWT Secret).
- *   • Run Peptide migration `20260426120000_workout_cool_handoffs.sql` on that DB (included in peptideos repo).
- *   • PeptideOS PR #22 stores `secret_token` as sha256(rawToken) hex — never compare plaintext.
+ * PeptideOS PR #22 stores `secret_token` as sha256(rawToken) hex — never compare plaintext.
+ * New SSO users get a random unused password; sign-in is a Better Auth signed session.
  */
 import crypto from "crypto";
 
@@ -16,9 +13,11 @@ import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
 
 import { configuredWorkoutOrigin } from "./workout-origin";
+import { newUnusedSsoPassword } from "./unused-sso-password";
 import { createTrustedBetterAuthSession } from "./trusted-session";
-import { CREDENTIAL_PROVIDER, PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
-import { deriveWorkoutCoolCredentialFromSupabaseJwtSecret } from "./derive-wc-password";
+import { ssoJson } from "./sso-response";
+import { PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
+import { handoffDisposition } from "./handoff-disposition";
 import { lookupUnconsumedHandoffByHash, releaseHandoffClaimByHash, runWithHandoffClaim } from "./consume-handoff";
 import { completePeptideOsSsoLogin } from "./complete-sso";
 
@@ -26,7 +25,6 @@ import type { NextRequest } from "next/server";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
 
 import { prisma } from "@/shared/lib/prisma";
-import { hashStringWithSalt } from "@/features/update-password/lib/hash";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
 
@@ -55,18 +53,6 @@ function splitName(displayName: string | undefined, email: string): { firstName:
   }
   const local = (email.split("@")[0] || "Athlete").slice(0, 48);
   return { firstName: local || "Athlete", lastName: "User", name: `${local} User` };
-}
-
-async function trySignIn(request: NextRequest, email: string, password: string): Promise<Response | null> {
-  try {
-    return (await auth.api.signInEmail({
-      body: { email, password },
-      asResponse: true,
-      headers: request.headers
-    })) as Response;
-  } catch {
-    return null;
-  }
 }
 
 function finalizeSession(signInRes: Response): NextResponse {
@@ -111,60 +97,45 @@ function metaDisplayName(meta: unknown): string | undefined {
 async function loadSsoAccountSnapshot(email: string): Promise<SsoAccountSnapshot> {
   const existingUser = await prisma.user.findUnique({
     where: { email },
-    include: { accounts: { select: { id: true, providerId: true, accountId: true, password: true } } }
+    include: { accounts: { select: { providerId: true, accountId: true } } }
   });
 
   if (!existingUser) {
-    return { existingUser: null, existingCredential: null, peptideosAccountId: null };
+    return { existingUser: null, peptideosAccountId: null };
   }
 
-  const existingCredential = existingUser.accounts.find((account) => account.providerId === CREDENTIAL_PROVIDER);
   const peptideosAccount = existingUser.accounts.find((account) => account.providerId === PEPTIDEOS_PROVIDER);
-
   return {
     existingUser: { id: existingUser.id },
-    existingCredential: existingCredential
-      ? { id: existingCredential.id, password: existingCredential.password }
-      : null,
     peptideosAccountId: peptideosAccount?.accountId ?? null
   };
 }
 
-async function createAccount(data: { accountId: string; providerId: string; userId: string; password?: string }) {
+async function createPeptideosAccount(userId: string, peptideosUserId: string) {
   await prisma.account.create({
     data: {
       id: crypto.randomUUID(),
-      accountId: data.accountId,
-      providerId: data.providerId,
-      userId: data.userId,
-      password: data.password,
+      accountId: peptideosUserId,
+      providerId: PEPTIDEOS_PROVIDER,
+      userId,
       createdAt: new Date(),
       updatedAt: new Date()
     }
   });
 }
 
-function isRedirectResponse(response: NextResponse): boolean {
-  return response.status >= 300 && response.status < 400;
-}
-
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET?.trim();
-  if (!jwtSecret || jwtSecret.length < 16) {
-    return NextResponse.json({ error: "SUPABASE_JWT_SECRET not configured" }, { status: 503 });
-  }
-
   const tokenParam = request.nextUrl.searchParams.get("token")?.trim();
-  if (!tokenParam) return NextResponse.json({ error: "missing_token" }, { status: 400 });
+  if (!tokenParam) return ssoJson({ error: "missing_token" }, 400);
 
   try {
     const claimed = await runWithHandoffClaim(
       tokenParam,
       {
         claimByHash: (tokenHash) => lookupUnconsumedHandoffByHash(prisma, tokenHash),
-        releaseByHash: (tokenHash) => releaseHandoffClaimByHash(prisma, tokenHash)
+        releaseByHash: (tokenHash, claimedAt) => releaseHandoffClaimByHash(prisma, tokenHash, claimedAt)
       },
       async (hid) => {
         const signInHolder: { response: Response | null } = { response: null };
@@ -179,70 +150,43 @@ export async function GET(request: NextRequest) {
     `;
         } catch (e) {
           console.error("[peptideos-wc-sso] auth.users lookup:", e);
-          return NextResponse.json({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, { status: 500 });
+          return {
+            value: ssoJson({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, 500),
+            disposition: "release" as const
+          };
         }
 
         const email = userRows[0]?.email?.trim().toLowerCase();
-        if (!email) return NextResponse.json({ error: "missing_email" }, { status: 500 });
+        if (!email) {
+          return { value: ssoJson({ error: "missing_email" }, 500), disposition: "release" as const };
+        }
 
         const displayName = metaDisplayName(userRows[0]?.meta);
-        const pw = deriveWorkoutCoolCredentialFromSupabaseJwtSecret({
-          supabaseJwtSecret: jwtSecret,
-          email,
-          supabaseUserId: hid
-        });
-        const derivedPasswordHash = hashStringWithSalt(pw, env.BETTER_AUTH_SECRET);
         const snapshot = await loadSsoAccountSnapshot(email);
 
-        const completed = await completePeptideOsSsoLogin(hid, derivedPasswordHash, snapshot, {
-          signUpNewUser: async () => {
+        const completed = await completePeptideOsSsoLogin(hid, snapshot, {
+          findUserByEmail: async () => prisma.user.findUnique({ where: { email }, select: { id: true } }),
+          signUp: async () => {
             const { firstName, lastName, name } = splitName(displayName, email);
-            try {
-              await auth.api.signUpEmail({
-                body: {
-                  email,
-                  password: pw,
-                  name,
-                  firstName,
-                  lastName,
-                  role: UserRole.user
-                },
-                headers: request.headers
-              });
-            } catch {
-              /* race: another request may have created the user */
-            }
-            const created = await prisma.user.findUnique({ where: { email } });
-            if (!created) throw new Error("sso_signup_failed");
-            return { userId: created.id };
-          },
-          createCredential: async (userId) => {
-            await createAccount({
-              accountId: email,
-              providerId: CREDENTIAL_PROVIDER,
-              userId,
-              password: derivedPasswordHash
+            const unusedPassword = newUnusedSsoPassword();
+            const created = await auth.api.signUpEmail({
+              body: {
+                email,
+                password: unusedPassword,
+                name,
+                firstName,
+                lastName,
+                role: UserRole.user
+              },
+              headers: request.headers
             });
+            const userId = created?.user?.id;
+            return userId ? { userId } : null;
           },
           createPeptideosAccount: async (userId) => {
-            await createAccount({
-              accountId: hid,
-              providerId: PEPTIDEOS_PROVIDER,
-              userId
-            });
+            await createPeptideosAccount(userId, hid);
           },
-          updateCredentialPassword: async () => {
-            throw new Error("SSO must never overwrite an existing credential");
-          },
-          signInWithDerivedPassword: async () => {
-            const res = await trySignIn(request, email, pw);
-            if (res?.ok) {
-              signInHolder.response = res;
-              return true;
-            }
-            return false;
-          },
-          signInWithTrustedSession: async (userId) => {
+          createSignedSession: async (userId) => {
             const res = await createTrustedBetterAuthSession(userId);
             if (res) {
               signInHolder.response = res;
@@ -253,26 +197,31 @@ export async function GET(request: NextRequest) {
         });
 
         if (!completed.ok) {
-          return NextResponse.json({ error: completed.error }, { status: completed.status });
+          return {
+            value: ssoJson({ error: completed.error }, completed.status),
+            disposition: handoffDisposition(completed.status, completed.wroteUserState)
+          };
         }
         if (!signInHolder.response) {
-          return NextResponse.json({ error: "sso_signin_failed" }, { status: 500 });
+          return {
+            value: ssoJson({ error: "sso_signin_failed" }, 500),
+            disposition: handoffDisposition(500, completed.wroteUserState)
+          };
         }
-        return finalizeSession(signInHolder.response);
+        return { value: finalizeSession(signInHolder.response), disposition: "keep" as const };
       },
-      isRedirectResponse,
     );
 
     if (claimed.outcome === "invalid_or_expired_handoff") {
-      return NextResponse.json({ error: "invalid_or_expired_handoff" }, { status: 400 });
+      return ssoJson({ error: "invalid_or_expired_handoff" }, 400);
     }
     if (claimed.outcome === "error") {
       console.error("[peptideos-wc-sso] claimed run:", claimed.error);
-      return NextResponse.json({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, { status: 500 });
+      return ssoJson({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, 500);
     }
     return claimed.value;
   } catch (e) {
     console.error("[peptideos-wc-sso] unhandled:", e);
-    return NextResponse.json({ error: "sso_internal_error", ...ssoExplain(e) }, { status: 500 });
+    return ssoJson({ error: "sso_internal_error", ...ssoExplain(e) }, 500);
   }
 }

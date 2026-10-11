@@ -16,6 +16,8 @@ test("Better Auth Google config blocks OAuth new-user creation and email-match l
   assert.match(src, /shouldAllowOAuthNewUser/);
   assert.match(src, /allowBetterAuthUserCreate|isSsoUserCreateAllowed/);
   assert.doesNotMatch(src, /trustedProviders:\s*\[["']google["']\]/);
+  assert.doesNotMatch(src, /sendResetPassword/);
+  assert.doesNotMatch(src, /ResetPasswordEmail/);
 });
 
 test("SSO create-user wraps only signUpEmail with the in-process ALS flag", () => {

@@ -67,7 +67,19 @@ test("Better Auth forget/reset paths are public password-reset requests", () => 
   assert.equal(isBetterAuthPasswordResetRequest("/API/AUTH/FORGET-PASSWORD/"), true);
   assert.equal(isBetterAuthPasswordResetRequest("/api/auth/sign-in/email"), false);
   assert.equal(isBetterAuthPasswordResetRequest("/api/auth/sign-up/email"), false);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/admin/set-user-password"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/admin/setUserPassword"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/api/auth/admin/setuserpassword"), true);
+  assert.equal(isBetterAuthPasswordResetRequest("/API/AUTH/ADMIN/SET-USER-PASSWORD/"), true);
 });
+
+function encodeTimes(value: string, times: number): string {
+  let encoded = value;
+  for (let i = 0; i < times; i++) {
+    encoded = encodeURIComponent(encoded);
+  }
+  return encoded;
+}
 
 test("normalizeBetterAuthPath collapses slashes, decodes %2f, and resolves dot segments", () => {
   assert.equal(normalizeBetterAuthPath("/api/auth//sign-up//email"), "/api/auth/sign-up/email");
@@ -77,4 +89,12 @@ test("normalizeBetterAuthPath collapses slashes, decodes %2f, and resolves dot s
   assert.equal(normalizeBetterAuthPath("/api/auth/./forget-password"), "/api/auth/forget-password");
   assert.equal(isPublicBetterAuthSignupRequest("/api/auth/foo/../sign-up/email"), true);
   assert.equal(isBetterAuthPasswordResetRequest("/api/auth/bar/../forget-password"), true);
+  assert.equal(isPublicBetterAuthSignupRequest(`/api/auth/sign-up${encodeTimes("/", 2)}email`), true);
+  assert.equal(isBetterAuthPasswordResetRequest(`/api/auth/foo/${encodeTimes("..", 1)}/forget-password`), true);
+});
+
+test("path decode stops after 8 rounds so deeper encodings do not match", () => {
+  assert.equal(isPublicBetterAuthSignupRequest(`/api/auth/sign-up${encodeTimes("/", 7)}email`), true);
+  assert.equal(isPublicBetterAuthSignupRequest(`/api/auth/sign-up${encodeTimes("/", 8)}email`), false);
+  assert.equal(isBetterAuthPasswordResetRequest(`/api/auth/admin/set-user-password${encodeTimes("/", 8)}extra`), false);
 });

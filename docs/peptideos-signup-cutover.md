@@ -23,7 +23,7 @@ Revisit after PeptideOS has provisioned `wc.user` / `wc.account` for every legac
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
 | Better Auth HTTP `POST /api/auth/sign-up/email` and `/api/auth/admin/create-user` (catch-all `[...all]`) | **Blocked** `403` + `{ error, redirectTo }` |
-| Better Auth HTTP forget/reset (`/forget-password`, `/forgot-password`, `/request-password-reset`, `/reset-password`) | **Disabled** generic `200` + `{ ok, redirectTo }` (never leaks whether an account exists). Points at PeptideOS `/forgot-password`. |
+| Better Auth HTTP forget/reset (`/forget-password`, `/forgot-password`, `/request-password-reset`, `/reset-password`, `/admin/set-user-password`) | **Disabled** generic `200` + `{ ok, redirectTo }` (never leaks whether an account exists). Points at PeptideOS `/forgot-password`. |
 | Google OAuth `disableSignUp` / `disableImplicitSignUp` plus `databaseHooks.user.create` | **Blocked** unless the in-process SSO ALS flag is set |
 | `databaseHooks.account.create` for `providerId: "credential"` | **Blocked** unless the in-process SSO ALS flag is set (stops resetPassword from creating a credential row) |
 | Google / email **sign-in** for existing accounts | **Allowed** |

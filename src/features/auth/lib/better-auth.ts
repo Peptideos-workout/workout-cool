@@ -4,7 +4,6 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
 import { UserRole } from "@prisma/client";
 import { VerifyEmail } from "@emails/VerifyEmail";
-import { ResetPasswordEmail } from "@emails/ResetPasswordEmail";
 
 import { betterAuthTrustedOrigins } from "./trusted-origins";
 import { isSsoUserCreateAllowed } from "./sso-user-create-context";
@@ -145,14 +144,6 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     requireEmailVerification: false, // FIXME: TEMPORARY
-    sendResetPassword: async ({ user, url }) => {
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your password",
-        text: `Click the link to reset your password: ${url}`,
-        react: ResetPasswordEmail({ url }),
-      });
-    },
     password: {
       hash: async (password: string) => {
         const hashedPassword = hashStringWithSalt(password, env.BETTER_AUTH_SECRET);

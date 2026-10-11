@@ -21,9 +21,31 @@ function resolveDotSegments(path: string): string {
   return absolute ? `/${joined}` : joined;
 }
 
+export const BETTER_AUTH_PATH_DECODE_ROUNDS = 8;
+
+function loopDecodePath(value: string): string | null {
+  let current = value;
+  for (let i = 0; i < BETTER_AUTH_PATH_DECODE_ROUNDS; i++) {
+    let next: string;
+    try {
+      next = decodeURIComponent(current);
+    } catch {
+      return null;
+    }
+    if (next === current) {
+      return current;
+    }
+    current = next;
+  }
+  return null;
+}
+
 export function normalizeBetterAuthPath(path: string): string {
-  let normalized = stripQueryAndHash(path).trim().replace(/%2f/gi, "/").toLowerCase();
-  normalized = normalized.replace(/\/+/g, "/");
+  const decoded = loopDecodePath(stripQueryAndHash(path).trim().toLowerCase());
+  if (decoded === null) {
+    return "/";
+  }
+  let normalized = decoded.replace(/\/+/g, "/");
   normalized = resolveDotSegments(normalized);
   if (normalized.length > 1 && normalized.endsWith("/")) {
     normalized = normalized.slice(0, -1);
@@ -35,6 +57,9 @@ function canonicalizeSignupPath(path: string): string {
   const normalized = normalizeBetterAuthPath(path);
   if (normalized === "/admin/createuser" || normalized === "/admin/create-user") {
     return "/admin/create-user";
+  }
+  if (normalized === "/admin/setuserpassword" || normalized === "/admin/set-user-password") {
+    return "/admin/set-user-password";
   }
   return normalized;
 }
@@ -73,7 +98,8 @@ export function isBetterAuthPasswordResetRequest(pathname: string): boolean {
     pathEqualsOrPrefixed(path, "/forget-password") ||
     pathEqualsOrPrefixed(path, "/forgot-password") ||
     pathEqualsOrPrefixed(path, "/request-password-reset") ||
-    pathEqualsOrPrefixed(path, "/reset-password")
+    pathEqualsOrPrefixed(path, "/reset-password") ||
+    pathEqualsOrPrefixed(path, "/admin/set-user-password")
   );
 }
 

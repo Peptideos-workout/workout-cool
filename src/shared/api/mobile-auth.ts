@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 
-import { auth } from "@/features/auth/lib/better-auth";
-
 import { cleanMobileCookies } from "./mobile-cookie-utils";
+
+import { auth } from "@/features/auth/lib/better-auth";
 
 /**
  * Gets the authenticated session from a request, handling mobile app cookie issues

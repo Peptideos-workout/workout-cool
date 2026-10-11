@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import dayjs from "dayjs";
-
 import { useI18n, useCurrentLocale } from "locales/client";
+import dayjs from "dayjs";
 
 interface Props {
   panelColors?: string[];

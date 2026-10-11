@@ -2,7 +2,6 @@
 
 import React from "react";
 import { UserIcon, UsersIcon } from "lucide-react";
-
 import { useI18n } from "locales/client";
 import { Gender } from "app/[locale]/(app)/tools/calorie-calculator/calorie-calculator.utils";
 

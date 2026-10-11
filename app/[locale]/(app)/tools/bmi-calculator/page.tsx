@@ -1,9 +1,9 @@
 import React from "react";
 import { Metadata } from "next";
-
 import { getI18n } from "locales/server";
 import { BmiEducationalContent } from "app/[locale]/(app)/tools/bmi-calculator/shared/components/BmiEducationalContent";
 import { BmiCalculatorClient } from "app/[locale]/(app)/tools/bmi-calculator/shared/BmiCalculatorClient";
+
 import { getServerUrl } from "@/shared/lib/server-url";
 import { env } from "@/env";
 import { generateSEOMetadata, SEOScripts } from "@/components/seo/SEOHead";

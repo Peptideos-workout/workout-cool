@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+
+import type { ReactNode } from "react";
 
 import { serverRequiredUser } from "@/entities/user/model/get-server-session-user";
 

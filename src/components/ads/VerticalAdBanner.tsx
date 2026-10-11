@@ -1,10 +1,10 @@
-import { env } from "@/env";
-
 import { GoogleAdSense } from "./GoogleAdSense";
 import { EzoicAd } from "./EzoicAd";
 import { SponsorSidebar } from "./custom";
 import { AdWrapper } from "./AdWrapper";
 import { AdPlaceholder } from "./AdPlaceholder";
+
+import { env } from "@/env";
 
 interface VerticalAdBannerProps {
   adSlot: string;

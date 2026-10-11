@@ -4,7 +4,6 @@ import React from "react";
 import { useQueryState } from "nuqs";
 import Image from "next/image";
 import { Trophy } from "lucide-react";
-
 import { useI18n } from "locales/client";
 
 import { useTopWorkoutUsers } from "../hooks/use-top-workout-users";

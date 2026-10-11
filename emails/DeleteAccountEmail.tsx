@@ -1,8 +1,8 @@
 import { Link, Section, Text } from "@react-email/components";
 
-import { SiteConfig } from "@/shared/config/site-config";
-
 import { BaseEmailLayout } from "./utils/BaseEmailLayout";
+
+import { SiteConfig } from "@/shared/config/site-config";
 
 export default function DeleteAccountEmail({ email }: { email: string }) {
   return (

@@ -1,6 +1,6 @@
-import { cn } from "@/shared/lib/utils";
-
 import type { ComponentPropsWithoutRef } from "react";
+
+import { cn } from "@/shared/lib/utils";
 
 export const CircleSvg = ({ className, ...props }: ComponentPropsWithoutRef<"svg">) => {
   return (

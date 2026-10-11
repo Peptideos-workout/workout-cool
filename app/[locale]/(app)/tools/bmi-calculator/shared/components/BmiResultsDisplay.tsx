@@ -2,7 +2,6 @@
 
 import React from "react";
 import { CheckCircleIcon, AlertTriangleIcon, XCircleIcon, InfoIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
-
 import { useI18n } from "locales/client";
 import { BmiResult, BmiCategory, HealthRisk } from "app/[locale]/(app)/tools/bmi-calculator/bmi-calculator.utils";
 

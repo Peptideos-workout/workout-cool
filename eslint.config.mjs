@@ -1,9 +1,9 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
 import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
 import { configs as tsConfigs } from "typescript-eslint";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import globals from "globals";
 import nextPlugin from "@next/eslint-plugin-next";
 import reactHooks from "eslint-plugin-react-hooks";

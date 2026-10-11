@@ -1,8 +1,8 @@
-import { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Metadata } from "next";
 
-import { PremiumUpgradeCard } from "@/features/premium/ui/premium-upgrade-card";
 import { SiteConfig } from "@/shared/config/site-config";
+import { PremiumUpgradeCard } from "@/features/premium/ui/premium-upgrade-card";
 
 export const metadata: Metadata = {
   title: "Premium Plans - Train freely, support the mission",

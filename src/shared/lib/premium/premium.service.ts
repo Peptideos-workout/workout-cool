@@ -1,10 +1,10 @@
 import { PaymentProcessor, Platform } from "@prisma/client";
 
-import { SiteConfig } from "@/shared/config/site-config";
+import type { PremiumStatus, UserSubscription } from "@/shared/types/premium.types";
+
 import { revenueCatApi } from "@/shared/lib/revenuecat";
 import { prisma } from "@/shared/lib/prisma";
-
-import type { PremiumStatus, UserSubscription } from "@/shared/types/premium.types";
+import { SiteConfig } from "@/shared/config/site-config";
 
 /**
  * Premium Service - KISS approach

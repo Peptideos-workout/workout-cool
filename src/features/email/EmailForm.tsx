@@ -4,15 +4,15 @@ import { AlertCircle, CheckCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 
-import { LoadingButton } from "@/features/form/SubmitButton";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormMessage, useZodForm } from "@/components/ui/form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
 import { EmailActionSchema } from "./email.schema";
 import { addEmailAction } from "./email.action";
 
 import type { EmailActionSchemaType } from "./email.schema";
+
+import { LoadingButton } from "@/features/form/SubmitButton";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormMessage, useZodForm } from "@/components/ui/form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export type EmailFormProps = {
   submitButtonLabel?: string;

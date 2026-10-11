@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useCurrentLocale, useI18n } from "locales/client";
 
 import { getSessionAccess, type AccessControlContext } from "@/shared/lib/access-control";
-import { getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
+import { getConfiguredPeptideOsWorkoutsSsoUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { Button } from "@/components/ui/button";
 
 interface SessionAccessGuardProps {
@@ -65,23 +65,11 @@ export function SessionAccessGuard({
                 const redirectUrl = sessionSlug
                   ? `/${locale}/programs/${programSlug}/session/${sessionSlug}`
                   : `/${locale}/programs/${programSlug}`;
-                router.push(`/auth/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+                window.location.assign(getConfiguredPeptideOsWorkoutsSsoUrl(redirectUrl));
               }}
               size="large"
             >
               {t("programs.login_to_continue")}
-            </Button>
-            <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => {
-                const redirectUrl = sessionSlug
-                  ? `/${locale}/programs/${programSlug}/session/${sessionSlug}`
-                  : `/${locale}/programs/${programSlug}`;
-                window.location.assign(getConfiguredPeptideOsSignupUrl(redirectUrl));
-              }}
-              size="large"
-            >
-              {t("programs.signup_to_continue")}
             </Button>
             <Button className="w-full" onClick={() => router.push(`/programs/${programSlug}`)} size="large" variant="outline">
               {t("programs.back_to_program")}

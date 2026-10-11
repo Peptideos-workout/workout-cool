@@ -177,7 +177,7 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      enabled: true,
+      enabled: false,
       disableSignUp: true,
       disableImplicitSignUp: true,
       clientId: env.GOOGLE_CLIENT_ID,

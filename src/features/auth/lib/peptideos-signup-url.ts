@@ -7,6 +7,9 @@ export const PEPTIDEOS_SIGNUP_PATH = "/signup";
 /** PeptideOS password recovery page. */
 export const PEPTIDEOS_FORGOT_PASSWORD_PATH = "/forgot-password";
 
+/** PeptideOS launcher that mints a WC SSO handoff (`/api/workouts/sso` → `/login?next=/workouts` when signed out). */
+export const PEPTIDEOS_WORKOUTS_SSO_PATH = "/api/workouts/sso";
+
 /** PeptideOS account settings (Change Password lives on this page). */
 export const PEPTIDEOS_SETTINGS_PATH = "/settings";
 
@@ -69,7 +72,8 @@ function containsForbiddenReturnChars(value: string): boolean {
   return decoded.includes("\\") || /%5c/i.test(decoded);
 }
 
-function absoluteWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
+/** Same-origin workout-cool return URL. Fail closed (undefined) on anything unsafe. */
+export function safeWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
   const dest = returnTo?.trim();
   const base = appUrl.trim();
   if (!dest || !base || containsForbiddenReturnChars(dest)) {
@@ -113,7 +117,7 @@ function peptideOsAuthUrl(origin: string, path: string): string {
 
 export function peptideOsSignupUrl(origin: string, appUrl: string, returnTo?: string): string {
   const url = new URL(PEPTIDEOS_SIGNUP_PATH, `${origin.replace(/\/$/, "")}/`);
-  const redirect = absoluteWorkoutReturnTo(returnTo, appUrl);
+  const redirect = safeWorkoutReturnTo(returnTo, appUrl);
   if (redirect) {
     url.searchParams.set("redirect", redirect);
   }
@@ -139,12 +143,30 @@ export function resolvePeptideOsForgotPasswordUrl(explicitUrl?: string, appUrl?:
 
 export function peptideOsSettingsUrl(origin: string, appUrl: string, returnTo?: string): string {
   const url = new URL(PEPTIDEOS_SETTINGS_PATH, `${origin.replace(/\/$/, "")}/`);
-  const redirect = absoluteWorkoutReturnTo(returnTo, appUrl);
+  const redirect = safeWorkoutReturnTo(returnTo, appUrl);
   if (redirect) {
     url.searchParams.set("redirect", redirect);
   }
   url.hash = PEPTIDEOS_SETTINGS_PASSWORD_HASH;
   return url.toString();
+}
+
+export function peptideOsWorkoutsSsoUrl(origin: string, appUrl: string, returnTo?: string): string {
+  const url = new URL(PEPTIDEOS_WORKOUTS_SSO_PATH, `${origin.replace(/\/$/, "")}/`);
+  const redirect = safeWorkoutReturnTo(returnTo, appUrl);
+  if (redirect) {
+    url.searchParams.set("redirect", redirect);
+  }
+  return url.toString();
+}
+
+export function resolvePeptideOsWorkoutsSsoUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {
+  const origin = peptideOsOrigin(explicitUrl, appUrl);
+  const app = appUrl?.trim();
+  if (!app) {
+    return peptideOsWorkoutsSsoUrl(origin, origin);
+  }
+  return peptideOsWorkoutsSsoUrl(origin, app, returnTo);
 }
 
 export function resolvePeptideOsSettingsUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {

@@ -3,7 +3,7 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-import { isWorkoutCoolSignupPath, peptideOsSignupRedirectLocation } from "@/features/auth/lib/signup-http-redirect";
+import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 
 function detectUserLocale(request: NextRequest): string {
   const acceptLanguage = request.headers.get("accept-language");
@@ -52,10 +52,11 @@ const I18nMiddleware = createI18nMiddleware({
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const detectedLocale = detectUserLocale(request);
+  const hasSession = Boolean(getSessionCookie(request));
 
-  if (isWorkoutCoolSignupPath(pathname)) {
-    const returnTo = request.nextUrl.searchParams.get("redirect") ?? undefined;
-    const location = peptideOsSignupRedirectLocation(
+  if (shouldRedirectSignedOutRequest(pathname, hasSession)) {
+    const returnTo = `${pathname}${request.nextUrl.search}`;
+    const location = peptideOsSignedOutRedirectLocation(
       process.env.NEXT_PUBLIC_PEPTIDEOS_URL,
       process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL,
       returnTo

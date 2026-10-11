@@ -92,6 +92,24 @@ export function isPublicBetterAuthSignupRequest(pathname: string): boolean {
   return isUndecodableBetterAuthPath(pathname) || isBetterAuthEmailSignUpPath(betterAuthRequestPath(pathname));
 }
 
+/** Better Auth HTTP paths that start email/password or social sign-in. */
+export function isBetterAuthEmailSignInPath(path: string): boolean {
+  return pathEqualsOrPrefixed(canonicalizeSignupPath(path), "/sign-in");
+}
+
+/** Better Auth OAuth callback (Google). */
+export function isBetterAuthOAuthCallbackPath(path: string): boolean {
+  return pathEqualsOrPrefixed(canonicalizeSignupPath(path), "/callback");
+}
+
+export function isPublicBetterAuthSigninRequest(pathname: string): boolean {
+  if (isUndecodableBetterAuthPath(pathname)) {
+    return true;
+  }
+  const path = betterAuthRequestPath(pathname);
+  return isBetterAuthEmailSignInPath(path) || isBetterAuthOAuthCallbackPath(path);
+}
+
 function pathEqualsOrPrefixed(path: string, base: string): boolean {
   return path === base || path.startsWith(`${base}/`);
 }

@@ -76,13 +76,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.85,
       })),
     ),
-    // Auth pages (lower priority as they're functional pages)
-    {
-      url: `${baseUrl}/auth/signin`,
-      lastModified: currentDate,
-      changeFrequency: "monthly" as const,
-      priority: 0.3,
-    },
     {
       url: getConfiguredPeptideOsSignupUrl(),
       lastModified: currentDate,

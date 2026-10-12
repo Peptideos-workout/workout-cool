@@ -24,9 +24,9 @@ function walkTsx(dir: string, acc: string[] = []): string[] {
 
 test("client logout clears the WC session then opens the PeptideOS POST handoff page", () => {
   const src = read("src/features/auth/model/useLogout.ts");
-  assert.match(src, /authClient\.signOut/);
-  assert.match(src, /auth\/signout\/continue/);
-  assert.match(src, /location\.assign|location\.href/);
+  assert.match(src, /signOutAction/);
+  assert.doesNotMatch(src, /authClient\.signOut/);
+  assert.doesNotMatch(src, /location\.assign|location\.href/);
   assert.doesNotMatch(src, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl/);
   assert.doesNotMatch(src, /router\.push\(redirectUrl\)/);
 });
@@ -42,7 +42,8 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
   assert.match(action, /auth\.api\.signOut/);
   assert.match(action, /auth\/signout\/continue/);
   assert.match(action, /logSsoEvent/);
-  assert.match(action, /issueSignoutContinueCookie|SIGNOUT_CONTINUE_COOKIE/);
+  assert.match(action, /issueSignoutContinueCookie|issueSignoutContinueToken/);
+  assert.match(action, /signoutContinueCookieName/);
   assert.doesNotMatch(action, /redirect\([^)]*workouts\/signout|redirect\([^)]*peptideOsWorkoutsSignout/);
   assert.doesNotMatch(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl|api\/workouts\/signout/);
 });
@@ -58,8 +59,10 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
     page,
     /getConfiguredPeptideOsWorkoutsSignoutActionUrl|peptideOsWorkoutsSignoutActionUrl|getConfiguredPeptideOsWorkoutsSignoutUrl/
   );
-  assert.match(page, /signoutContinueView|consumeSignoutContinueToken|autoSubmit/);
+  assert.match(page, /isSignoutContinueAutoSubmitHeader|SIGNOUT_CONTINUE_OK_HEADER|autoSubmit/);
+  assert.match(page, /data-signout-handoff/);
   assert.match(page, /signout_confirm_title/);
+  assert.doesNotMatch(page, /cookies\(|signoutContinueView|consumeSignoutContinueToken/);
   assert.match(ui, /method=["']post["']/i);
   assert.match(ui, /type=["']submit["']/);
   assert.match(ui, /autoSubmit/);
@@ -67,12 +70,14 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
   assert.match(ui, /if\s*\(\s*autoSubmit|autoSubmit\s*&&/);
   assert.doesNotMatch(page, /from-peptideos|peptideos-wc-signout/);
   assert.match(proxy, /isSignoutContinuePath/);
-  assert.match(proxy, /Content-Security-Policy/);
-  assert.match(proxy, /signoutContinueContentSecurityPolicy/);
-  assert.match(proxy, /X-Frame-Options/);
-  assert.match(proxy, /DENY/);
-  assert.match(proxy, /SIGNOUT_CONTINUE_COOKIE/);
-  assert.match(proxy, /maxAge:\s*0/);
+  assert.match(proxy, /signoutContinueProxyResponse/);
+  const proxyHelper = read("src/features/auth/signout/lib/signout-continue-proxy.ts");
+  assert.match(proxyHelper, /NextResponse\.next\(\s*\{\s*request:\s*\{\s*headers/);
+  assert.match(proxyHelper, /SIGNOUT_CONTINUE_OK_HEADER/);
+  assert.match(proxyHelper, /headers\.delete/);
+  assert.match(proxyHelper, /consumeSignoutContinueToken/);
+  assert.match(proxyHelper, /maxAge:\s*0/);
+  assert.match(proxyHelper, /X-Frame-Options|DENY/);
   assert.match(csp, /form-action/);
   assert.match(csp, /'self'/);
   assert.match(csp, /frame-ancestors 'none'/);

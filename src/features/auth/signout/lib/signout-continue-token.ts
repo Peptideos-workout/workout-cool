@@ -3,7 +3,13 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 /** Short-lived hop B cookie that authorizes auto-submit on `/auth/signout/continue`. */
 export const SIGNOUT_CONTINUE_COOKIE = "wc_signout_continue";
 
+/** `__Host-` form used when the cookie is Secure (Path=/, no Domain). */
+export const SIGNOUT_CONTINUE_HOST_COOKIE = `__Host-${SIGNOUT_CONTINUE_COOKIE}`;
+
 export const SIGNOUT_CONTINUE_TTL_SECONDS = 60;
+
+/** Internal request header set by the proxy after it verifies the cookie. Never trust a client copy. */
+export const SIGNOUT_CONTINUE_OK_HEADER = "x-wc-signout-continue";
 
 export interface SignoutContinueCookieOptions {
   httpOnly: true;
@@ -13,7 +19,13 @@ export interface SignoutContinueCookieOptions {
   path: "/";
 }
 
-/** Used nonces. Best-effort single-use in this process; the cookie is also cleared on continue. */
+/**
+ * Token is HMAC-signed with an absolute expiry. Single-use is the cookie clear on /continue.
+ *
+ * A process-local used-nonce Map also rejects same-instance replays of a captured cookie (needed
+ * for `next start` e2e). That Map is not shared across serverless instances — a captured cookie
+ * can still verify on another instance until it expires.
+ */
 const usedNonces = new Map<string, number>();
 
 function continueSecret(explicit?: string): string {
@@ -41,10 +53,77 @@ function sweepUsedNonces(now: number) {
   }
 }
 
-/** Mint a signed, ~60s token. `now` / `secret` are injectable for tests. */
-export function issueSignoutContinueToken(now = Date.now(), secret = continueSecret()): string {
+export function signoutContinueCookieName(secure = process.env.NODE_ENV === "production"): string {
+  return secure ? SIGNOUT_CONTINUE_HOST_COOKIE : SIGNOUT_CONTINUE_COOKIE;
+}
+
+export function signoutContinueCookieOptions(secure = process.env.NODE_ENV === "production"): SignoutContinueCookieOptions {
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: "strict",
+    maxAge: SIGNOUT_CONTINUE_TTL_SECONDS,
+    path: "/"
+  };
+}
+
+export function readSignoutContinueCookie(cookies: { get: (name: string) => { value: string } | undefined }): string | undefined {
+  return cookies.get(SIGNOUT_CONTINUE_HOST_COOKIE)?.value || cookies.get(SIGNOUT_CONTINUE_COOKIE)?.value;
+}
+
+const DECISION_TTL_MS = 10_000;
+
+/** Signed hop-B decision so a rewrite re-entry can reuse consume without trusting a client `1`. */
+export function signSignoutContinueDecision(autoSubmit: boolean, now = Date.now(), secret = continueSecret()): string | null {
   if (!secret) {
-    throw new Error("BETTER_AUTH_SECRET is required to issue a sign-out continue token");
+    return null;
+  }
+  const payload = `${autoSubmit ? "1" : "0"}.${now}`;
+  return `${payload}.${signPayload(payload, secret)}`;
+}
+
+export function readSignoutContinueDecision(
+  header: string | null | undefined,
+  now = Date.now(),
+  secret = continueSecret()
+): boolean | null {
+  if (!header || !secret) {
+    return null;
+  }
+
+  const signatureStart = header.lastIndexOf(".");
+  if (signatureStart < 1) {
+    return null;
+  }
+
+  const payload = header.slice(0, signatureStart);
+  const signature = header.slice(signatureStart + 1);
+  if (!signaturesEqual(signature, signPayload(payload, secret))) {
+    return null;
+  }
+
+  const separator = payload.indexOf(".");
+  if (separator !== 1) {
+    return null;
+  }
+
+  const bit = payload.slice(0, separator);
+  const issuedAt = Number(payload.slice(separator + 1));
+  if ((bit !== "0" && bit !== "1") || !Number.isFinite(issuedAt) || issuedAt > now || now - issuedAt > DECISION_TTL_MS) {
+    return null;
+  }
+
+  return bit === "1";
+}
+
+export function isSignoutContinueAutoSubmitHeader(headers: { get: (name: string) => string | null }): boolean {
+  return readSignoutContinueDecision(headers.get(SIGNOUT_CONTINUE_OK_HEADER)) === true;
+}
+
+/** Mint a signed, ~60s token. Missing secret returns null so hop B can fall back to the click page. */
+export function issueSignoutContinueToken(now = Date.now(), secret = continueSecret()): string | null {
+  if (!secret) {
+    return null;
   }
 
   const nonce = randomBytes(32).toString("base64url");
@@ -54,8 +133,8 @@ export function issueSignoutContinueToken(now = Date.now(), secret = continueSec
 }
 
 /**
- * Consume a continue token. Missing, expired, forged, and replayed values all fail.
- * First consume records the nonce so a replay cannot auto-submit again.
+ * Verify signature + expiry, then mark the nonce used in this process.
+ * Missing, expired, forged, and same-instance replayed values all fail.
  */
 export function consumeSignoutContinueToken(rawCookie: string | undefined, now = Date.now(), secret = continueSecret()): boolean {
   if (!rawCookie || !secret) {
@@ -105,14 +184,4 @@ export function signoutContinueView(
   secret = continueSecret()
 ): "auto-submit" | "confirm" {
   return consumeSignoutContinueToken(rawCookie, now, secret) ? "auto-submit" : "confirm";
-}
-
-export function signoutContinueCookieOptions(secure = process.env.NODE_ENV === "production"): SignoutContinueCookieOptions {
-  return {
-    httpOnly: true,
-    secure,
-    sameSite: "strict",
-    maxAge: SIGNOUT_CONTINUE_TTL_SECONDS,
-    path: "/"
-  };
 }

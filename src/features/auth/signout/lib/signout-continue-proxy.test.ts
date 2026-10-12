@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import {
   SIGNOUT_CONTINUE_COOKIE,
@@ -11,7 +11,7 @@ import {
   issueSignoutContinueToken,
   signSignoutContinueDecision
 } from "./signout-continue-token";
-import { prepareSignoutContinueRequestHeaders, signoutContinueProxyResponse } from "./signout-continue-proxy";
+import { applySignoutConfirmSecurityHeaders, prepareSignoutContinueRequestHeaders, signoutContinueProxyResponse } from "./signout-continue-proxy";
 
 const SECRET = "test-signout-continue-secret";
 const POS = "https://peptideos.us";
@@ -80,6 +80,17 @@ test("prepareSignoutContinueRequestHeaders reuses a signed decision without cons
     if (previous === undefined) delete process.env.BETTER_AUTH_SECRET;
     else process.env.BETTER_AUTH_SECRET = previous;
   }
+});
+
+test("applySignoutConfirmSecurityHeaders sets DENY and merges frame-ancestors into existing CSP", () => {
+  const response = new NextResponse(null, {
+    headers: { "Content-Security-Policy": "default-src 'self'; form-action 'self'" }
+  });
+  applySignoutConfirmSecurityHeaders(response);
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.match(response.headers.get("content-security-policy") ?? "", /default-src 'self'/);
+  assert.match(response.headers.get("content-security-policy") ?? "", /form-action 'self'/);
+  assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
 });
 
 test("signoutContinueProxyResponse forwards consume via NextResponse request headers and clears cookies", () => {

@@ -4,7 +4,9 @@ import assert from "node:assert/strict";
 import {
   SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP,
   SIGNOUT_CONTINUE_X_FRAME_OPTIONS,
+  isSignoutConfirmPath,
   isSignoutContinuePath,
+  mergeFrameAncestorsNone,
   signoutContinueContentSecurityPolicy,
   signoutContinueFormActionCsp
 } from "./signout-continue-csp";
@@ -56,4 +58,25 @@ test("isSignoutContinuePath matches locale-prefixed hop B continue pages only", 
   assert.equal(isSignoutContinuePath("/auth/signout"), false);
   assert.equal(isSignoutContinuePath("/auth/signout/continue/extra"), false);
   assert.equal(isSignoutContinuePath("/profile"), false);
+});
+
+test("isSignoutConfirmPath matches the WC confirm page and not hop B continue", () => {
+  assert.equal(isSignoutConfirmPath("/auth/signout"), true);
+  assert.equal(isSignoutConfirmPath("/en/auth/signout"), true);
+  assert.equal(isSignoutConfirmPath("/fr/auth/signout/"), true);
+  assert.equal(isSignoutConfirmPath("/zh-CN/auth/signout"), true);
+  assert.equal(isSignoutConfirmPath("/auth/signout/continue"), false);
+  assert.equal(isSignoutConfirmPath("/en/auth/signout/continue"), false);
+  assert.equal(isSignoutConfirmPath("/profile"), false);
+});
+
+test("mergeFrameAncestorsNone adds or upgrades frame-ancestors without dropping existing directives", () => {
+  assert.equal(mergeFrameAncestorsNone(undefined), SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP);
+  assert.equal(mergeFrameAncestorsNone(""), SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP);
+  assert.equal(mergeFrameAncestorsNone("default-src 'self'"), `default-src 'self'; ${SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP}`);
+  assert.equal(
+    mergeFrameAncestorsNone("form-action 'self'; frame-ancestors https://evil.example"),
+    `form-action 'self'; ${SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP}`
+  );
+  assert.doesNotMatch(mergeFrameAncestorsNone("frame-ancestors https://evil.example"), /evil/);
 });

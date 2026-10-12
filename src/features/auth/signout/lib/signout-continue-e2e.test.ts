@@ -135,6 +135,46 @@ test("next start auto-submits a valid continue token and shows the click page on
   }
 });
 
+test("next start confirm page sends CSP frame-ancestors none and X-Frame-Options DENY", async (t) => {
+  if (!hasProductionBuild()) {
+    t.skip("requires `pnpm build` so `next start` can boot");
+    return;
+  }
+
+  const port = await unusedPort();
+  const base = `http://127.0.0.1:${port}`;
+  const nextBin = join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
+  const child = spawn(process.execPath, [nextBin, "start", "-p", String(port), "-H", "127.0.0.1"], {
+    cwd: process.cwd(),
+    env: { ...PLACEHOLDER_ENV, PORT: String(port) },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  try {
+    await waitForHealth(base, child);
+    const response = await fetch(`${base}/auth/signout`, {
+      headers: { "accept-language": "en" },
+      redirect: "follow"
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("x-frame-options") ?? "", /DENY/i);
+    assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
+  } finally {
+    child.kill("SIGTERM");
+    await new Promise((resolve) => {
+      if (child.exitCode !== null) {
+        resolve(undefined);
+        return;
+      }
+      child.once("exit", () => resolve(undefined));
+      setTimeout(() => {
+        child.kill("SIGKILL");
+        resolve(undefined);
+      }, 3_000);
+    });
+  }
+});
+
 test("continue page source exposes a handoff marker for the next-start e2e", () => {
   const page = readFileSync("app/[locale]/(app)/auth/signout/continue/page.tsx", "utf8");
   assert.match(page, /data-signout-handoff=\{autoSubmit \? "auto-submit" : "confirm"\}/);

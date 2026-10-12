@@ -3,8 +3,8 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-import { signoutContinueProxyResponse } from "@/features/auth/signout/lib/signout-continue-proxy";
-import { isSignoutContinuePath } from "@/features/auth/signout/lib/signout-continue-csp";
+import { applySignoutConfirmSecurityHeaders, signoutContinueProxyResponse } from "@/features/auth/signout/lib/signout-continue-proxy";
+import { isSignoutConfirmPath, isSignoutContinuePath } from "@/features/auth/signout/lib/signout-continue-csp";
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 
@@ -114,6 +114,10 @@ export async function proxy(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams.toString();
   response.headers.set("searchParams", searchParams);
+
+  if (isSignoutConfirmPath(pathname)) {
+    applySignoutConfirmSecurityHeaders(response);
+  }
 
   return response;
 }

@@ -111,6 +111,14 @@ test("PeptideOS-initiated hop C is POST-only Origin-checked /api/peptideos-wc-si
   assert.doesNotMatch(route, /GET\(request[\s\S]*runPeptideOsWcSignout/);
 });
 
+test("proxy sends clickjacking headers on the WC /auth/signout confirm page", () => {
+  const proxy = read("proxy.ts");
+  const page = read("app/[locale]/(app)/auth/signout/page.tsx");
+  assert.match(proxy, /isSignoutConfirmPath/);
+  assert.match(proxy, /applySignoutConfirmSecurityHeaders/);
+  assert.doesNotMatch(page, /Content-Security-Policy|X-Frame-Options|frame-ancestors/);
+});
+
 test("sign-out confirm page has a heading and a cancel link that does not sign out", () => {
   const page = read("app/[locale]/(app)/auth/signout/page.tsx");
 

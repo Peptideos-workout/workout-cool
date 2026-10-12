@@ -57,6 +57,26 @@ test("client logger drops a hyphen-free token used as the code", () => {
   assert.doesNotMatch(logged, /message/);
 });
 
+test("client logger drops an all-caps random token used as a code", () => {
+  const token = "ABCDEFGHJKLMNPQRSTUVWX";
+  assert.equal(token.includes("_"), false);
+  assert.equal(token.length, 22);
+
+  const lines = captureErrorLogs(() => {
+    logRedactedClientError("resend_verification_email", { name: "APIError", code: token, message: token });
+  });
+  const logged = lines.join("\n");
+
+  assert.match(logged, /"name":"APIError"/);
+  assert.doesNotMatch(logged, /ABCDEFGHJKLMNPQRSTUVWX/);
+  assert.doesNotMatch(logged, /"code"/);
+
+  const kept = captureErrorLogs(() => {
+    logRedactedClientError("resend_verification_email", { name: "APIError", code: "BAD_REQUEST" });
+  });
+  assert.match(kept.join("\n"), /BAD_REQUEST/);
+});
+
 test("useResendEmail does not import the server SSO logger", () => {
   const source = readFileSync(new URL("../model/useResendEmail.ts", import.meta.url), "utf8");
   assert.doesNotMatch(source, /sso-error-log/);

@@ -2,6 +2,7 @@ export interface SanitizedSsoError {
   name: string;
   code: string;
   message?: string;
+  status?: number;
 }
 
 /** Exact safe diagnostics only — never raw Error.message (passwords, hashes, tokens, emails). */
@@ -28,9 +29,22 @@ function allowlistedName(value: string): string {
   return KNOWN_ERROR_NAMES.has(trimmed) ? trimmed : "";
 }
 
+/**
+ * Prisma `P####`, a 5-character SQL state, or a short word code such as `BAD_REQUEST`.
+ * Each word is at most 10 letters, at most four underscores, and the whole code is at most 24 characters.
+ * A long unbroken uppercase token does not match.
+ */
 function allowlistedCode(value: string): string {
   const trimmed = value.trim();
-  return /^(P\d{4}|[0-9A-Z]{5}|[A-Z][A-Z_]{1,31})$/.test(trimmed) ? trimmed : "";
+  if (trimmed.length > 24) return "";
+  return /^(P\d{4}|[0-9A-Z]{5}|[A-Z]{2,10}(?:_[A-Z]{2,10}){0,4})$/.test(trimmed) ? trimmed : "";
+}
+
+/** HTTP status only. Strings, floats, and values outside 100–599 are dropped. */
+function allowlistedHttpStatus(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isInteger(value)) return undefined;
+  if (value < 100 || value > 599) return undefined;
+  return value;
 }
 
 function allowlistedReason(value: string): string {
@@ -76,6 +90,7 @@ export function sanitizeSsoErrorForLog(error: unknown): SanitizedSsoError {
     typeof error === "object" && error !== null && "code" in error && typeof (error as { code: unknown }).code === "string"
       ? (error as { code: string }).code
       : "";
+  const rawStatus = typeof error === "object" && error !== null && "status" in error ? (error as { status: unknown }).status : undefined;
   const rawMessage =
     error instanceof Error
       ? error.message
@@ -88,6 +103,8 @@ export function sanitizeSsoErrorForLog(error: unknown): SanitizedSsoError {
     name: safeDiagnostic(allowlistedName(rawName)),
     code: safeDiagnostic(allowlistedCode(rawCode))
   };
+  const status = allowlistedHttpStatus(rawStatus);
+  if (status !== undefined) sanitized.status = status;
   const message = rawMessage.trim();
   if (ALLOWLISTED_MESSAGES.has(message)) {
     const safeMessage = safeDiagnostic(message);
@@ -110,7 +127,7 @@ export function logSsoEvent(
   level: keyof typeof SSO_LOG_LEVEL = SSO_LOG_LEVEL.error
 ): void {
   try {
-    const payload: Record<string, string> = { scope: allowlistedScope(scope) };
+    const payload: Record<string, string | number> = { scope: allowlistedScope(scope) };
     const safeReason = reason ? allowlistedReason(reason) : "";
     if (safeReason) payload.reason = safeReason;
     if (error !== undefined) {
@@ -118,6 +135,7 @@ export function logSsoEvent(
       if (sanitized.name) payload.name = sanitized.name;
       if (sanitized.code) payload.code = sanitized.code;
       if (sanitized.message) payload.message = sanitized.message;
+      if (sanitized.status !== undefined) payload.status = sanitized.status;
     }
     const write = level === SSO_LOG_LEVEL.debug ? console.debug : level === SSO_LOG_LEVEL.info ? console.info : console.error;
     write("[peptideos-wc-sso]", payload);

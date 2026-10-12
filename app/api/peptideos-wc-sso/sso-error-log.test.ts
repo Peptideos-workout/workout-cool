@@ -111,6 +111,49 @@ test("drops a 20-32 character token with no hyphen", () => {
   assert.doesNotMatch(logged, /"meta"/);
 });
 
+test("drops an all-caps random token used as a code", () => {
+  const token = "ABCDEFGHJKLMNPQRSTUVWX";
+  assert.equal(token.includes("_"), false);
+  assert.equal(token.length, 22);
+
+  const error = Object.assign(new Error("signup failed"), { name: "APIError", code: token });
+  const sanitized = sanitizeSsoErrorForLog(error);
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("handoff_consume", error);
+  });
+  const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+
+  assert.equal(sanitized.name, "APIError");
+  assert.equal(sanitized.code, "");
+  assert.doesNotMatch(logged, /ABCDEFGHJKLMNPQRSTUVWX/);
+  assert.equal(sanitizeSsoErrorForLog({ name: "APIError", code: "BAD_REQUEST" }).code, "BAD_REQUEST");
+  assert.equal(sanitizeSsoErrorForLog({ name: "PrismaClientKnownRequestError", code: "P2002" }).code, "P2002");
+  assert.equal(sanitizeSsoErrorForLog({ name: "Error", code: "42P01" }).code, "42P01");
+});
+
+test("logs an integer HTTP status and drops a non-integer status", () => {
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("wc_signout", { name: "Response", status: 400, code: "ABCDEFGHJKLMNPQRSTUVWX" }, "signout_not_ok");
+  });
+  const logged = lines.join("\n");
+
+  assert.equal(lines.length, 1);
+  assert.match(logged, /"status":400/);
+  assert.doesNotMatch(logged, /"status":"400"/);
+  assert.doesNotMatch(logged, /ABCDEFGHJKLMNPQRSTUVWX/);
+  assert.doesNotMatch(logged, /Response/);
+
+  const rejected = captureErrorLogs(() => {
+    logSsoEvent("wc_signout", { status: "400" }, "signout_not_ok");
+    logSsoEvent("wc_signout", { status: 400.5 }, "signout_not_ok");
+    logSsoEvent("wc_signout", { status: 99 }, "signout_not_ok");
+    logSsoEvent("wc_signout", { status: 600 }, "signout_not_ok");
+  });
+  assert.doesNotMatch(rejected.join("\n"), /status/);
+  assert.doesNotMatch(rejected.join("\n"), /400/);
+  assert.doesNotMatch(rejected.join("\n"), /600/);
+});
+
 test("drops a collision message that is not on the allowlist", () => {
   const sanitized = sanitizeSsoErrorForLog(new Error("User already exists: victim@example.com"));
   assert.equal(sanitized.message, undefined);

@@ -29,6 +29,29 @@ function allowlistedScope(value: string): string {
   return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(value) ? value : "sso";
 }
 
+/**
+ * Emails, JWTs, query text, and token-like strings are never diagnostics.
+ * Short stable codes (P2002, 42P01, BAD_REQUEST) and class names stay.
+ */
+function looksLikeSecret(value: string): boolean {
+  if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(value)) return true;
+  if (/eyJ[A-Za-z0-9_-]{8,}/.test(value)) return true;
+  if (
+    /(?:bearer|password\s*=|token\s*=|secret_token|\$queryRaw|\b(?:SELECT|UPDATE|INSERT|DELETE)\b|set-cookie|authorization)/i.test(
+      value
+    )
+  ) {
+    return true;
+  }
+  if (/^[a-f0-9]{16,}$/i.test(value)) return true;
+  if (value.length >= 20 && /[-]/.test(value) && /[a-z]/i.test(value) && !/^[a-z][a-z0-9_]{0,63}$/.test(value)) return true;
+  return false;
+}
+
+function safeDiagnostic(value: string): string {
+  return value && !looksLikeSecret(value) ? value : "";
+}
+
 export function sanitizeSsoErrorForLog(error: unknown): SanitizedSsoError {
   const rawName =
     error instanceof Error
@@ -47,13 +70,15 @@ export function sanitizeSsoErrorForLog(error: unknown): SanitizedSsoError {
         ? String((error as { message: unknown }).message)
         : "";
 
+  // name + Prisma/SQL code + an exact allowlisted message. Never error.meta, query, args, or clientVersion.
   const sanitized: SanitizedSsoError = {
-    name: allowlistedName(rawName),
-    code: allowlistedCode(rawCode)
+    name: safeDiagnostic(allowlistedName(rawName)),
+    code: safeDiagnostic(allowlistedCode(rawCode))
   };
   const message = rawMessage.trim();
   if (ALLOWLISTED_MESSAGES.has(message)) {
-    sanitized.message = message;
+    const safeMessage = safeDiagnostic(message);
+    if (safeMessage) sanitized.message = safeMessage;
   }
   return sanitized;
 }

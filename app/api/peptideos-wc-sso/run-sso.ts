@@ -64,25 +64,6 @@ function finalizeSession(origin: string, signInRes: Response, redirectParam?: st
   return redirect;
 }
 
-function ssoExplain(e: unknown): { dev_detail?: string } {
-  const allow =
-    process.env.NODE_ENV === "development" || process.env.SSO_DIAGNOSTICS === "1" || process.env.SSO_DIAGNOSTICS === "true";
-  if (!allow) return {};
-  let msg =
-    e instanceof Error
-      ? e.message || String(e)
-      : typeof e === "object" && e !== null && "message" in e && typeof (e as { message: unknown }).message === "string"
-        ? (e as { message: string }).message
-        : String(e);
-  const code =
-    typeof e === "object" && e !== null && "code" in e && typeof (e as { code: unknown }).code === "string"
-      ? (e as { code: string }).code.trim()
-      : "";
-  msg = `${code ? `${code} — ` : ""}${msg}`;
-  msg = msg.slice(0, 800);
-  return msg ? { dev_detail: msg } : {};
-}
-
 function metaDisplayName(meta: unknown): string | undefined {
   if (!meta || typeof meta !== "object") return undefined;
   const m = meta as Record<string, unknown>;
@@ -112,7 +93,7 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
         } catch (e) {
           logSsoEvent("auth_users_lookup", e);
           return {
-            value: reply({ error: "auth_users_lookup_failed", ...ssoExplain(e) }, 500),
+            value: reply({ error: "auth_users_lookup_failed" }, 500),
             disposition: "release" as const
           };
         }
@@ -165,11 +146,11 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
     }
     if (claimed.outcome === "error") {
       logSsoEvent("claimed_run", claimed.error);
-      return reply({ error: "sso_internal_error", ...ssoExplain(claimed.error) }, 500);
+      return reply({ error: "sso_internal_error" }, 500);
     }
     return claimed.value;
   } catch (e) {
     logSsoEvent("unhandled", e);
-    return reply({ error: "sso_internal_error", ...ssoExplain(e) }, 500);
+    return reply({ error: "sso_internal_error" }, 500);
   }
 }

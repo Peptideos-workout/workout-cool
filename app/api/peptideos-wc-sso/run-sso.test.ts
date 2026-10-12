@@ -384,6 +384,7 @@ test("auth.users lookup logs stay allowlisted and never dump the raw stack", asy
 
     const response = await runPeptideOsSso(ssoRequest(), deps);
     assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: "auth_users_lookup_failed" });
     const joined = lines.join("\n");
     assert.match(joined, /auth_users_lookup/);
     assert.match(joined, /42P01/);
@@ -428,7 +429,66 @@ test("auth.users lookup failure before any write releases the single-use claim",
   const body = await response.json();
 
   assert.equal(response.status, 500);
-  assert.equal(body.error, "auth_users_lookup_failed");
+  assert.deepEqual(body, { error: "auth_users_lookup_failed" });
   assert.equal(handoff.consumed_at, null);
   assert.deepEqual(released, [{ hash: hashHandoffToken(rawToken), at: claimedAt }]);
+});
+
+test("handoff consume Prisma errors log and return neither the handoff token nor the email", async () => {
+  const handoffToken = "plaintext-handoff-from-query-string";
+  const email = "athlete@example.test";
+  const query = `UPDATE public.workout_cool_handoffs SET consumed_at = NOW() WHERE secret_token = '${handoffToken}'`;
+  const lines: string[] = [];
+  const originalError = console.error;
+  const env = process.env as Record<string, string | undefined>;
+  const previousDiagnostics = env.SSO_DIAGNOSTICS;
+  const previousNodeEnv = env.NODE_ENV;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  env.SSO_DIAGNOSTICS = "1";
+  env.NODE_ENV = "development";
+
+  try {
+    const { deps } = fakeWorld();
+    deps.claimByHash = async () => {
+      throw Object.assign(new Error(`Invalid prisma.$queryRaw() invocation:\n${query}\n${email}`), {
+        name: "PrismaClientKnownRequestError",
+        code: "P2010",
+        meta: { email, query, args: [handoffToken, email] }
+      });
+    };
+
+    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const body = await response.json();
+    const logged = lines.join("\n");
+    const serialized = `${logged}\n${JSON.stringify(body)}`;
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(body, { error: "sso_internal_error" });
+    assert.equal("dev_detail" in body, false);
+    assert.match(logged, /PrismaClientKnownRequestError/);
+    assert.match(logged, /P2010/);
+    assert.match(logged, /unhandled/);
+    assert.doesNotMatch(serialized, /plaintext-handoff-from-query-string/);
+    assert.doesNotMatch(serialized, /athlete@example\.test/);
+    assert.doesNotMatch(serialized, /secret_token/);
+    assert.doesNotMatch(serialized, /\$queryRaw/);
+    assert.doesNotMatch(serialized, /workout_cool_handoffs/);
+    assert.doesNotMatch(serialized, /dev_detail/);
+
+    const htmlResponse = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
+    const html = await htmlResponse.text();
+    assert.equal(htmlResponse.status, 500);
+    assert.doesNotMatch(html, /plaintext-handoff-from-query-string/);
+    assert.doesNotMatch(html, /athlete@example\.test/);
+    assert.doesNotMatch(html, /secret_token/);
+    assert.doesNotMatch(html, /dev_detail/);
+  } finally {
+    console.error = originalError;
+    if (previousDiagnostics === undefined) delete env.SSO_DIAGNOSTICS;
+    else env.SSO_DIAGNOSTICS = previousDiagnostics;
+    if (previousNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = previousNodeEnv;
+  }
 });

@@ -48,6 +48,45 @@ test("keeps prisma-style codes and an allowlisted unique-constraint message, nev
   assert.ok(!("meta" in sanitized));
 });
 
+test("a Prisma error whose message or meta contains a handoff token and an email logs neither", () => {
+  const handoffToken = "plaintext-handoff-from-query-string";
+  const email = "athlete@example.test";
+  const query = `UPDATE public.workout_cool_handoffs SET consumed_at = NOW() WHERE secret_token = '${handoffToken}'`;
+  const error = Object.assign(new Error(`Invalid prisma.$queryRaw() invocation:\n${query}\n${email}`), {
+    name: "PrismaClientKnownRequestError",
+    code: "P2002",
+    clientVersion: "6.5.0",
+    meta: {
+      email,
+      target: ["email"],
+      query,
+      args: [handoffToken, email]
+    }
+  });
+
+  const sanitized = sanitizeSsoErrorForLog(error);
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("handoff_consume", error);
+  });
+  const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+
+  assert.equal(sanitized.name, "PrismaClientKnownRequestError");
+  assert.equal(sanitized.code, "P2002");
+  assert.equal(sanitized.message, undefined);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0] ?? "", /\[peptideos-wc-sso\]/);
+  assert.match(lines[0] ?? "", /handoff_consume/);
+  assert.match(lines[0] ?? "", /P2002/);
+  assert.doesNotMatch(logged, /plaintext-handoff-from-query-string/);
+  assert.doesNotMatch(logged, /athlete@example\.test/);
+  assert.doesNotMatch(logged, /secret_token/);
+  assert.doesNotMatch(logged, /\$queryRaw/);
+  assert.doesNotMatch(logged, /workout_cool_handoffs/);
+  assert.doesNotMatch(logged, /clientVersion/);
+  assert.doesNotMatch(logged, /"meta"/);
+  assert.doesNotMatch(logged, /"args"/);
+});
+
 test("drops a collision message that is not on the allowlist", () => {
   const sanitized = sanitizeSsoErrorForLog(new Error("User already exists: victim@example.com"));
   assert.equal(sanitized.message, undefined);

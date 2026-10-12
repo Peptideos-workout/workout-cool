@@ -5,6 +5,7 @@ import { betterAuth } from "better-auth";
 import { UserRole } from "@prisma/client";
 import { VerifyEmail } from "@emails/VerifyEmail";
 
+import { logSsoEvent } from "../../../../app/api/peptideos-wc-sso/sso-error-log";
 import { betterAuthTrustedOrigins } from "./trusted-origins";
 import { isSsoUserCreateAllowed } from "./sso-user-create-context";
 import { PUBLIC_SIGNUP_DISABLED } from "./public-signup-guard";
@@ -157,7 +158,7 @@ export const auth = betterAuth({
           react: VerifyEmail({ url: finalUrl }),
         });
       } catch (error) {
-        console.error("Error sending verification email:", error);
+        logSsoEvent("send_verification_email", error);
       }
     },
   },

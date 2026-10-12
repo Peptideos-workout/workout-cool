@@ -5,9 +5,10 @@ import { NextRequest } from "next/server";
 
 import { safeSsoErrorBody, ssoClientError, ssoJson } from "./sso-response";
 
-test("SSO error responses are not storeable", () => {
+test("SSO error responses are not storeable and do not leak a referrer", () => {
   const response = ssoJson({ error: "sso_email_collision" }, 409);
   assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+  assert.equal(response.headers.get("Referrer-Policy"), "no-referrer");
   assert.equal(response.status, 409);
 });
 
@@ -24,6 +25,8 @@ test("SSO errors stay JSON for API callers and HTML for browser navigations", as
   });
   const htmlRes = ssoClientError(htmlReq, { error: "missing_token" }, 400, "https://peptideos.us/api/workouts/sso");
   assert.match(htmlRes.headers.get("content-type") ?? "", /text\/html/);
+  assert.equal(htmlRes.headers.get("Cache-Control"), "private, no-store");
+  assert.equal(htmlRes.headers.get("Referrer-Policy"), "no-referrer");
   assert.match(await htmlRes.text(), /Try again/i);
 });
 

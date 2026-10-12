@@ -14,16 +14,18 @@ import { UserRole } from "@prisma/client";
 import { configuredWorkoutOrigin } from "./workout-origin";
 import { newUnusedSsoPassword } from "./unused-sso-password";
 import { createTrustedBetterAuthSession } from "./trusted-session";
-import { runPeptideOsSso } from "./run-sso";
+import { runPeptideOsSso, runPeptideOsSsoPost } from "./run-sso";
 import { PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
 import { createPeptideosAccountLink } from "./create-peptideos-account";
 import { lookupUnconsumedHandoffByHash } from "./consume-handoff";
 
 import type { NextRequest } from "next/server";
+import type { PeptideOsSsoDeps } from "./run-sso";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
 
 import { prisma } from "@/shared/lib/prisma";
 import { runWithSsoUserCreate } from "@/features/auth/lib/sso-user-create-context";
+import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
 
@@ -69,8 +71,8 @@ async function createPeptideosAccount(userId: string, peptideosUserId: string) {
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
-  return runPeptideOsSso(request, {
+function ssoDeps(): PeptideOsSsoDeps {
+  return {
     claimByHash: (tokenHash) => lookupUnconsumedHandoffByHash(prisma, tokenHash),
     lookupAuthUser: async (hid) => {
       const userRows = await prisma.$queryRaw<{ email: string; meta: unknown }[]>`
@@ -110,5 +112,29 @@ export async function GET(request: NextRequest) {
       }),
     createSignedSession: (userId) => createTrustedBetterAuthSession(userId),
     workoutOrigin: workoutOrigin()
-  });
+  };
+}
+
+// TODO: remove GET ?token= once PeptideOS POSTs the handoff
+// (application/x-www-form-urlencoded token and optional redirect).
+export async function GET(request: NextRequest) {
+  return runPeptideOsSso(request, ssoDeps());
+}
+
+/**
+ * Cross-site form POST from PeptideOS. Origin must be exactly the configured PeptideOS
+ * origin (`NEXT_PUBLIC_PEPTIDEOS_URL`, otherwise the workouts host's apex, for example
+ * https://peptideos.us). A missing Origin is rejected. The 403 uses the same redacted
+ * SSO error page and does not consume the handoff.
+ *
+ * Better Auth's origin check does not reject this request. That middleware is registered
+ * only on the `/api/auth/*` router, and only when the request carries a cookie. This route
+ * is outside that router, and `proxy.ts` excludes `/api`, so neither the proxy nor Better
+ * Auth's CSRF check runs on the POST. `auth.api.signUpEmail` does not go through the router
+ * middleware either (a cookied PeptideOS Origin is 403 on `/api/auth/sign-up/email` and 200
+ * via `auth.api`). trustedOrigins stays the workout app, and `disableCSRFCheck` stays unset,
+ * so `/api/auth/*` still rejects a PeptideOS Origin.
+ */
+export async function POST(request: NextRequest) {
+  return runPeptideOsSsoPost(request, ssoDeps(), peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL));
 }

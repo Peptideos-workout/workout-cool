@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { ssoClientError } from "./sso-response";
+import { applySsoResponseHeaders, ssoClientError } from "./sso-response";
 import { logSsoEvent } from "./sso-error-log";
 import { handoffDisposition } from "./handoff-disposition";
 import { runWithHandoffClaim } from "./consume-handoff";
@@ -56,11 +56,10 @@ function splitName(displayName: string | undefined, email: string): { firstName:
   return { firstName: local || "Athlete", lastName: "User", name: `${local} User` };
 }
 
-function finalizeSession(origin: string, signInRes: Response, redirectParam?: string): NextResponse {
-  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam));
+function finalizeSession(origin: string, signInRes: Response, redirectParam: string | undefined, status: 303 | 307): NextResponse {
+  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam), status);
   mergeSetCookies(signInRes, redirect);
-  redirect.headers.set("Cache-Control", "private, no-store");
-  return redirect;
+  return applySsoResponseHeaders(redirect);
 }
 
 function metaDisplayName(meta: unknown): string | undefined {
@@ -71,11 +70,47 @@ function metaDisplayName(meta: unknown): string | undefined {
   return full || undefined;
 }
 
-export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
-  const redirectParam = request.nextUrl.searchParams.get("redirect") ?? undefined;
+const URLENCODED_FORM = "application/x-www-form-urlencoded";
+
+/** Origin must equal the configured PeptideOS origin. Missing, www, and any other value are rejected. */
+export function isExactPeptideOsSsoOrigin(originHeader: string | null, expectedOrigin: string): boolean {
+  if (!originHeader || !expectedOrigin) return false;
+  return originHeader === expectedOrigin;
+}
+
+function isUrlEncodedForm(request: NextRequest): boolean {
+  const mediaType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  return mediaType === URLENCODED_FORM;
+}
+
+async function readSsoForm(request: NextRequest): Promise<{ token?: string; redirect?: string }> {
+  if (!isUrlEncodedForm(request)) return {};
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return {};
+  }
+  const tokenValue = form.get("token");
+  const redirectValue = form.get("redirect");
+  const token = typeof tokenValue === "string" ? tokenValue.trim() : "";
+  return {
+    token: token || undefined,
+    redirect: typeof redirectValue === "string" ? redirectValue : undefined
+  };
+}
+
+interface SsoSubmission {
+  token?: string;
+  redirect?: string;
+  status: 303 | 307;
+}
+
+async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps, submission: SsoSubmission): Promise<NextResponse> {
+  const redirectParam = submission.redirect;
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin, redirectParam);
   const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref);
-  const tokenParam = request.nextUrl.searchParams.get("token")?.trim();
+  const tokenParam = submission.token?.trim();
   if (!tokenParam) return reply({ error: "missing_token" }, 400);
 
   try {
@@ -133,7 +168,7 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
           };
         }
         return {
-          value: finalizeSession(deps.workoutOrigin, sessionResponse, request.nextUrl.searchParams.get("redirect") ?? undefined),
+          value: finalizeSession(deps.workoutOrigin, sessionResponse, redirectParam, submission.status),
           disposition: "keep" as const
         };
       },
@@ -151,4 +186,37 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
     logSsoEvent("unhandled", e);
     return reply({ error: "sso_internal_error" }, 500);
   }
+}
+
+/** GET `?token=` rollout path. Redirect stays 307 so a navigation remains a GET. */
+export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
+  return executePeptideOsSso(request, deps, {
+    token: request.nextUrl.searchParams.get("token")?.trim(),
+    redirect: request.nextUrl.searchParams.get("redirect") ?? undefined,
+    status: 307
+  });
+}
+
+/**
+ * Form POST from PeptideOS. Origin is checked before the handoff is read or consumed.
+ * Success is 303 so the browser GETs the sanitized workout URL instead of re-POSTing it.
+ * The consume, account, and session steps are the same as GET.
+ */
+export async function runPeptideOsSsoPost(
+  request: NextRequest,
+  deps: PeptideOsSsoDeps,
+  expectedOrigin: string
+): Promise<NextResponse> {
+  if (!isExactPeptideOsSsoOrigin(request.headers.get("origin"), expectedOrigin)) {
+    logSsoEvent("sso_origin", undefined, "forbidden_origin");
+    const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+    return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref);
+  }
+
+  const form = await readSsoForm(request);
+  return executePeptideOsSso(request, deps, {
+    token: form.token,
+    redirect: form.redirect,
+    status: 303
+  });
 }

@@ -54,7 +54,6 @@ const config = [
   ),
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
-    ...nextPlugin.configs["core-web-vitals"],
     plugins: {
       "react-hooks": fixupPluginRules(reactHooks),
       react: fixupPluginRules(reactPlugin),
@@ -176,6 +175,14 @@ const config = [
       parserOptions: {
         project: "./tsconfig.json",
       },
+    },
+  },
+  {
+    files: ["app/**/*.{js,jsx,ts,tsx}", "emails/**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      // next/font cannot apply here: the app layout only preloads Inter (already loaded via next/font/google),
+      // and React Email layouts must use a stylesheet for email-client-safe fonts.
+      "@next/next/no-page-custom-font": "off",
     },
   },
   {

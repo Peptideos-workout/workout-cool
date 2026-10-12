@@ -1,12 +1,14 @@
-import * as React from "react";
+import Image from "next/image";
 
-export const YoutubeIcon: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = (props) => (
-  <img
+import type { ComponentProps } from "react";
+
+export const YoutubeIcon = ({ height = 20, width = 20, ...props }: Omit<ComponentProps<typeof Image>, "alt" | "src">) => (
+  <Image
     alt="Youtube"
-    height={props.height ?? 20}
+    height={height}
     src="/icons/youtube.svg"
     style={{ display: "inline-block", verticalAlign: "middle" }}
-    width={props.width ?? 20}
+    width={width}
     {...props}
   />
 );

@@ -1,3 +1,5 @@
+import { isAllowlistedErrorCode } from "@/shared/lib/allowlisted-error-code";
+
 export interface SanitizedSsoError {
   name: string;
   code: string;
@@ -29,15 +31,10 @@ function allowlistedName(value: string): string {
   return KNOWN_ERROR_NAMES.has(trimmed) ? trimmed : "";
 }
 
-/**
- * Prisma `P####`, a 5-character SQL state, or a short word code such as `BAD_REQUEST`.
- * Each word is at most 10 letters, at most four underscores, and the whole code is at most 24 characters.
- * A long unbroken uppercase token does not match.
- */
+/** Known codes as-is, otherwise Prisma `P####`, a SQL state, or a short word code. */
 function allowlistedCode(value: string): string {
   const trimmed = value.trim();
-  if (trimmed.length > 24) return "";
-  return /^(P\d{4}|[0-9A-Z]{5}|[A-Z]{2,10}(?:_[A-Z]{2,10}){0,4})$/.test(trimmed) ? trimmed : "";
+  return isAllowlistedErrorCode(trimmed) ? trimmed : "";
 }
 
 /** HTTP status only. Strings, floats, and values outside 100–599 are dropped. */

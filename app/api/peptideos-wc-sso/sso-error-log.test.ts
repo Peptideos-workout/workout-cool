@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { logSsoEmailCollision, logSsoEvent, sanitizeSsoErrorForLog } from "./sso-error-log";
 
+import { KNOWN_ERROR_CODES } from "@/shared/lib/allowlisted-error-code";
+
 function captureErrorLogs(run: () => void): string[] {
   const lines: string[] = [];
   const original = console.error;
@@ -152,6 +154,29 @@ test("logs an integer HTTP status and drops a non-integer status", () => {
   assert.doesNotMatch(rejected.join("\n"), /status/);
   assert.doesNotMatch(rejected.join("\n"), /400/);
   assert.doesNotMatch(rejected.join("\n"), /600/);
+});
+
+test("logs every known error code and still drops token-like codes", () => {
+  const dropped = ["sk_live_fixturetoken01", "ABCDEFGHJKLMNPQRSTUVWX", "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD"];
+
+  for (const code of KNOWN_ERROR_CODES) {
+    const sanitized = sanitizeSsoErrorForLog({ name: "APIError", code });
+    const lines = captureErrorLogs(() => {
+      logSsoEvent("handoff_consume", { name: "APIError", code });
+    });
+    assert.equal(sanitized.code, code, code);
+    assert.match(lines[0] ?? "", new RegExp(`"code":"${code}"`), code);
+  }
+
+  for (const token of dropped) {
+    const sanitized = sanitizeSsoErrorForLog({ name: "Error", code: token });
+    const lines = captureErrorLogs(() => {
+      logSsoEvent("handoff_consume", { name: "Error", code: token });
+    });
+    const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+    assert.equal(sanitized.code, "", token);
+    assert.doesNotMatch(logged, new RegExp(token), token);
+  }
 });
 
 test("drops a collision message that is not on the allowlist", () => {

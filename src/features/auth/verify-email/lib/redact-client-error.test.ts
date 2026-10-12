@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 
 import { logRedactedClientError } from "./redact-client-error";
 
+import { KNOWN_ERROR_CODES } from "@/shared/lib/allowlisted-error-code";
+
 function captureErrorLogs(run: () => void): string[] {
   const lines: string[] = [];
   const original = console.error;
@@ -75,6 +77,25 @@ test("client logger drops an all-caps random token used as a code", () => {
     logRedactedClientError("resend_verification_email", { name: "APIError", code: "BAD_REQUEST" });
   });
   assert.match(kept.join("\n"), /BAD_REQUEST/);
+});
+
+test("client logger logs every known error code and still drops token-like codes", () => {
+  const dropped = ["sk_live_fixturetoken01", "ABCDEFGHJKLMNPQRSTUVWX", "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD"];
+
+  for (const code of KNOWN_ERROR_CODES) {
+    const lines = captureErrorLogs(() => {
+      logRedactedClientError("resend_verification_email", { name: "APIError", code });
+    });
+    assert.match(lines[0] ?? "", new RegExp(`"code":"${code}"`), code);
+  }
+
+  for (const token of dropped) {
+    const lines = captureErrorLogs(() => {
+      logRedactedClientError("resend_verification_email", { name: "Error", code: token, message: token });
+    });
+    assert.doesNotMatch(lines.join("\n"), new RegExp(token), token);
+    assert.doesNotMatch(lines.join("\n"), /"code"/, token);
+  }
 });
 
 test("useResendEmail does not import the server SSO logger", () => {

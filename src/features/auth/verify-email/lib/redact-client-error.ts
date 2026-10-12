@@ -1,3 +1,5 @@
+import { isAllowlistedErrorCode } from "@/shared/lib/allowlisted-error-code";
+
 /** Client-safe redactor. Never logs messages, stacks, emails, tokens, or session data. */
 const KNOWN_ERROR_NAMES = new Set([
   "Error",
@@ -10,8 +12,6 @@ const KNOWN_ERROR_NAMES = new Set([
   "PrismaClientValidationError"
 ]);
 
-/** Same shape as the server logger: Prisma, SQL state, or a short `BAD_REQUEST`-style code. Max 24 characters. */
-const ALLOWLISTED_CODE = /^(?:P\d{4}|[0-9A-Z]{5}|[A-Z]{2,10}(?:_[A-Z]{2,10}){0,4})$/;
 const ALLOWLISTED_SCOPE = /^[a-z][a-z0-9_]{0,63}$/;
 
 export function logRedactedClientError(scope: string, error: unknown): void {
@@ -32,7 +32,7 @@ export function logRedactedClientError(scope: string, error: unknown): void {
     const name = rawName.trim();
     if (KNOWN_ERROR_NAMES.has(name)) payload.name = name;
     const code = rawCode.trim();
-    if (code.length <= 24 && ALLOWLISTED_CODE.test(code)) payload.code = code;
+    if (isAllowlistedErrorCode(code)) payload.code = code;
     console.error("[auth]", payload);
   } catch {
     /* Logging must never change the resend flow. */

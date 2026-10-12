@@ -2,6 +2,7 @@ import { Inter, Permanent_Marker } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Providers } from "app/[locale]/providers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
@@ -374,6 +375,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
 
             <TailwindIndicator />
           </Providers>
+          <SpeedInsights />
         </body>
       </html>
     </>

@@ -1,7 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { isSignoutContinuePath, signoutContinueFormActionCsp } from "./signout-continue-csp";
+import {
+  SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP,
+  SIGNOUT_CONTINUE_X_FRAME_OPTIONS,
+  isSignoutContinuePath,
+  signoutContinueContentSecurityPolicy,
+  signoutContinueFormActionCsp
+} from "./signout-continue-csp";
 
 const POS = "https://peptideos.us";
 const WC = "https://workouts.peptideos.us";
@@ -21,6 +27,26 @@ test("signout continue CSP includes a local PeptideOS origin and local WC origin
   assert.match(csp, /http:\/\/localhost:4000/);
   assert.match(csp, /http:\/\/localhost:3010/);
   assert.match(csp, /'self'/);
+});
+
+test("signout continue CSP keeps form-action and adds frame-ancestors none", () => {
+  const formAction = signoutContinueFormActionCsp(POS, WC);
+  const csp = signoutContinueContentSecurityPolicy(POS, WC);
+
+  assert.match(formAction, /^form-action\b/);
+  assert.doesNotMatch(formAction, /frame-ancestors/);
+  assert.match(csp, /^form-action\b/);
+  assert.match(csp, /https:\/\/peptideos\.us/);
+  assert.match(csp, /https:\/\/workouts\.peptideos\.us/);
+  assert.match(csp, /'self'/);
+  assert.match(csp, /frame-ancestors 'none'/);
+  assert.equal(csp, `${formAction}; ${SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP}`);
+  assert.doesNotMatch(csp, /\*/);
+});
+
+test("signout continue page is not frameable", () => {
+  assert.equal(SIGNOUT_CONTINUE_FRAME_ANCESTORS_CSP, "frame-ancestors 'none'");
+  assert.equal(SIGNOUT_CONTINUE_X_FRAME_OPTIONS, "DENY");
 });
 
 test("isSignoutContinuePath matches locale-prefixed hop B continue pages only", () => {

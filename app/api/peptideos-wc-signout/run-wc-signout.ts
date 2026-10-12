@@ -7,7 +7,7 @@ import { peptideOsSignoutFinalizeLocation } from "@/features/auth/lib/peptideos-
 export interface PeptideOsWcSignoutDeps {
   signOut: (args: { headers: Headers }) => Promise<unknown>;
   peptideOsOrigin: string;
-  /** `NEXT_PUBLIC_APP_URL` origin. Local hop C uses this; production adds that origin only. */
+  /** `NEXT_PUBLIC_APP_URL` origin. Added to the hop C allowlist only when it is a loopback/dev host. */
   configuredAppOrigin?: string;
 }
 
@@ -26,12 +26,22 @@ function headerOrigin(value: string | null | undefined): string | undefined {
   }
 }
 
-/** Exact two production hosts plus each configured origin only. No wildcards or sibling hosts. */
+/** Loopback/dev hosts that may be added from env. Production WC / PeptideOS app origins are not. */
+export function isLoopbackDevOrigin(origin: string): boolean {
+  try {
+    const hostname = new URL(origin).hostname.replace(/^\[|\]$/g, "").toLowerCase();
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+/** Exact two production PeptideOS hosts, plus a configured origin only when it is loopback/dev. */
 export function hopCOriginAllowlist(...configuredOrigins: Array<string | undefined>): string[] {
   const allowed = new Set<string>(TRUSTED_HOP_C_ORIGINS);
   for (const configured of configuredOrigins) {
     const origin = headerOrigin(configured);
-    if (origin) {
+    if (origin && isLoopbackDevOrigin(origin)) {
       allowed.add(origin);
     }
   }

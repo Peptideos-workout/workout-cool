@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button";
 
 interface PeptideOsSignoutHandoffProps {
   actionUrl: string;
+  autoSubmit?: boolean;
   redirect: string;
   submitLabel: string;
 }
 
-export function PeptideOsSignoutHandoff({ actionUrl, redirect, submitLabel }: PeptideOsSignoutHandoffProps) {
+export function PeptideOsSignoutHandoff({ actionUrl, autoSubmit = false, redirect, submitLabel }: PeptideOsSignoutHandoffProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    formRef.current?.submit();
-  }, []);
+    if (autoSubmit) {
+      formRef.current?.submit();
+    }
+  }, [autoSubmit]);
 
   return (
     <form action={actionUrl} className="flex flex-col items-center gap-4" method="post" ref={formRef}>

@@ -3,7 +3,8 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-import { isSignoutContinuePath, signoutContinueFormActionCsp } from "@/features/auth/signout/lib/signout-continue-csp";
+import { SIGNOUT_CONTINUE_COOKIE, signoutContinueCookieOptions } from "@/features/auth/signout/lib/signout-continue-token";
+import { isSignoutContinuePath, signoutContinueContentSecurityPolicy } from "@/features/auth/signout/lib/signout-continue-csp";
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 
@@ -109,11 +110,13 @@ export async function proxy(request: NextRequest) {
   if (isSignoutContinuePath(pathname)) {
     response.headers.set(
       "Content-Security-Policy",
-      signoutContinueFormActionCsp(
+      signoutContinueContentSecurityPolicy(
         peptideOsOrigin(process.env.NEXT_PUBLIC_PEPTIDEOS_URL, process.env.NEXT_PUBLIC_APP_URL),
         process.env.NEXT_PUBLIC_APP_URL
       )
     );
+    response.headers.set("X-Frame-Options", "DENY");
+    response.cookies.set(SIGNOUT_CONTINUE_COOKIE, "", { ...signoutContinueCookieOptions(), maxAge: 0 });
   }
 
   return response;

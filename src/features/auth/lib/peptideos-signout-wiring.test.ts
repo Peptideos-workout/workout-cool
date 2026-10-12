@@ -42,6 +42,7 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
   assert.match(action, /auth\.api\.signOut/);
   assert.match(action, /auth\/signout\/continue/);
   assert.match(action, /logSsoEvent/);
+  assert.match(action, /issueSignoutContinueCookie|SIGNOUT_CONTINUE_COOKIE/);
   assert.doesNotMatch(action, /redirect\([^)]*workouts\/signout|redirect\([^)]*peptideOsWorkoutsSignout/);
   assert.doesNotMatch(action, /getConfiguredPeptideOsWorkoutsSignoutUrl|peptideOsWorkoutsSignoutUrl|api\/workouts\/signout/);
 });
@@ -57,15 +58,24 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
     page,
     /getConfiguredPeptideOsWorkoutsSignoutActionUrl|peptideOsWorkoutsSignoutActionUrl|getConfiguredPeptideOsWorkoutsSignoutUrl/
   );
+  assert.match(page, /signoutContinueView|consumeSignoutContinueToken|autoSubmit/);
+  assert.match(page, /signout_confirm_title/);
   assert.match(ui, /method=["']post["']/i);
   assert.match(ui, /type=["']submit["']/);
+  assert.match(ui, /autoSubmit/);
   assert.match(ui, /useEffect|\.submit\(/);
+  assert.match(ui, /if\s*\(\s*autoSubmit|autoSubmit\s*&&/);
   assert.doesNotMatch(page, /from-peptideos|peptideos-wc-signout/);
   assert.match(proxy, /isSignoutContinuePath/);
   assert.match(proxy, /Content-Security-Policy/);
-  assert.match(proxy, /signoutContinueFormActionCsp/);
+  assert.match(proxy, /signoutContinueContentSecurityPolicy/);
+  assert.match(proxy, /X-Frame-Options/);
+  assert.match(proxy, /DENY/);
+  assert.match(proxy, /SIGNOUT_CONTINUE_COOKIE/);
+  assert.match(proxy, /maxAge:\s*0/);
   assert.match(csp, /form-action/);
   assert.match(csp, /'self'/);
+  assert.match(csp, /frame-ancestors 'none'/);
   assert.doesNotMatch(page, /Content-Security-Policy|form-action/);
   assert.doesNotMatch(ui, /Content-Security-Policy|form-action/);
 });

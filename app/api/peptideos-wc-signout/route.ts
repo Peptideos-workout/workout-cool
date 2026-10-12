@@ -6,7 +6,8 @@
  *   Origin: https://peptideos.us
  *
  * GET must not log out (logout CSRF). POST is Origin-checked
- * (Referer fallback). Routed outside `/api/auth/`.
+ * (Referer fallback: peptideos.us / www.peptideos.us, plus a configured
+ * loopback origin only). Routed outside `/api/auth/`.
  * Must end the WC session and land on PeptideOS `/`. Must not call hop B.
  */
 import { NextResponse } from "next/server";

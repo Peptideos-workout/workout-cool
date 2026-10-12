@@ -8,7 +8,7 @@ import { betterAuth } from "better-auth";
 import {
   hopCOriginAllowlist,
   isLoopbackDevOrigin,
-  isNoSessionSignOutStatus,
+  isNoSessionSignOutResponse,
   isTrustedPeptideOsHopCRequest,
   runPeptideOsWcSignout,
   TRUSTED_HOP_C_ORIGINS
@@ -171,13 +171,25 @@ test("hop C POST from the configured local app origin is allowed and still 303s 
   assert.equal(response.headers.get("location"), `${POS}/`);
 });
 
-test("Better Auth no-session sign-out is HTTP 400", () => {
-  assert.equal(isNoSessionSignOutStatus(400), true);
-  assert.equal(isNoSessionSignOutStatus(401), false);
-  assert.equal(isNoSessionSignOutStatus(500), false);
+function betterAuthNoSessionResponse() {
+  return new Response(JSON.stringify({ code: "FAILED_TO_GET_SESSION", message: "Failed to get session" }), {
+    status: 400,
+    statusText: "BAD_REQUEST",
+    headers: { "content-type": "application/json" }
+  });
+}
+
+test("isNoSessionSignOutResponse requires Better Auth FAILED_TO_GET_SESSION, not status 400 alone", async () => {
+  assert.equal(await isNoSessionSignOutResponse(betterAuthNoSessionResponse()), true);
+  assert.equal(
+    await isNoSessionSignOutResponse(new Response(JSON.stringify({ code: "INVALID_TOKEN", message: "invalid token" }), { status: 400 })),
+    false
+  );
+  assert.equal(await isNoSessionSignOutResponse(new Response("Failed to get session", { status: 400 })), false);
+  assert.equal(await isNoSessionSignOutResponse(new Response(JSON.stringify({ code: "FAILED_TO_GET_SESSION" }), { status: 500 })), false);
 });
 
-test("hop C treats a no-session Better Auth 400 as normal and still 303s to PeptideOS /", async () => {
+test("hop C treats a genuine Better Auth no-session 400 as info and still 303s to PeptideOS /", async () => {
   const errors: string[] = [];
   const infos: string[] = [];
   const originalError = console.error;
@@ -194,7 +206,7 @@ test("hop C treats a no-session Better Auth 400 as normal and still 303s to Pept
   };
   try {
     const response = await runPeptideOsWcSignout(hopCPost(`${POS}/`, { origin: POS }), {
-      signOut: async () => new Response("Failed to get session", { status: 400 }),
+      signOut: async () => betterAuthNoSessionResponse(),
       peptideOsOrigin: POS
     });
     assert.equal(response.status, 303);
@@ -208,6 +220,36 @@ test("hop C treats a no-session Better Auth 400 as normal and still 303s to Pept
   const errorLog = errors.join("\n");
   assert.doesNotMatch(errorLog, /signout_not_ok/);
   assert.doesNotMatch(errorLog, /\[peptideos-wc-sso\]/);
+  assert.match(infos.join("\n"), /signout_no_session/);
+});
+
+test("hop C still logs signout_not_ok for a 400 that is not Better Auth no-session", async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  try {
+    const response = await runPeptideOsWcSignout(hopCPost(`${POS}/`), {
+      signOut: async () =>
+        new Response(JSON.stringify({ code: "INVALID_TOKEN", message: "token=secret-session" }), {
+          status: 400,
+          statusText: "BAD_REQUEST"
+        }),
+      peptideOsOrigin: POS
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get("location"), `${POS}/`);
+  } finally {
+    console.error = original;
+  }
+
+  const logged = lines.join("\n");
+  assert.match(logged, /\[peptideos-wc-sso\]/);
+  assert.match(logged, /wc_signout/);
+  assert.match(logged, /signout_not_ok/);
+  assert.match(logged, /400/);
+  assert.doesNotMatch(logged, /secret-session|token=/);
 });
 
 test("hop C logs through logSsoEvent when signOut returns a non-ok Response other than no-session 400", async () => {
@@ -341,6 +383,8 @@ test("hop C Better Auth signOut with no session cookie is not an error and still
   try {
     const result = await testAuth.api.signOut({ headers: request.headers, asResponse: true });
     assert.equal(result.status, 400);
+    assert.deepEqual(await result.clone().json(), { code: "FAILED_TO_GET_SESSION", message: "Failed to get session" });
+    assert.equal(await isNoSessionSignOutResponse(result), true);
 
     const response = await runPeptideOsWcSignout(request, {
       signOut: (args) => testAuth.api.signOut({ headers: args.headers, asResponse: true }),

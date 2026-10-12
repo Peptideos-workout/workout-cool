@@ -216,4 +216,9 @@ test("CI runs the next-start sign-out e2e after the build step with placeholder 
   assert.match(ci, /BETTER_AUTH_SECRET/);
   assert.match(ci, /DATABASE_URL/);
   assert.match(ci, /GOOGLE_CLIENT_ID/);
+
+  const e2e = read("src/features/auth/signout/lib/signout-continue-e2e.test.ts");
+  assert.match(e2e, /process\.env\.CI/);
+  assert.match(e2e, /missingProductionBuildDisposition/);
+  assert.match(e2e, /disposition === "fail"|CI requires `pnpm build`/);
 });

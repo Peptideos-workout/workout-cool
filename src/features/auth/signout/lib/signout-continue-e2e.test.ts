@@ -20,8 +20,28 @@ const PLACEHOLDER_ENV: NodeJS.ProcessEnv = {
   GOOGLE_CLIENT_SECRET: "test-google-client-secret"
 };
 
-function hasProductionBuild(): boolean {
+export function hasProductionBuild(): boolean {
   return existsSync(join(process.cwd(), ".next", "BUILD_ID"));
+}
+
+/** Locally skip when `.next` is missing; in CI that is a hard failure. */
+export function missingProductionBuildDisposition(ci: string | undefined, hasBuild: boolean): "run" | "skip" | "fail" {
+  if (hasBuild) {
+    return "run";
+  }
+  return ci ? "fail" : "skip";
+}
+
+function requireProductionBuild(t: { skip: (msg?: string) => void }): boolean {
+  const disposition = missingProductionBuildDisposition(process.env.CI, hasProductionBuild());
+  if (disposition === "run") {
+    return true;
+  }
+  if (disposition === "fail") {
+    throw new Error("CI requires `pnpm build` so `next start` can boot");
+  }
+  t.skip("requires `pnpm build` so `next start` can boot");
+  return false;
 }
 
 function unusedPort(): Promise<number> {
@@ -76,9 +96,17 @@ function handoffKind(html: string): "auto-submit" | "confirm" | "unknown" {
   return "unknown";
 }
 
+test("missing production build fails in CI and skips locally", () => {
+  assert.equal(missingProductionBuildDisposition("true", false), "fail");
+  assert.equal(missingProductionBuildDisposition("1", false), "fail");
+  assert.equal(missingProductionBuildDisposition(undefined, false), "skip");
+  assert.equal(missingProductionBuildDisposition("", false), "skip");
+  assert.equal(missingProductionBuildDisposition("true", true), "run");
+  assert.equal(missingProductionBuildDisposition(undefined, true), "run");
+});
+
 test("next start auto-submits a valid continue token and shows the click page on replay", async (t) => {
-  if (!hasProductionBuild()) {
-    t.skip("requires `pnpm build` so `next start` can boot");
+  if (!requireProductionBuild(t)) {
     return;
   }
 
@@ -136,8 +164,7 @@ test("next start auto-submits a valid continue token and shows the click page on
 });
 
 test("next start confirm page sends CSP frame-ancestors none and X-Frame-Options DENY", async (t) => {
-  if (!hasProductionBuild()) {
-    t.skip("requires `pnpm build` so `next start` can boot");
+  if (!requireProductionBuild(t)) {
     return;
   }
 

@@ -86,9 +86,28 @@ function forbidden(): NextResponse {
   return response;
 }
 
-/** Better Auth `/sign-out` returns 400 when no session cookie was sent. That is a normal hop C outcome. */
-export function isNoSessionSignOutStatus(status: number): boolean {
-  return status === 400;
+/** Better Auth `/sign-out` body when no session cookie was sent. */
+export const BETTER_AUTH_NO_SESSION_CODE = "FAILED_TO_GET_SESSION";
+export const BETTER_AUTH_NO_SESSION_MESSAGE = "Failed to get session";
+
+function isBetterAuthNoSessionBody(body: unknown): boolean {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+  const record = body as { code?: unknown; message?: unknown };
+  return record.code === BETTER_AUTH_NO_SESSION_CODE || record.message === BETTER_AUTH_NO_SESSION_MESSAGE;
+}
+
+/** Genuine Better Auth no-session sign-out: HTTP 400 plus FAILED_TO_GET_SESSION. Status 400 alone is not enough. */
+export async function isNoSessionSignOutResponse(result: Response): Promise<boolean> {
+  if (result.status !== 400) {
+    return false;
+  }
+  try {
+    return isBetterAuthNoSessionBody(await result.clone().json());
+  } catch {
+    return false;
+  }
 }
 
 function copySetCookies(from: Response, to: NextResponse) {
@@ -119,7 +138,7 @@ export async function runPeptideOsWcSignout(
     if (result instanceof Response) {
       signOutResponse = result;
       if (!result.ok) {
-        if (isNoSessionSignOutStatus(result.status)) {
+        if (await isNoSessionSignOutResponse(result)) {
           logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_no_session", SSO_LOG_LEVEL.info);
         } else {
           logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_not_ok");

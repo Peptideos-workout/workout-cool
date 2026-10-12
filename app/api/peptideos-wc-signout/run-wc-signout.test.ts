@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { betterAuth } from "better-auth";
 
-import { isTrustedPeptideOsHopCRequest, runPeptideOsWcSignout, TRUSTED_HOP_C_ORIGINS } from "./run-wc-signout";
+import { hopCOriginAllowlist, isTrustedPeptideOsHopCRequest, runPeptideOsWcSignout, TRUSTED_HOP_C_ORIGINS } from "./run-wc-signout";
 
 const WC = "https://workouts.peptideos.us";
 const POS = "https://peptideos.us";
@@ -29,6 +29,24 @@ test("trusted hop C Origins are exactly peptideos.us and www.peptideos.us", () =
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: `${POS}/` })), true);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ referer: `${POS}/auth/signout` })), true);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ referer: `${POS_WWW}/` })), true);
+});
+
+test("hop C allowlist adds only the env-configured app origin so local dev is not blocked", () => {
+  const localApp = "http://localhost:3000";
+  const productionApp = WC;
+
+  assert.deepEqual(hopCOriginAllowlist(productionApp), [POS, POS_WWW, productionApp]);
+  assert.deepEqual(hopCOriginAllowlist(POS), [POS, POS_WWW]);
+  assert.deepEqual(hopCOriginAllowlist(localApp), [POS, POS_WWW, localApp]);
+
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: localApp }), localApp), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ referer: `${localApp}/signout` }), localApp), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: POS }), localApp), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: POS_WWW }), productionApp), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: localApp })), false);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: "http://localhost:3001" }), localApp), false);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: "https://staging.peptideos.us" }), productionApp), false);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: "https://*.peptideos.us" }), localApp), false);
 });
 
 test("trusted hop C Origin rejects anything that is not an exact allowlisted origin", () => {
@@ -101,6 +119,42 @@ test("hop C rejects missing or foreign Origin/Referer with 403 and does not sign
     assert.equal(response.status, 403, JSON.stringify(headers));
     assert.equal(signedOut, false, JSON.stringify(headers));
   }
+});
+
+test("hop C POST from the configured local app origin is allowed and still 303s to PeptideOS", async () => {
+  const localApp = "http://localhost:3010";
+  const response = await runPeptideOsWcSignout(hopCPost(`${POS}/`, { origin: localApp }), {
+    signOut: async () => undefined,
+    peptideOsOrigin: POS,
+    configuredAppOrigin: localApp
+  });
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), `${POS}/`);
+});
+
+test("hop C logs through logSsoEvent when signOut returns a non-ok Response", async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  try {
+    const response = await runPeptideOsWcSignout(hopCPost(`${POS}/`), {
+      signOut: async () => new Response("token=secret-session", { status: 400, statusText: "password=hunter2" }),
+      peptideOsOrigin: POS
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get("location"), `${POS}/`);
+  } finally {
+    console.error = original;
+  }
+
+  const logged = lines.join("\n");
+  assert.match(logged, /\[peptideos-wc-sso\]/);
+  assert.match(logged, /wc_signout/);
+  assert.match(logged, /signout_not_ok/);
+  assert.match(logged, /400/);
+  assert.doesNotMatch(logged, /secret-session|hunter2|password=/);
 });
 
 test("hop C still lands on PeptideOS / when sign-out throws and logs through the SSO logger", async () => {

@@ -12,6 +12,7 @@ test("hop C route is POST-only; GET does not sign out", () => {
   assert.match(src, /export async function GET/);
   assert.match(src, /405/);
   assert.match(src, /asResponse:\s*true/);
+  assert.match(src, /configuredAppOrigin|workoutCoolPublicOrigin/);
   assert.match(src, /runPeptideOsWcSignout|auth\.api\.signOut/);
   assert.doesNotMatch(src, /GET\(request[\s\S]*runPeptideOsWcSignout|GET\(request[\s\S]*auth\.api\.signOut/);
   assert.doesNotMatch(src, /peptideOsWorkoutsSignoutUrl|workouts\/signout\/continue|from-peptideos/);

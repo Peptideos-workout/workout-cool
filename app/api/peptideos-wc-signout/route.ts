@@ -15,6 +15,7 @@ import { runPeptideOsWcSignout } from "./run-wc-signout";
 
 import type { NextRequest } from "next/server";
 
+import { workoutCoolPublicOrigin } from "@/shared/lib/workout-cool-public-origin";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
@@ -35,6 +36,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   return runPeptideOsWcSignout(request, {
     signOut: (args) => auth.api.signOut({ ...args, asResponse: true }),
-    peptideOsOrigin: peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL)
+    peptideOsOrigin: peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL),
+    configuredAppOrigin: workoutCoolPublicOrigin(env.NEXT_PUBLIC_APP_URL)
   });
 }

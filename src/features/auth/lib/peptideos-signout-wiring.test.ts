@@ -49,6 +49,8 @@ test("GET /auth/signout never signs out; only the POST server action does", () =
 test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-origin page", () => {
   const page = read("app/[locale]/(app)/auth/signout/continue/page.tsx");
   const ui = read("src/features/auth/signout/ui/peptideos-signout-handoff.tsx");
+  const proxy = read("proxy.ts");
+  const csp = read("src/features/auth/signout/lib/signout-continue-csp.ts");
 
   assert.match(page, /PeptideOsSignoutHandoff/);
   assert.match(
@@ -59,6 +61,13 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
   assert.match(ui, /type=["']submit["']/);
   assert.match(ui, /useEffect|\.submit\(/);
   assert.doesNotMatch(page, /from-peptideos|peptideos-wc-signout/);
+  assert.match(proxy, /isSignoutContinuePath/);
+  assert.match(proxy, /Content-Security-Policy/);
+  assert.match(proxy, /signoutContinueFormActionCsp/);
+  assert.match(csp, /form-action/);
+  assert.match(csp, /'self'/);
+  assert.doesNotMatch(page, /Content-Security-Policy|form-action/);
+  assert.doesNotMatch(ui, /Content-Security-Policy|form-action/);
 });
 
 test("PeptideOS-initiated hop C is POST-only Origin-checked /api/peptideos-wc-signout", () => {

@@ -3,7 +3,9 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
+import { isSignoutContinuePath, signoutContinueFormActionCsp } from "@/features/auth/signout/lib/signout-continue-csp";
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
+import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 
 function detectUserLocale(request: NextRequest): string {
   const acceptLanguage = request.headers.get("accept-language");
@@ -103,6 +105,16 @@ export async function proxy(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams.toString();
   response.headers.set("searchParams", searchParams);
+
+  if (isSignoutContinuePath(pathname)) {
+    response.headers.set(
+      "Content-Security-Policy",
+      signoutContinueFormActionCsp(
+        peptideOsOrigin(process.env.NEXT_PUBLIC_PEPTIDEOS_URL, process.env.NEXT_PUBLIC_APP_URL),
+        process.env.NEXT_PUBLIC_APP_URL
+      )
+    );
+  }
 
   return response;
 }

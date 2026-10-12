@@ -21,25 +21,16 @@ export async function lookupUnconsumedHandoffByHash(
     `;
 }
 
-export async function consumeWorkoutCoolHandoff(
-  rawToken: string,
-  lookupByHash: (tokenHash: string) => Promise<HandoffClaimRow[]>,
-): Promise<string | null> {
-  const tokenHash = hashHandoffToken(rawToken);
-  const rows = await lookupByHash(tokenHash);
-  return rows[0]?.user_id ?? null;
-}
-
 export type HandoffClaimOutcome<T> =
   | { outcome: "invalid_or_expired_handoff" }
   | { outcome: "success"; value: T }
   | { outcome: "error"; error: unknown };
 
-export type HandoffDisposition = "keep" | "release";
+export type HandoffDisposition = "keep";
 
 /**
  * Atomically claim a single-use handoff. A claim stays consumed after success or any failure.
- * Retrying needs a fresh handoff from PeptideOS. `disposition: "release"` is ignored.
+ * Retrying needs a fresh handoff from PeptideOS.
  */
 export async function runWithHandoffClaim<T>(
   rawToken: string,

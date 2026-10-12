@@ -87,6 +87,30 @@ test("a Prisma error whose message or meta contains a handoff token and an email
   assert.doesNotMatch(logged, /"args"/);
 });
 
+test("drops a 20-32 character token with no hyphen", () => {
+  const token = "sk_live_fixturetoken01";
+  assert.ok(token.length >= 20 && token.length <= 32);
+  assert.equal(token.includes("-"), false);
+
+  const error = Object.assign(new Error(`signup failed ${token} athlete@example.test`), {
+    name: "Error",
+    code: token,
+    meta: { token, email: "athlete@example.test" }
+  });
+  const sanitized = sanitizeSsoErrorForLog(error);
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("handoff_consume", error);
+  });
+  const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+
+  assert.equal(sanitized.name, "Error");
+  assert.equal(sanitized.code, "");
+  assert.equal(sanitized.message, undefined);
+  assert.doesNotMatch(logged, /sk_live_fixturetoken01/);
+  assert.doesNotMatch(logged, /athlete@example\.test/);
+  assert.doesNotMatch(logged, /"meta"/);
+});
+
 test("drops a collision message that is not on the allowlist", () => {
   const sanitized = sanitizeSsoErrorForLog(new Error("User already exists: victim@example.com"));
   assert.equal(sanitized.message, undefined);
@@ -132,6 +156,8 @@ test("logSsoEvent info and debug do not write console.error", () => {
   assert.equal(errors.length, 0);
   assert.match(infos.join("\n"), /signout_no_session/);
   assert.match(infos.join("\n"), /\[peptideos-wc-sso\]/);
+  assert.doesNotMatch(infos.join("\n"), /Response/);
+  assert.doesNotMatch(infos.join("\n"), /400/);
 });
 
 test("logSsoEvent never prints stacks or raw Error objects", () => {

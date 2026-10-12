@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "locales/client";
 
-import { logSsoEvent } from "../../../../../app/api/peptideos-wc-sso/sso-error-log";
+import { logRedactedClientError } from "../lib/redact-client-error";
 
 import { getServerUrl } from "@/shared/lib/server-url";
 import { paths } from "@/shared/constants/paths";
@@ -35,7 +35,7 @@ export const useResendEmail = (email: string) => {
       if (res.error) brandedToast({ title: t(res.error.message as keyof typeof t), variant: "error" });
       if (res.data?.status) brandedToast({ title: t("email_sent"), variant: "success" });
     } catch (err) {
-      logSsoEvent("resend_verification_email", err);
+      logRedactedClientError("resend_verification_email", err);
       brandedToast({ title: t("cant_send_email"), variant: "error" });
     } finally {
       setIsDisabled(false);

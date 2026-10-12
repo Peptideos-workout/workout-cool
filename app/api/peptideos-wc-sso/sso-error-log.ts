@@ -11,14 +11,26 @@ const ALLOWLISTED_MESSAGES = new Set([
   "relation auth.users does not exist"
 ]);
 
+/** Class names only. Every entry ends in Error; arbitrary *Error strings are rejected. */
+const KNOWN_ERROR_NAMES = new Set([
+  "Error",
+  "TypeError",
+  "APIError",
+  "PrismaClientKnownRequestError",
+  "PrismaClientUnknownRequestError",
+  "PrismaClientInitializationError",
+  "PrismaClientRustPanicError",
+  "PrismaClientValidationError"
+]);
+
 function allowlistedName(value: string): string {
   const trimmed = value.trim();
-  return /^[A-Za-z][A-Za-z0-9.]{0,79}$/.test(trimmed) ? trimmed : "";
+  return KNOWN_ERROR_NAMES.has(trimmed) ? trimmed : "";
 }
 
 function allowlistedCode(value: string): string {
   const trimmed = value.trim();
-  return /^[A-Za-z0-9_]{1,32}$/.test(trimmed) ? trimmed : "";
+  return /^(P\d{4}|[0-9A-Z]{5}|[A-Z][A-Z_]{1,31})$/.test(trimmed) ? trimmed : "";
 }
 
 function allowlistedReason(value: string): string {
@@ -31,10 +43,11 @@ function allowlistedScope(value: string): string {
 
 /**
  * Emails, JWTs, query text, and token-like strings are never diagnostics.
- * Short stable codes (P2002, 42P01, BAD_REQUEST) and class names stay.
+ * Short stable codes (P2002, 42P01, BAD_REQUEST) and known class names stay.
  */
 function looksLikeSecret(value: string): boolean {
-  if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(value)) return true;
+  if (value.length > 256) return true;
+  if (/[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,253}\.[A-Z]{2,24}/i.test(value)) return true;
   if (/eyJ[A-Za-z0-9_-]{8,}/.test(value)) return true;
   if (
     /(?:bearer|password\s*=|token\s*=|secret_token|\$queryRaw|\b(?:SELECT|UPDATE|INSERT|DELETE)\b|set-cookie|authorization)/i.test(

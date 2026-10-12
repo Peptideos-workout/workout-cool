@@ -248,7 +248,7 @@ test("hop C still logs signout_not_ok for a 400 that is not Better Auth no-sessi
   assert.match(logged, /\[peptideos-wc-sso\]/);
   assert.match(logged, /wc_signout/);
   assert.match(logged, /signout_not_ok/);
-  assert.match(logged, /400/);
+  assert.doesNotMatch(logged, /400/);
   assert.doesNotMatch(logged, /secret-session|token=/);
 });
 
@@ -273,7 +273,7 @@ test("hop C logs through logSsoEvent when signOut returns a non-ok Response othe
   assert.match(logged, /\[peptideos-wc-sso\]/);
   assert.match(logged, /wc_signout/);
   assert.match(logged, /signout_not_ok/);
-  assert.match(logged, /500/);
+  assert.doesNotMatch(logged, /500/);
   assert.doesNotMatch(logged, /secret-session|hunter2|password=/);
 });
 

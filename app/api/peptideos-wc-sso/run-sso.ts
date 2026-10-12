@@ -123,13 +123,13 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
         if (!completed.ok) {
           return {
             value: reply({ error: completed.error }, completed.status),
-            disposition: handoffDisposition(completed.status, completed.wroteUserState)
+            disposition: handoffDisposition()
           };
         }
         if (!sessionResponse) {
           return {
             value: reply({ error: "sso_signin_failed" }, 500),
-            disposition: handoffDisposition(500, completed.wroteUserState)
+            disposition: handoffDisposition()
           };
         }
         return {

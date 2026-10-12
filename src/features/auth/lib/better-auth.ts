@@ -59,7 +59,6 @@ export const auth = betterAuth({
   plugins: [
     admin(),
     customSession(async ({ user, session }) => {
-      console.log("⛏️ customSession executed - fetched from DB - whole user and session data is this ->> \n");
       const userFromDB = await prisma.user.findUnique({
         where: {
           id: user.id,

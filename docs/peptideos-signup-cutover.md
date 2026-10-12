@@ -9,7 +9,7 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 | Surface | Behavior |
 |---|---|
 | Signed-out visitor on a **gated** app page | **HTTP 307** from `proxy.ts` to PeptideOS `/api/workouts/sso` (SSO launcher). Optional `?redirect=` is a safe same-origin workout-cool URL (fail closed). |
-| Signed-out visitor on a **public marketing** page | **Renders**. Header Sign in / Sign up CTAs go to PeptideOS `/login` and `/signup`. |
+| Signed-out visitor on a **public marketing** page | **Renders**. Header Login goes to PeptideOS `/api/workouts/sso?redirect=`. Header and program Signup go to `/signup?next=/api/workouts/sso?redirect=` (PeptideOS `/login` and `/signup` ignore `?redirect=`). |
 | `/auth/signin` and `/auth/signup` pages, workout-cool login/register forms | **Removed**. Those leftover paths are gated (307 to PeptideOS SSO). |
 | `signUpAction` server action | **Blocked** (`public_signup_disabled`) |
 | `POST /api/auth/signup` | **Blocked** `403` + `{ error, redirectTo }` |
@@ -23,11 +23,15 @@ All current WC users have a `wc.account` row with `providerId = "peptideos"`. Di
 | Change-password | PeptideOS `/settings#password` only, when the linked account has an email identity. Legacy local `PasswordForm` and `PUT /api/user/password` are removed. |
 | `/auth/link-peptideos` | **Not allowlisted.** PR #3 is deferred; email collisions in SSO stay `409` and go to support. |
 
-After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars). Anything else fails closed to the workout-cool origin home (`${workoutOrigin}/`, e.g. `https://workouts.peptideos.us/`) — not a relative `/` that the browser would resolve against PeptideOS.
+After PeptideOS SSO, `finalizeSession` honours the untrusted `redirect` query on `/api/peptideos-wc-sso` only when it is a same-origin workout-cool URL (`safeWorkoutReturnTo`: loop-decode, reject `\`, `%5c`, `//`, userinfo, and control chars) and not a leftover auth page (`/auth/signout`, `/auth/signin`, `/auth/signup`, including locale prefixes). Anything else fails closed to the workout-cool origin home (`${workoutOrigin}/`, e.g. `https://workouts.peptideos.us/`) — not a relative `/` that the browser would resolve against PeptideOS. The same denylist is applied by `planWorkoutSso` when building outbound PeptideOS SSO URLs.
 
 PeptideOS `GET /api/workouts/sso?redirect=<absolute WC URL>` preserves that redirect through login and passes it back on the WC SSO handoff. The proxy 307 for gated routes sends `?redirect=<original absolute WC URL, path+query>` with `Cache-Control: private, no-store`.
 
-WC sign-out clears the Better Auth session, then redirects to PeptideOS `GET /api/workouts/signout?redirect=<WC home>`. WC home is public, so PeptideOS cannot bounce the browser back into `/api/workouts/sso`.
+Cross-app sign-out is two hops (PeptideOS PR #37). Neither hop may land on WC `/auth/signout`.
+
+**Hop B (WC-initiated):** `signOutAction` / `useLogout` end the Better Auth session, then `/auth/signout/continue` (a page on the WC origin) auto-submits `POST https://peptideos.us/api/workouts/signout?redirect=https://workouts.peptideos.us/` (no-JS submit button as fallback). PeptideOS Origin-checks the WC origin, signs out, and 303s to the sanitized WC home. WC home is public, so it cannot bounce into `/api/workouts/sso`. That continue page sets `Content-Security-Policy: form-action` to the PeptideOS origin plus `'self'` / the configured WC origin so the POST and the 303 back are allowed.
+
+**Hop C (PeptideOS-initiated):** PeptideOS reaches WC with an auto-submit `POST https://workouts.peptideos.us/api/peptideos-wc-signout?redirect=https://peptideos.us/` (PeptideOS PR #37). GET on that route is 405 and does not sign out (logout CSRF). POST requires Origin exactly `https://peptideos.us` or `https://www.peptideos.us`, plus the env-configured PeptideOS / app origin only (Referer origin as fallback; 403 otherwise), ends the WC session (303 carries `Set-Cookie` `Max-Age=0` for `session_token` and `session_data`), and lands on PeptideOS `/`. Sign-out errors — thrown or `auth.api.signOut({ asResponse: true })` with `!res.ok` — are logged through the allowlisted SSO logger. It must not call hop B.
 
 GET `/auth/signout` only renders a confirmation form. Sign-out runs on the POST server action (Next.js CSRF), so prefetch and a GET render cannot clear the session. `/auth/signout` stays allowlisted; `/dashboard` is gated.
 
@@ -41,6 +45,7 @@ GET `/api/programs/[slug]/sessions/[sessionSlug]` is **gated** (401 without a se
 
 - `/auth/signout` (any locale prefix)
 - `/api/peptideos-wc-sso` and subpaths
+- `/api/peptideos-wc-signout`
 - `/api/health`
 - `/api/webhooks/*`
 - `/api/auth/*` (sign-in/sign-up/reset still blocked in the Better Auth catch-all)
@@ -60,7 +65,7 @@ Landing and marketing/info pages stay **public and indexable**. PeptideOS login 
 - `/premium`
 - `/leaderboard`
 - `/legal/*`
-- robots, sitemap, assets, `/auth/signout`, SSO/health/webhooks/`/api/auth/*`
+- robots, sitemap, assets, `/auth/signout`, SSO/hop C/health/webhooks/`/api/auth/*`
 
 **Gated (signed-out visitors get HTTP 307 to PeptideOS SSO):**
 

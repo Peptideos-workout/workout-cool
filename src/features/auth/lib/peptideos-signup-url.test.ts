@@ -13,7 +13,10 @@ import {
   peptideOsLoginUrl,
   peptideOsOrigin,
   peptideOsSettingsUrl,
+  peptideOsSignoutFinalizeLocation,
   peptideOsSignupUrl,
+  peptideOsWorkoutsSignoutActionUrl,
+  peptideOsWorkoutsSignoutHomeRedirect,
   peptideOsWorkoutsSignoutUrl,
   peptideOsWorkoutsSsoUrl,
   resolvePeptideOsForgotPasswordUrl,
@@ -21,6 +24,7 @@ import {
   resolvePeptideOsSettingsUrl,
   resolvePeptideOsSignupUrl,
   resolvePeptideOsWorkoutsSignoutUrl,
+  planWorkoutSso,
   resolvePeptideOsWorkoutsSsoUrl,
   safeWorkoutReturnTo,
   ssoFinalizeLocation
@@ -43,43 +47,48 @@ test("falls back to the production PeptideOS origin used by the SSO sibling app"
   assert.equal(peptideOsOrigin(undefined, undefined), DEFAULT_PEPTIDEOS_ORIGIN);
 });
 
-test("signup URL is PeptideOS /signup (the existing PeptideOS auth page)", () => {
-  assert.equal(PEPTIDEOS_SIGNUP_PATH, "/signup");
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP), `${ORIGIN}/signup`);
-  assert.equal(resolvePeptideOsSignupUrl(undefined, APP), `${ORIGIN}/signup`);
-});
+function signupNext(returnTo?: string): string {
+  const sso = new URL("/api/workouts/sso", `${ORIGIN}/`);
+  if (returnTo) {
+    sso.searchParams.set("redirect", returnTo);
+  }
+  return `${ORIGIN}/signup?next=${encodeURIComponent(`${sso.pathname}${sso.search}`)}`;
+}
 
-test("login URL is PeptideOS /login (the existing PeptideOS auth page)", () => {
+test("login URL is the PeptideOS SSO entry (PeptideOS /login ignores ?redirect=)", () => {
   assert.equal(PEPTIDEOS_LOGIN_PATH, "/login");
-  assert.equal(peptideOsLoginUrl(ORIGIN, APP), `${ORIGIN}/login`);
-  assert.equal(resolvePeptideOsLoginUrl(undefined, APP), `${ORIGIN}/login`);
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP), `${ORIGIN}/api/workouts/sso`);
+  assert.equal(resolvePeptideOsLoginUrl(undefined, APP), `${ORIGIN}/api/workouts/sso`);
   assert.equal(
     resolvePeptideOsLoginUrl(undefined, APP, "/en/tools"),
-    `${ORIGIN}/login?redirect=${encodeURIComponent(`${APP}/en/tools`)}`
+    `${ORIGIN}/api/workouts/sso?redirect=${encodeURIComponent(`${APP}/en/tools`)}`
   );
-  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/login`);
-  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/login`);
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/api/workouts/sso`);
+  assert.equal(peptideOsLoginUrl(ORIGIN, APP, "/en/%5cevil"), `${ORIGIN}/api/workouts/sso`);
 });
 
-test("preserves a workout-cool return path as an absolute redirect query", () => {
+test("signup URL uses next=/api/workouts/sso?redirect= so PeptideOS returns through SSO", () => {
+  assert.equal(PEPTIDEOS_SIGNUP_PATH, "/signup");
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP), signupNext());
+  assert.equal(resolvePeptideOsSignupUrl(undefined, APP), signupNext());
+});
+
+test("preserves a workout-cool return path on signup as next=/api/workouts/sso?redirect=", () => {
   assert.equal(
     resolvePeptideOsSignupUrl(undefined, APP, "/en/programs/strength"),
-    `${ORIGIN}/signup?redirect=${encodeURIComponent(`${APP}/en/programs/strength`)}`
+    signupNext(`${APP}/en/programs/strength`)
   );
-  assert.equal(
-    peptideOsSignupUrl(ORIGIN, APP, `${APP}/profile`),
-    `${ORIGIN}/signup?redirect=${encodeURIComponent(`${APP}/profile`)}`
-  );
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, `${APP}/profile`), signupNext(`${APP}/profile`));
 });
 
 test("drops off-origin and protocol-relative return URLs", () => {
-  assert.equal(resolvePeptideOsSignupUrl(undefined, APP, "https://evil.example/phish"), `${ORIGIN}/signup`);
-  assert.equal(resolvePeptideOsSignupUrl(undefined, APP, "//evil.example/phish"), `${ORIGIN}/signup`);
+  assert.equal(resolvePeptideOsSignupUrl(undefined, APP, "https://evil.example/phish"), signupNext());
+  assert.equal(resolvePeptideOsSignupUrl(undefined, APP, "//evil.example/phish"), signupNext());
 });
 
 test("requires parsed return origin to match appUrl origin", () => {
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil.example/phish"), `${ORIGIN}/signup`);
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://workouts.peptideos.us.evil.example/"), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil.example/phish"), signupNext());
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://workouts.peptideos.us.evil.example/"), signupNext());
 });
 
 test("rejects backslash and encoded %5c variants in the return URL", () => {
@@ -97,8 +106,8 @@ test("rejects backslash and encoded %5c variants in the return URL", () => {
     `${APP}/%25255cevil`
   ];
   for (const returnTo of rejected) {
-    assert.equal(peptideOsSignupUrl(ORIGIN, APP, returnTo), `${ORIGIN}/signup`, returnTo);
-    assert.equal(resolvePeptideOsSignupUrl(undefined, APP, returnTo), `${ORIGIN}/signup`, returnTo);
+    assert.equal(peptideOsSignupUrl(ORIGIN, APP, returnTo), signupNext(), returnTo);
+    assert.equal(resolvePeptideOsSignupUrl(undefined, APP, returnTo), signupNext(), returnTo);
   }
 });
 
@@ -111,19 +120,19 @@ function encodeTimes(value: string, times: number): string {
 }
 
 test("drops return URLs that stay encoded after 8 decode rounds or are malformed", () => {
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, `/en/programs${encodeTimes("/", 8)}strength`), `${ORIGIN}/signup`);
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%"), `${ORIGIN}/signup`);
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%ZZ"), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, `/en/programs${encodeTimes("/", 8)}strength`), signupNext());
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%"), signupNext());
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%ZZ"), signupNext());
   assert.equal(
     resolvePeptideOsSignupUrl(undefined, APP, "/en/programs/strength"),
-    `${ORIGIN}/signup?redirect=${encodeURIComponent(`${APP}/en/programs/strength`)}`
+    signupNext(`${APP}/en/programs/strength`)
   );
 });
 
 test("rejects return URLs that carry userinfo", () => {
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil@workouts.peptideos.us/phish"), `${ORIGIN}/signup`);
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://user:pass@workouts.peptideos.us/profile"), `${ORIGIN}/signup`);
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://workouts.peptideos.us@evil.example/"), `${ORIGIN}/signup`);
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://evil@workouts.peptideos.us/phish"), signupNext());
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://user:pass@workouts.peptideos.us/profile"), signupNext());
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, "https://workouts.peptideos.us@evil.example/"), signupNext());
 });
 
 test("PeptideOS workouts SSO URL is the existing /api/workouts/sso launcher", () => {
@@ -181,6 +190,32 @@ test("SSO finalize honours only same-origin WC redirects and fails closed to the
   assert.equal(ssoFinalizeLocation(APP, `${APP}/en/profile\u0000`), `${APP}/`);
 });
 
+test("planWorkoutSso and ssoFinalizeLocation deny leftover WC auth pages and fall back to /", () => {
+  const denied = [
+    "/auth/signout",
+    "/auth/signin",
+    "/auth/signup",
+    "/en/auth/signout",
+    "/fr/auth/signin",
+    "/zh-CN/auth/signup/",
+    `${APP}/auth/signout`,
+    `${APP}/en/auth/signin`,
+    `${APP}/zh-cn/auth/signup`,
+    "/AUTH/SIGNOUT",
+    "/Auth/SignIn",
+    `${APP}/AUTH/signup`
+  ];
+  for (const returnTo of denied) {
+    assert.equal(ssoFinalizeLocation(APP, returnTo), `${APP}/`, returnTo);
+    assert.equal(planWorkoutSso(ORIGIN, APP, returnTo), `${ORIGIN}/api/workouts/sso`, returnTo);
+    assert.equal(peptideOsWorkoutsSsoUrl(ORIGIN, APP, returnTo), `${ORIGIN}/api/workouts/sso`, returnTo);
+    assert.equal(peptideOsLoginUrl(ORIGIN, APP, returnTo), `${ORIGIN}/api/workouts/sso`, returnTo);
+    assert.equal(peptideOsSignupUrl(ORIGIN, APP, returnTo), signupNext(), returnTo);
+  }
+  assert.equal(planWorkoutSso(ORIGIN, APP, "/en/profile"), `${ORIGIN}/api/workouts/sso?redirect=${encodeURIComponent(`${APP}/en/profile`)}`);
+  assert.equal(ssoFinalizeLocation(APP, "/en/profile"), `${APP}/en/profile`);
+});
+
 test("PeptideOS workouts sign-out URL redirects back to public WC home", () => {
   assert.equal(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, "/api/workouts/signout");
   assert.equal(
@@ -191,4 +226,24 @@ test("PeptideOS workouts sign-out URL redirects back to public WC home", () => {
     resolvePeptideOsWorkoutsSignoutUrl(undefined, APP),
     `${ORIGIN}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`
   );
+});
+
+test("hop B POST action is PeptideOS sign-out with redirect=WC home, never WC /auth/signout", () => {
+  const hopB = `${ORIGIN}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`;
+  assert.equal(peptideOsWorkoutsSignoutActionUrl(ORIGIN, APP), hopB);
+  assert.equal(peptideOsWorkoutsSignoutHomeRedirect(APP), `${APP}/`);
+  assert.doesNotMatch(peptideOsWorkoutsSignoutActionUrl(ORIGIN, APP), /auth\/signout/);
+});
+
+test("hop C finalize lands on PeptideOS / and never hop B or WC /auth/signout", () => {
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, undefined), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${APP}/auth/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${APP}/`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/api/workouts/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/auth/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/AUTH/SIGNOUT`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/API/workouts/signout`), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, "https://evil.example/"), `${ORIGIN}/`);
+  assert.equal(peptideOsSignoutFinalizeLocation(ORIGIN, `${ORIGIN}/settings`), `${ORIGIN}/settings`);
 });

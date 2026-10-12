@@ -1,3 +1,5 @@
+import { stripLocalePrefix } from "./locale-path";
+
 /** PeptideOS public origin used by the sibling SSO app (`NEXT_PUBLIC_APP_URL` on PeptideOS). */
 export const DEFAULT_PEPTIDEOS_ORIGIN = "https://peptideos.us";
 
@@ -127,25 +129,57 @@ export function safeWorkoutReturnTo(returnTo: string | undefined, appUrl: string
   return destUrl.toString();
 }
 
-function peptideOsAuthUrl(origin: string, path: string): string {
-  return new URL(path, `${origin.replace(/\/$/, "")}/`).toString();
+/** Leftover WC auth pages: logout confirm, removed sign-in, removed sign-up. */
+const DENIED_SSO_RETURN_PATHS = ["/auth/signout", "/auth/signin", "/auth/signup"] as const;
+
+function isDeniedSsoReturnPath(pathname: string): boolean {
+  const path = stripLocalePrefix(pathname).toLowerCase();
+  return DENIED_SSO_RETURN_PATHS.some((denied) => path === denied || path.startsWith(`${denied}/`));
 }
 
-function peptideOsAuthPageUrl(origin: string, path: string, appUrl: string, returnTo?: string): string {
-  const url = new URL(path, `${origin.replace(/\/$/, "")}/`);
-  const redirect = safeWorkoutReturnTo(returnTo, appUrl);
+/** Same-origin WC return, minus leftover auth pages that 404 or sign the user back out. */
+function plannedWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
+  const safe = safeWorkoutReturnTo(returnTo, appUrl);
+  if (!safe) {
+    return undefined;
+  }
+  if (isDeniedSsoReturnPath(new URL(safe).pathname)) {
+    return undefined;
+  }
+  return safe;
+}
+
+/** PeptideOS `/api/workouts/sso` launcher with a sanitized WC `redirect`. */
+export function planWorkoutSso(origin: string, appUrl: string, returnTo?: string): string {
+  const url = new URL(PEPTIDEOS_WORKOUTS_SSO_PATH, `${origin.replace(/\/$/, "")}/`);
+  const redirect = plannedWorkoutReturnTo(returnTo, appUrl);
   if (redirect) {
     url.searchParams.set("redirect", redirect);
   }
   return url.toString();
 }
 
+function peptideOsSsoNext(appUrl: string, returnTo?: string): string {
+  const sso = new URL(PEPTIDEOS_WORKOUTS_SSO_PATH, "https://peptideos.invalid/");
+  const redirect = plannedWorkoutReturnTo(returnTo, appUrl);
+  if (redirect) {
+    sso.searchParams.set("redirect", redirect);
+  }
+  return `${sso.pathname}${sso.search}`;
+}
+
+function peptideOsAuthUrl(origin: string, path: string): string {
+  return new URL(path, `${origin.replace(/\/$/, "")}/`).toString();
+}
+
 export function peptideOsSignupUrl(origin: string, appUrl: string, returnTo?: string): string {
-  return peptideOsAuthPageUrl(origin, PEPTIDEOS_SIGNUP_PATH, appUrl, returnTo);
+  const url = new URL(PEPTIDEOS_SIGNUP_PATH, `${origin.replace(/\/$/, "")}/`);
+  url.searchParams.set("next", peptideOsSsoNext(appUrl, returnTo));
+  return url.toString();
 }
 
 export function peptideOsLoginUrl(origin: string, appUrl: string, returnTo?: string): string {
-  return peptideOsAuthPageUrl(origin, PEPTIDEOS_LOGIN_PATH, appUrl, returnTo);
+  return planWorkoutSso(origin, appUrl, returnTo);
 }
 
 export function resolvePeptideOsSignupUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {
@@ -185,12 +219,7 @@ export function peptideOsSettingsUrl(origin: string, appUrl: string, returnTo?: 
 }
 
 export function peptideOsWorkoutsSsoUrl(origin: string, appUrl: string, returnTo?: string): string {
-  const url = new URL(PEPTIDEOS_WORKOUTS_SSO_PATH, `${origin.replace(/\/$/, "")}/`);
-  const redirect = safeWorkoutReturnTo(returnTo, appUrl);
-  if (redirect) {
-    url.searchParams.set("redirect", redirect);
-  }
-  return url.toString();
+  return planWorkoutSso(origin, appUrl, returnTo);
 }
 
 export function resolvePeptideOsWorkoutsSsoUrl(explicitUrl?: string, appUrl?: string, returnTo?: string): string {
@@ -205,16 +234,30 @@ export function resolvePeptideOsWorkoutsSsoUrl(explicitUrl?: string, appUrl?: st
 /** Honour PeptideOS `redirect` only when it is a safe same-origin WC URL. Fail closed to `${origin}/`. */
 export function ssoFinalizeLocation(workoutOrigin: string, redirectParam?: string): string {
   const origin = new URL(workoutOrigin).origin;
-  return safeWorkoutReturnTo(redirectParam, origin) ?? `${origin}/`;
+  return plannedWorkoutReturnTo(redirectParam, origin) ?? `${origin}/`;
 }
 
 export function peptideOsWorkoutsSignoutUrl(origin: string, appUrl: string): string {
   const url = new URL(PEPTIDEOS_WORKOUTS_SIGNOUT_PATH, `${origin.replace(/\/$/, "")}/`);
-  const home = safeWorkoutReturnTo("/", appUrl);
+  const home = peptideOsWorkoutsSignoutHomeRedirect(appUrl);
   if (home) {
     url.searchParams.set("redirect", home);
   }
   return url.toString();
+}
+
+/**
+ * Hop B POST action: `https://peptideos.us/api/workouts/signout?redirect=https://workouts.peptideos.us/`.
+ * Must be submitted from a page on the WC origin so PeptideOS Origin check passes.
+ */
+export function peptideOsWorkoutsSignoutActionUrl(origin: string, appUrl: string): string {
+  return peptideOsWorkoutsSignoutUrl(origin, appUrl);
+}
+
+/** WC home PeptideOS should return to after cross-app sign-out. */
+export function peptideOsWorkoutsSignoutHomeRedirect(appUrl: string): string {
+  const origin = new URL(appUrl).origin;
+  return safeWorkoutReturnTo("/", origin) ?? `${origin}/`;
 }
 
 export function resolvePeptideOsWorkoutsSignoutUrl(explicitUrl?: string, appUrl?: string): string {
@@ -233,4 +276,28 @@ export function resolvePeptideOsSettingsUrl(explicitUrl?: string, appUrl?: strin
     return peptideOsSettingsUrl(origin, origin);
   }
   return peptideOsSettingsUrl(origin, app, returnTo);
+}
+
+/** Leftover / looping PeptideOS paths hop C must never land on. */
+const DENIED_HOP_C_RETURN_PATHS = ["/api/workouts/signout", "/auth/signout", "/auth/signin", "/auth/signup"] as const;
+
+function isDeniedHopCReturnPath(pathname: string): boolean {
+  const path = pathname.toLowerCase();
+  return DENIED_HOP_C_RETURN_PATHS.some((denied) => path === denied || path.startsWith(`${denied}/`));
+}
+
+/**
+ * Hop C landing: honour PeptideOS `redirect` only when it is a safe same-origin PeptideOS URL
+ * and not hop B / leftover auth. Fail closed to `${peptideOsOrigin}/`. Never WC `/auth/signout`.
+ */
+export function peptideOsSignoutFinalizeLocation(peptideOsOriginUrl: string, redirectParam?: string): string {
+  const origin = new URL(peptideOsOriginUrl).origin;
+  const safe = safeWorkoutReturnTo(redirectParam, origin);
+  if (!safe) {
+    return `${origin}/`;
+  }
+  if (isDeniedHopCReturnPath(new URL(safe).pathname)) {
+    return `${origin}/`;
+  }
+  return safe;
 }

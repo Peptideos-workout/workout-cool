@@ -1,5 +1,7 @@
 import {
   peptideOsOrigin,
+  peptideOsWorkoutsSignoutActionUrl,
+  peptideOsWorkoutsSignoutHomeRedirect,
   resolvePeptideOsForgotPasswordUrl,
   resolvePeptideOsLoginUrl,
   resolvePeptideOsSettingsUrl,
@@ -32,6 +34,17 @@ export function getConfiguredPeptideOsWorkoutsSsoUrl(returnTo?: string): string 
 
 export function getConfiguredPeptideOsWorkoutsSignoutUrl(): string {
   return resolvePeptideOsWorkoutsSignoutUrl(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL);
+}
+
+export function getConfiguredPeptideOsWorkoutsSignoutActionUrl(): string {
+  return peptideOsWorkoutsSignoutActionUrl(
+    peptideOsOrigin(env.NEXT_PUBLIC_PEPTIDEOS_URL, env.NEXT_PUBLIC_APP_URL),
+    env.NEXT_PUBLIC_APP_URL
+  );
+}
+
+export function getConfiguredPeptideOsWorkoutsSignoutHomeRedirect(): string {
+  return peptideOsWorkoutsSignoutHomeRedirect(env.NEXT_PUBLIC_APP_URL);
 }
 
 export function getConfiguredPeptideOsOrigin(): string {

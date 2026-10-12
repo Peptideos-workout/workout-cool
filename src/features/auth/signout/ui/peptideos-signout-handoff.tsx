@@ -7,11 +7,18 @@ import { Button } from "@/components/ui/button";
 interface PeptideOsSignoutHandoffProps {
   actionUrl: string;
   autoSubmit?: boolean;
+  fallbackLabel: string;
   redirect: string;
   submitLabel: string;
 }
 
-export function PeptideOsSignoutHandoff({ actionUrl, autoSubmit = false, redirect, submitLabel }: PeptideOsSignoutHandoffProps) {
+export function PeptideOsSignoutHandoff({
+  actionUrl,
+  autoSubmit = false,
+  fallbackLabel,
+  redirect,
+  submitLabel
+}: PeptideOsSignoutHandoffProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -23,7 +30,13 @@ export function PeptideOsSignoutHandoff({ actionUrl, autoSubmit = false, redirec
   return (
     <form action={actionUrl} className="flex flex-col items-center gap-4" method="post" ref={formRef}>
       <input name="redirect" type="hidden" value={redirect} />
-      <Button type="submit">{submitLabel}</Button>
+      {autoSubmit ? (
+        <Button className="signout-continue-fallback min-h-12 px-8 py-3 text-lg" style={{ display: "none" }} type="submit">
+          {fallbackLabel}
+        </Button>
+      ) : (
+        <Button type="submit">{submitLabel}</Button>
+      )}
     </form>
   );
 }

@@ -74,6 +74,14 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
   assert.match(page, /isSignoutContinueAutoSubmitHeader|SIGNOUT_CONTINUE_OK_HEADER|autoSubmit/);
   assert.match(page, /data-signout-handoff/);
   assert.match(page, /signout_confirm_title/);
+  assert.match(page, /SignoutPendingNotice/);
+  assert.match(page, /signout_pending_title/);
+  assert.match(page, /signout_pending_fallback/);
+  assert.match(page, /<noscript>/);
+  assert.match(page, /signout-continue-fallback\{display:inline-flex !important\}/);
+  assert.match(ui, /signout-continue-fallback/);
+  assert.match(ui, /display:\s*"none"/);
+  assert.match(ui, /fallbackLabel/);
   assert.doesNotMatch(page, /cookies\(|signoutContinueView|consumeSignoutContinueToken/);
   assert.match(ui, /method=["']post["']/i);
   assert.match(ui, /type=["']submit["']/);
@@ -133,6 +141,8 @@ test("signout_confirm_title is defined in every locale", () => {
   for (const locale of ["en", "fr", "es", "zh-CN", "ru", "pt"]) {
     const src = read(`locales/${locale}.ts`);
     assert.match(src, /signout_confirm_title:/, locale);
+    assert.match(src, /signout_pending_title:/, locale);
+    assert.match(src, /signout_pending_fallback:/, locale);
   }
 });
 

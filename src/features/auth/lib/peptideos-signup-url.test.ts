@@ -119,8 +119,8 @@ function encodeTimes(value: string, times: number): string {
   return encoded;
 }
 
-test("drops return URLs that stay encoded after 8 decode rounds or are malformed", () => {
-  assert.equal(peptideOsSignupUrl(ORIGIN, APP, `/en/programs${encodeTimes("/", 8)}strength`), signupNext());
+test("drops return URLs that stay encoded after 5 decode rounds or are malformed", () => {
+  assert.equal(peptideOsSignupUrl(ORIGIN, APP, `/en/programs${encodeTimes("/", 5)}strength`), signupNext());
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%"), signupNext());
   assert.equal(peptideOsSignupUrl(ORIGIN, APP, "/en/programs/%ZZ"), signupNext());
   assert.equal(
@@ -177,6 +177,37 @@ test("rejects control characters in the return URL", () => {
   assert.equal(safeWorkoutReturnTo(`${APP}/en/profile\u001f`, APP), undefined);
   assert.equal(safeWorkoutReturnTo(`${APP}/en/profile\u007f`, APP), undefined);
   assert.equal(safeWorkoutReturnTo("/en/profile?tab=ok", APP), `${APP}/en/profile?tab=ok`);
+});
+
+test("ssoFinalizeLocation uses decoded form only for checks and never returns a decoded rewrite", () => {
+  const home = `${APP}/`;
+  const encodedSlash = [
+    "/%2F%2Fevil.com",
+    `${APP}/%2F%2Fevil.com`,
+    "/%252F%252Fevil.com",
+    `${APP}/%252F%252Fevil.com`,
+    "/%25252F%25252Fevil.com",
+    "/%5C%5Cevil.com",
+    `${APP}/%5C%5Cevil.com`,
+    "/%255c%255cevil.com",
+    "/auth/signin;next=/",
+    "/en/auth/signup;x",
+    `${APP}/auth/signout;foo`,
+    "/%2Fauth/signin;bar"
+  ];
+
+  for (const dest of encodedSlash) {
+    const location = ssoFinalizeLocation(APP, dest);
+    assert.equal(location, home, dest);
+    assert.doesNotMatch(location, /evil\.com/, dest);
+    assert.doesNotMatch(location, /\/\/\//, dest);
+  }
+
+  assert.equal(ssoFinalizeLocation(APP, "/en/profile%2Fstats"), `${APP}/en/profile%2Fstats`);
+  assert.equal(ssoFinalizeLocation(APP, `${APP}/en/profile%2Fstats`), `${APP}/en/profile%2Fstats`);
+  assert.equal(ssoFinalizeLocation(APP, "/en/profile;jsessionid=1"), `${APP}/en/profile;jsessionid=1`);
+  assert.equal(safeWorkoutReturnTo(`${APP}/%2F%2Fevil.com`, APP), undefined);
+  assert.equal(safeWorkoutReturnTo("/%2F%2Fevil.com", APP), undefined);
 });
 
 test("SSO finalize honours only same-origin WC redirects and fails closed to the WC origin home", () => {

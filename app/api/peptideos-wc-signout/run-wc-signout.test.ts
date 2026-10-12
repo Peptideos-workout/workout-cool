@@ -5,7 +5,13 @@ import { NextRequest } from "next/server";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { betterAuth } from "better-auth";
 
-import { hopCOriginAllowlist, isTrustedPeptideOsHopCRequest, runPeptideOsWcSignout, TRUSTED_HOP_C_ORIGINS } from "./run-wc-signout";
+import {
+  hopCOriginAllowlist,
+  isLoopbackDevOrigin,
+  isTrustedPeptideOsHopCRequest,
+  runPeptideOsWcSignout,
+  TRUSTED_HOP_C_ORIGINS
+} from "./run-wc-signout";
 
 const WC = "https://workouts.peptideos.us";
 const POS = "https://peptideos.us";
@@ -31,22 +37,41 @@ test("trusted hop C Origins are exactly peptideos.us and www.peptideos.us", () =
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ referer: `${POS_WWW}/` })), true);
 });
 
-test("hop C allowlist adds only the env-configured app origin so local dev is not blocked", () => {
+test("hop C allowlist is PeptideOS hosts plus a configured loopback origin only", () => {
   const localApp = "http://localhost:3000";
+  const loopbackIpv4 = "http://127.0.0.1:3010";
+  const loopbackIpv6 = "http://[::1]:3010";
   const productionApp = WC;
 
-  assert.deepEqual(hopCOriginAllowlist(productionApp), [POS, POS_WWW, productionApp]);
+  assert.deepEqual(hopCOriginAllowlist(productionApp), [POS, POS_WWW]);
+  assert.deepEqual(hopCOriginAllowlist(POS, productionApp), [POS, POS_WWW]);
   assert.deepEqual(hopCOriginAllowlist(POS), [POS, POS_WWW]);
   assert.deepEqual(hopCOriginAllowlist(localApp), [POS, POS_WWW, localApp]);
+  assert.deepEqual(hopCOriginAllowlist(loopbackIpv4), [POS, POS_WWW, loopbackIpv4]);
+  assert.deepEqual(hopCOriginAllowlist(loopbackIpv6), [POS, POS_WWW, loopbackIpv6]);
+  assert.ok(!hopCOriginAllowlist(productionApp).includes(WC));
 
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: localApp }), localApp), true);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ referer: `${localApp}/signout` }), localApp), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: loopbackIpv4 }), loopbackIpv4), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: loopbackIpv6 }), loopbackIpv6), true);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: POS }), localApp), true);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: POS_WWW }), productionApp), true);
+  assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: WC }), productionApp), false);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: localApp })), false);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: "http://localhost:3001" }), localApp), false);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: "https://staging.peptideos.us" }), productionApp), false);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: "https://*.peptideos.us" }), localApp), false);
+});
+
+test("isLoopbackDevOrigin allows only localhost, 127.0.0.1, and ::1", () => {
+  assert.equal(isLoopbackDevOrigin("http://localhost:3000"), true);
+  assert.equal(isLoopbackDevOrigin("http://127.0.0.1:4000"), true);
+  assert.equal(isLoopbackDevOrigin("http://[::1]:3010"), true);
+  assert.equal(isLoopbackDevOrigin(WC), false);
+  assert.equal(isLoopbackDevOrigin(POS), false);
+  assert.equal(isLoopbackDevOrigin("https://workouts.localhost"), false);
+  assert.equal(isLoopbackDevOrigin("https://127.0.0.1.evil.example"), false);
 });
 
 test("trusted hop C Origin rejects anything that is not an exact allowlisted origin", () => {
@@ -119,6 +144,19 @@ test("hop C rejects missing or foreign Origin/Referer with 403 and does not sign
     assert.equal(response.status, 403, JSON.stringify(headers));
     assert.equal(signedOut, false, JSON.stringify(headers));
   }
+});
+
+test("hop C POST from the workout-cool production origin is rejected even when that origin is configured", async () => {
+  let signedOut = false;
+  const response = await runPeptideOsWcSignout(hopCPost(`${POS}/`, { origin: WC }), {
+    signOut: async () => {
+      signedOut = true;
+    },
+    peptideOsOrigin: POS,
+    configuredAppOrigin: WC
+  });
+  assert.equal(response.status, 403);
+  assert.equal(signedOut, false);
 });
 
 test("hop C POST from the configured local app origin is allowed and still 303s to PeptideOS", async () => {

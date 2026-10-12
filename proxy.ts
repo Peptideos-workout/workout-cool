@@ -3,7 +3,8 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-import { isSignoutContinuePath, signoutContinueFormActionCsp } from "@/features/auth/signout/lib/signout-continue-csp";
+import { signoutContinueProxyResponse } from "@/features/auth/signout/lib/signout-continue-proxy";
+import { isSignoutContinuePath } from "@/features/auth/signout/lib/signout-continue-csp";
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 
@@ -68,6 +69,14 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  if (isSignoutContinuePath(pathname)) {
+    return signoutContinueProxyResponse(request, {
+      locale: detectedLocale,
+      peptideOsOrigin: peptideOsOrigin(process.env.NEXT_PUBLIC_PEPTIDEOS_URL, process.env.NEXT_PUBLIC_APP_URL),
+      appUrl: process.env.NEXT_PUBLIC_APP_URL
+    });
+  }
+
   // If on root path and no locale detected yet, redirect to detected locale
   if (pathname === "/" && !request.cookies.get("detected-locale")) {
     const url = new URL(`/${detectedLocale}`, request.url);
@@ -105,16 +114,6 @@ export async function proxy(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams.toString();
   response.headers.set("searchParams", searchParams);
-
-  if (isSignoutContinuePath(pathname)) {
-    response.headers.set(
-      "Content-Security-Policy",
-      signoutContinueFormActionCsp(
-        peptideOsOrigin(process.env.NEXT_PUBLIC_PEPTIDEOS_URL, process.env.NEXT_PUBLIC_APP_URL),
-        process.env.NEXT_PUBLIC_APP_URL
-      )
-    );
-  }
 
   return response;
 }

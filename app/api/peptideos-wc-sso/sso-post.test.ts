@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { betterAuth } from "better-auth";
 
-import { isExactPeptideOsSsoOrigin, runPeptideOsSso, runPeptideOsSsoPost } from "./run-sso";
+import { SSO_POST_MAX_BYTES, isExactPeptideOsSsoOrigin, runPeptideOsSso, runPeptideOsSsoPost } from "./run-sso";
 import { hashHandoffToken } from "./hash-handoff-token";
 import { attachTrustedSession } from "./attach-trusted-session";
 
@@ -41,6 +41,8 @@ function postRequest(options: {
   cookie?: string;
   referer?: string;
   queryToken?: string;
+  rawBody?: string;
+  contentLength?: string;
 }) {
   const url = new URL(`${WC}/api/peptideos-wc-sso`);
   if (options.queryToken) url.searchParams.set("token", options.queryToken);
@@ -55,7 +57,9 @@ function postRequest(options: {
   headers.set("accept", options.accept ?? "application/json");
   if (options.cookie) headers.set("cookie", options.cookie);
   if (options.referer) headers.set("referer", options.referer);
-  return new NextRequest(url, { method: "POST", headers, body: params.toString() });
+  if (options.contentLength !== undefined) headers.set("content-length", options.contentLength);
+  const body = options.rawBody ?? params.toString();
+  return new NextRequest(url, { method: "POST", headers, body });
 }
 
 function fakeWorld(overrides: {
@@ -236,7 +240,11 @@ test("an expired handoff fails and is not consumed", async () => {
 
 test("POST ignores a query-string token and a non-form body", async () => {
   const queryOnly = fakeWorld();
-  const fromQuery = await runPeptideOsSsoPost(postRequest({ queryToken: rawToken, token: undefined }), queryOnly.deps, POS);
+  const fromQuery = await runPeptideOsSsoPost(
+    postRequest({ queryToken: rawToken, redirect: "/en/profile" }),
+    queryOnly.deps,
+    POS
+  );
   assert.equal(fromQuery.status, 400);
   assert.deepEqual(await fromQuery.json(), { error: "missing_token" });
   assert.equal(queryOnly.handoff.consumed_at, null);
@@ -253,6 +261,84 @@ test("POST ignores a query-string token and a non-form body", async () => {
   assert.deepEqual(await fromJson.json(), { error: "missing_token" });
   assert.equal(json.handoff.consumed_at, null);
   assert.equal(json.claimCount(), 0);
+});
+
+function assertPayloadTooLarge(response: Response, handoff: FakeHandoff, claimCount: () => number) {
+  assert.equal(response.status, 413);
+  assertSsoResponseHeaders(response);
+  assert.equal(handoff.consumed_at, null);
+  assert.equal(claimCount(), 0);
+}
+
+test("POST rejects a content-length over 4KB, a missing body, and an oversized body without consuming", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+  try {
+    const declared = fakeWorld();
+    const declaredResponse = await runPeptideOsSsoPost(
+      postRequest({ token: rawToken, contentLength: String(SSO_POST_MAX_BYTES + 1) }),
+      declared.deps,
+      POS
+    );
+    assert.deepEqual(await declaredResponse.json(), { error: "payload_too_large" });
+    assertPayloadTooLarge(declaredResponse, declared.handoff, declared.claimCount);
+
+    const missing = fakeWorld();
+    const missingRequest = new NextRequest(`${WC}/api/peptideos-wc-sso`, {
+      method: "POST",
+      headers: {
+        origin: POS,
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded"
+      }
+    });
+    const missingResponse = await runPeptideOsSsoPost(missingRequest, missing.deps, POS);
+    assert.deepEqual(await missingResponse.json(), { error: "payload_too_large" });
+    assertPayloadTooLarge(missingResponse, missing.handoff, missing.claimCount);
+
+    const empty = fakeWorld();
+    const emptyResponse = await runPeptideOsSsoPost(postRequest({ rawBody: "" }), empty.deps, POS);
+    assert.deepEqual(await emptyResponse.json(), { error: "payload_too_large" });
+    assertPayloadTooLarge(emptyResponse, empty.handoff, empty.claimCount);
+
+    const oversized = fakeWorld();
+    const tokenPart = `token=${encodeURIComponent(rawToken)}&pad=`;
+    const oversizedBody = tokenPart + "a".repeat(SSO_POST_MAX_BYTES);
+    assert.ok(Buffer.byteLength(oversizedBody) > SSO_POST_MAX_BYTES);
+    const oversizedResponse = await runPeptideOsSsoPost(
+      postRequest({ rawBody: oversizedBody, contentLength: "32" }),
+      oversized.deps,
+      POS
+    );
+    const oversizedJson = await oversizedResponse.json();
+    assert.deepEqual(oversizedJson, { error: "payload_too_large" });
+    assert.doesNotMatch(JSON.stringify(oversizedJson), new RegExp(rawToken));
+    assertPayloadTooLarge(oversizedResponse, oversized.handoff, oversized.claimCount);
+
+    const htmlWorld = fakeWorld();
+    const html = await runPeptideOsSsoPost(
+      postRequest({ rawBody: oversizedBody, contentLength: "32", accept: "text/html" }),
+      htmlWorld.deps,
+      POS
+    );
+    const page = await html.text();
+    assert.equal(html.status, 413);
+    assert.match(html.headers.get("content-type") ?? "", /text\/html/);
+    assert.doesNotMatch(page, new RegExp(rawToken));
+    assert.doesNotMatch(page, /payload_too_large/);
+    assert.equal(htmlWorld.claimCount(), 0);
+
+    const capped = fakeWorld();
+    const pad = "b".repeat(SSO_POST_MAX_BYTES - Buffer.byteLength(tokenPart));
+    const cappedBody = tokenPart + pad;
+    assert.equal(Buffer.byteLength(cappedBody), SSO_POST_MAX_BYTES);
+    const cappedResponse = await runPeptideOsSsoPost(postRequest({ rawBody: cappedBody }), capped.deps, POS);
+    assert.equal(cappedResponse.status, 303);
+    assert.ok(capped.handoff.consumed_at);
+    assertSsoResponseHeaders(cappedResponse);
+  } finally {
+    console.error = original;
+  }
 });
 
 test("POST email collision is 409 and the handoff stays consumed", async () => {

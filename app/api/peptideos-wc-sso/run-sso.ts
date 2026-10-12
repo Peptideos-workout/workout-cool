@@ -72,6 +72,34 @@ function metaDisplayName(meta: unknown): string | undefined {
 
 const URLENCODED_FORM = "application/x-www-form-urlencoded";
 
+/** Form POST bodies larger than this are rejected before they are parsed. */
+export const SSO_POST_MAX_BYTES = 4 * 1024;
+
+type SsoPostBodyLimit = "ok" | "missing" | "oversized";
+
+/** `Content-Length` over the cap, or an unusable length. Absent means the body itself must be measured. */
+function declaredSsoPostBodyLimit(contentLength: string | null): SsoPostBodyLimit | "absent" {
+  if (contentLength === null) return "absent";
+  const trimmed = contentLength.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) return "missing";
+  const declared = Number(trimmed);
+  if (!Number.isSafeInteger(declared) || declared === 0) return "missing";
+  if (declared > SSO_POST_MAX_BYTES) return "oversized";
+  return "ok";
+}
+
+/**
+ * Byte length of a body whose declared length is missing or within the cap.
+ * A `Content-Length` over the cap is rejected before this runs, so `formData()` is never called on it.
+ * Returns 0 when the request has no body.
+ */
+async function measuredSsoPostBodyLength(request: NextRequest): Promise<number | "oversized"> {
+  if (!request.body) return 0;
+  const bytes = await request.clone().arrayBuffer();
+  if (bytes.byteLength > SSO_POST_MAX_BYTES) return "oversized";
+  return bytes.byteLength;
+}
+
 /** Origin must equal the configured PeptideOS origin. Missing, www, and any other value are rejected. */
 export function isExactPeptideOsSsoOrigin(originHeader: string | null, expectedOrigin: string): boolean {
   if (!originHeader || !expectedOrigin) return false;
@@ -188,6 +216,26 @@ async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps,
   }
 }
 
+function ssoPayloadTooLarge(request: NextRequest, workoutOrigin: string): NextResponse {
+  logSsoEvent("sso_body", undefined, "payload_too_large");
+  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
+  return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref);
+}
+
+/** 413 before `formData()`. A declared length over the cap is rejected without reading the body. */
+async function rejectOversizedSsoPost(request: NextRequest, workoutOrigin: string): Promise<NextResponse | null> {
+  const declared = declaredSsoPostBodyLimit(request.headers.get("content-length"));
+  if (declared === "missing" || declared === "oversized") {
+    return ssoPayloadTooLarge(request, workoutOrigin);
+  }
+
+  const measured = await measuredSsoPostBodyLength(request);
+  if (measured === "oversized" || measured === 0) {
+    return ssoPayloadTooLarge(request, workoutOrigin);
+  }
+  return null;
+}
+
 /** GET `?token=` rollout path. Redirect stays 307 so a navigation remains a GET. */
 export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
   return executePeptideOsSso(request, deps, {
@@ -212,6 +260,9 @@ export async function runPeptideOsSsoPost(
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
     return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref);
   }
+
+  const tooLarge = await rejectOversizedSsoPost(request, deps.workoutOrigin);
+  if (tooLarge) return tooLarge;
 
   const form = await readSsoForm(request);
   return executePeptideOsSso(request, deps, {

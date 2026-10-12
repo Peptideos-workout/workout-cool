@@ -66,6 +66,35 @@ test("logSsoEmailCollision writes reason plus safe fields and never the raw toke
   assert.doesNotMatch(lines[0] ?? "", /plaintext-handoff-from-query-string/);
 });
 
+test("logSsoEvent info and debug do not write console.error", () => {
+  const errors: string[] = [];
+  const infos: string[] = [];
+  const originalError = console.error;
+  const originalInfo = console.info;
+  const originalDebug = console.debug;
+  console.error = (...args: unknown[]) => {
+    errors.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  console.info = (...args: unknown[]) => {
+    infos.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  console.debug = (...args: unknown[]) => {
+    infos.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  try {
+    logSsoEvent("wc_signout", { name: "Response", code: "400" }, "signout_no_session", "info");
+    logSsoEvent("wc_signout", { name: "Response", code: "400" }, "signout_no_session", "debug");
+  } finally {
+    console.error = originalError;
+    console.info = originalInfo;
+    console.debug = originalDebug;
+  }
+
+  assert.equal(errors.length, 0);
+  assert.match(infos.join("\n"), /signout_no_session/);
+  assert.match(infos.join("\n"), /\[peptideos-wc-sso\]/);
+});
+
 test("logSsoEvent never prints stacks or raw Error objects", () => {
   const lines = captureErrorLogs(() => {
     logSsoEvent("auth_users_lookup", Object.assign(new Error("relation auth.users does not exist"), { code: "42P01" }));

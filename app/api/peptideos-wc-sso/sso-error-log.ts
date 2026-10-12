@@ -58,8 +58,19 @@ export function sanitizeSsoErrorForLog(error: unknown): SanitizedSsoError {
   return sanitized;
 }
 
+export const SSO_LOG_LEVEL = {
+  error: "error",
+  info: "info",
+  debug: "debug"
+} as const;
+
 /** Server-side only. Never logs stacks, raw Error objects, or non-allowlisted messages. */
-export function logSsoEvent(scope: string, error?: unknown, reason?: string): void {
+export function logSsoEvent(
+  scope: string,
+  error?: unknown,
+  reason?: string,
+  level: keyof typeof SSO_LOG_LEVEL = SSO_LOG_LEVEL.error
+): void {
   try {
     const payload: Record<string, string> = { scope: allowlistedScope(scope) };
     const safeReason = reason ? allowlistedReason(reason) : "";
@@ -70,7 +81,8 @@ export function logSsoEvent(scope: string, error?: unknown, reason?: string): vo
       if (sanitized.code) payload.code = sanitized.code;
       if (sanitized.message) payload.message = sanitized.message;
     }
-    console.error("[peptideos-wc-sso]", payload);
+    const write = level === SSO_LOG_LEVEL.debug ? console.debug : level === SSO_LOG_LEVEL.info ? console.info : console.error;
+    write("[peptideos-wc-sso]", payload);
   } catch {
     /* Logging must never change SSO disposition. */
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { logSsoEvent } from "../peptideos-wc-sso/sso-error-log";
+import { logSsoEvent, SSO_LOG_LEVEL } from "../peptideos-wc-sso/sso-error-log";
 
 import { peptideOsSignoutFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
 
@@ -86,6 +86,11 @@ function forbidden(): NextResponse {
   return response;
 }
 
+/** Better Auth `/sign-out` returns 400 when no session cookie was sent. That is a normal hop C outcome. */
+export function isNoSessionSignOutStatus(status: number): boolean {
+  return status === 400;
+}
+
 function copySetCookies(from: Response, to: NextResponse) {
   const h = from.headers as Headers & { getSetCookie?: () => string[] };
   const list = typeof h.getSetCookie === "function" ? h.getSetCookie() : null;
@@ -114,7 +119,11 @@ export async function runPeptideOsWcSignout(
     if (result instanceof Response) {
       signOutResponse = result;
       if (!result.ok) {
-        logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_not_ok");
+        if (isNoSessionSignOutStatus(result.status)) {
+          logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_no_session", SSO_LOG_LEVEL.info);
+        } else {
+          logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_not_ok");
+        }
       }
     }
   } catch (error) {

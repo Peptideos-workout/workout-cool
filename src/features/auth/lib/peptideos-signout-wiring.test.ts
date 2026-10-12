@@ -31,6 +31,18 @@ test("client logout clears the WC session then opens the PeptideOS POST handoff 
   assert.doesNotMatch(src, /router\.push\(redirectUrl\)/);
 });
 
+test("useLogout runs signOutAction before invalidating or clearing the session query", () => {
+  const src = read("src/features/auth/model/useLogout.ts");
+  const mutation = src.match(/mutationFn:\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\n\s*\}/);
+  assert.ok(mutation, "useLogout must keep a mutationFn");
+  const body = mutation[0];
+  const signOutAt = body.search(/await signOutAction|logoutThenClearSession/);
+  const invalidateAt = body.search(/invalidateQueries|removeQueries|resetQueries|setQueryData/);
+  assert.notEqual(signOutAt, -1, "mutationFn must call signOutAction");
+  assert.notEqual(invalidateAt, -1, "mutationFn must still clear the session query after sign-out");
+  assert.ok(signOutAt < invalidateAt, "signOutAction must run before session query invalidation");
+});
+
 test("GET /auth/signout never signs out; only the POST server action does", () => {
   const page = read("app/[locale]/(app)/auth/signout/page.tsx");
   const action = read("src/features/auth/signout/model/signout.action.ts");
@@ -137,4 +149,63 @@ test("any Link to /auth/signout disables Next.js prefetch", () => {
       assert.match(tag, /prefetch=\{false\}/, `${file} Link to /auth/signout must set prefetch={false}`);
     }
   }
+});
+
+const PEPTIDEOS_SSO_HREF =
+  /getConfiguredPeptideOs(?:Login|Signup|WorkoutsSso)Url|workouts\/sso|peptideos\.us\/api\/workouts\/sso/i;
+
+test("shared Link disables Next.js prefetch for absolute http(s) hrefs", () => {
+  const src = read("src/components/ui/link.tsx");
+  assert.match(src, /disableCrossOriginPrefetch/);
+  assert.match(src, /prefetch \?\?/);
+  assert.match(src, /typeof href === "string"/);
+});
+
+test("SSO entry points are plain navigation links and never prefetch cross-origin PeptideOS URLs", () => {
+  const header = read("src/features/layout/Header.tsx");
+  const login = header.match(/<Link\b[\s\S]{0,500}?getConfiguredPeptideOsLoginUrl\(\)[\s\S]{0,200}?>/);
+  const signup = header.match(/<Link\b[\s\S]{0,500}?getConfiguredPeptideOsSignupUrl\(\)[\s\S]{0,200}?>/);
+  assert.ok(login, "header login must stay a Link or be converted to a plain <a>");
+  assert.ok(signup, "header signup must stay a Link or be converted to a plain <a>");
+  assert.match(login[0], /prefetch=\{false\}/, "header login Link must set prefetch={false}");
+  assert.match(signup[0], /prefetch=\{false\}/, "header signup Link must set prefetch={false}");
+  assert.doesNotMatch(header, /fetch\s*\(\s*getConfiguredPeptideOs(?:Login|Signup)/);
+
+  for (const file of [...walkTsx("src"), ...walkTsx("app")]) {
+    const src = read(file);
+    const linkTags = src.match(/<(?:Link|a)\b[\s\S]{0,800}?>/g) ?? [];
+    for (const tag of linkTags) {
+      if (!PEPTIDEOS_SSO_HREF.test(tag)) {
+        continue;
+      }
+      if (/^<a\b/.test(tag)) {
+        assert.doesNotMatch(tag, /rel=["'](?:prefetch|preload)["']/, `${file} must not prefetch PeptideOS via <link>/<a>`);
+        continue;
+      }
+      assert.match(tag, /prefetch=\{false\}/, `${file} Link to PeptideOS SSO must set prefetch={false}`);
+    }
+
+    for (const call of src.match(/fetch\s*\([\s\S]{0,300}\)/g) ?? []) {
+      assert.doesNotMatch(call, PEPTIDEOS_SSO_HREF, `${file} must not fetch PeptideOS SSO`);
+    }
+
+    for (const tag of src.match(/<link\b[\s\S]{0,400}?>/g) ?? []) {
+      if (!/rel=["'](?:prefetch|preload)["']/.test(tag)) {
+        continue;
+      }
+      assert.doesNotMatch(tag, /peptideos|workouts\/sso/i, `${file} must not <link rel=prefetch> PeptideOS`);
+    }
+  }
+});
+
+test("CI runs the next-start sign-out e2e after the build step with placeholder env", () => {
+  const ci = read(".github/workflows/ci.yml");
+  const buildAt = ci.search(/pnpm build|Build project/);
+  const e2eAt = ci.search(/signout-continue-e2e|next-start sign-out e2e|next start auto-submits/);
+  assert.notEqual(buildAt, -1, "CI must keep a build step");
+  assert.notEqual(e2eAt, -1, "CI must run the next-start sign-out e2e");
+  assert.ok(e2eAt > buildAt, "e2e must run after the build step so .next/BUILD_ID exists");
+  assert.match(ci, /BETTER_AUTH_SECRET/);
+  assert.match(ci, /DATABASE_URL/);
+  assert.match(ci, /GOOGLE_CLIENT_ID/);
 });

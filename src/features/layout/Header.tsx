@@ -75,10 +75,10 @@ export const Header = () => {
 
           {!session.data ? (
             <div className="ml-1 flex items-center gap-1 sm:gap-2">
-              <Link className="!no-underline" href={getConfiguredPeptideOsLoginUrl()} size="sm" variant="nav">
+              <Link className="!no-underline" href={getConfiguredPeptideOsLoginUrl()} prefetch={false} size="sm" variant="nav">
                 {t("commons.login")}
               </Link>
-              <Link className="!no-underline" href={getConfiguredPeptideOsSignupUrl()} size="sm" variant="button">
+              <Link className="!no-underline" href={getConfiguredPeptideOsSignupUrl()} prefetch={false} size="sm" variant="button">
                 {t("commons.signup")}
               </Link>
             </div>

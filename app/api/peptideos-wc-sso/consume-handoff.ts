@@ -7,10 +7,6 @@ export interface HandoffClaimRow {
   consumed_at: Date | string;
 }
 
-export function claimedAtFromRow(row: HandoffClaimRow): Date {
-  return row.consumed_at instanceof Date ? row.consumed_at : new Date(row.consumed_at);
-}
-
 export async function lookupUnconsumedHandoffByHash(
   db: Pick<PrismaClient, "$queryRaw">,
   tokenHash: string,
@@ -22,20 +18,6 @@ export async function lookupUnconsumedHandoffByHash(
         AND consumed_at IS NULL
         AND expires_at > NOW()
       RETURNING user_id, consumed_at
-    `;
-}
-
-export async function releaseHandoffClaimByHash(
-  db: { $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
-  tokenHash: string,
-  claimedAt: Date,
-): Promise<void> {
-  await db.$executeRaw`
-      UPDATE public.workout_cool_handoffs
-      SET consumed_at = NULL
-      WHERE secret_token = ${tokenHash}
-        AND consumed_at = ${claimedAt}
-        AND expires_at > NOW()
     `;
 }
 
@@ -51,20 +33,18 @@ export async function consumeWorkoutCoolHandoff(
 export type HandoffClaimOutcome<T> =
   | { outcome: "invalid_or_expired_handoff" }
   | { outcome: "success"; value: T }
-  | { outcome: "failure"; value: T }
   | { outcome: "error"; error: unknown };
 
 export type HandoffDisposition = "keep" | "release";
 
 /**
- * Atomically claim a single-use handoff. Release only with compare-and-set on the claimed timestamp,
- * and only when the handler says no user/link/session write happened. 409s burn the token.
+ * Atomically claim a single-use handoff. A claim stays consumed after success or any failure.
+ * Retrying needs a fresh handoff from PeptideOS. `disposition: "release"` is ignored.
  */
 export async function runWithHandoffClaim<T>(
   rawToken: string,
   deps: {
     claimByHash: (tokenHash: string) => Promise<HandoffClaimRow[]>;
-    releaseByHash: (tokenHash: string, claimedAt: Date) => Promise<void>;
   },
   run: (userId: string) => Promise<{ value: T; disposition: HandoffDisposition }>,
 ): Promise<HandoffClaimOutcome<T>> {
@@ -73,14 +53,8 @@ export async function runWithHandoffClaim<T>(
   const row = rows[0];
   if (!row?.user_id) return { outcome: "invalid_or_expired_handoff" };
 
-  const claimedAt = claimedAtFromRow(row);
-
   try {
-    const { value, disposition } = await run(row.user_id);
-    if (disposition === "release") {
-      await deps.releaseByHash(tokenHash, claimedAt);
-      return { outcome: "failure", value };
-    }
+    const { value } = await run(row.user_id);
     return { outcome: "success", value };
   } catch (error) {
     return { outcome: "error", error };

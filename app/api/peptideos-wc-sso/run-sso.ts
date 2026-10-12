@@ -16,7 +16,6 @@ import { resolvePeptideOsWorkoutsSsoUrl, ssoFinalizeLocation } from "@/features/
 
 export interface PeptideOsSsoDeps {
   claimByHash: (tokenHash: string) => Promise<HandoffClaimRow[]>;
-  releaseByHash: (tokenHash: string, claimedAt: Date) => Promise<void>;
   lookupAuthUser: (peptideosUserId: string) => Promise<{ email: string; meta: unknown } | null>;
   loadSsoAccountSnapshot: (email: string) => Promise<SsoAccountSnapshot>;
   findUserByEmail: (email: string) => Promise<{ id: string } | null>;
@@ -83,8 +82,7 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
     const claimed = await runWithHandoffClaim(
       tokenParam,
       {
-        claimByHash: deps.claimByHash,
-        releaseByHash: deps.releaseByHash
+        claimByHash: deps.claimByHash
       },
       async (hid) => {
         let authUser: { email: string; meta: unknown } | null;
@@ -94,13 +92,13 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
           logSsoEvent("auth_users_lookup", e);
           return {
             value: reply({ error: "auth_users_lookup_failed" }, 500),
-            disposition: "release" as const
+            disposition: "keep" as const
           };
         }
 
         const email = authUser?.email?.trim().toLowerCase();
         if (!authUser || !email) {
-          return { value: reply({ error: "missing_email" }, 500), disposition: "release" as const };
+          return { value: reply({ error: "missing_email" }, 500), disposition: "keep" as const };
         }
 
         const displayName = metaDisplayName(authUser.meta);

@@ -17,7 +17,7 @@ import { createTrustedBetterAuthSession } from "./trusted-session";
 import { runPeptideOsSso } from "./run-sso";
 import { PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
 import { createPeptideosAccountLink } from "./create-peptideos-account";
-import { lookupUnconsumedHandoffByHash, releaseHandoffClaimByHash } from "./consume-handoff";
+import { lookupUnconsumedHandoffByHash } from "./consume-handoff";
 
 import type { NextRequest } from "next/server";
 import type { SsoAccountSnapshot } from "./resolve-sso-account";
@@ -72,7 +72,6 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   return runPeptideOsSso(request, {
     claimByHash: (tokenHash) => lookupUnconsumedHandoffByHash(prisma, tokenHash),
-    releaseByHash: (tokenHash, claimedAt) => releaseHandoffClaimByHash(prisma, tokenHash, claimedAt),
     lookupAuthUser: async (hid) => {
       const userRows = await prisma.$queryRaw<{ email: string; meta: unknown }[]>`
       SELECT email, raw_user_meta_data AS meta

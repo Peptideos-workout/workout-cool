@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { hashHandoffToken } from "./hash-handoff-token";
-import { consumeWorkoutCoolHandoff, releaseHandoffClaimByHash, runWithHandoffClaim } from "./consume-handoff";
+import { consumeWorkoutCoolHandoff, runWithHandoffClaim } from "./consume-handoff";
 
 const claimedAt = new Date("2026-10-11T18:00:00.000Z");
 
@@ -31,71 +31,46 @@ test("returns null when the hashed token is missing, consumed, or expired", asyn
   assert.equal(user, null);
 });
 
-test("release uses compare-and-set on the claimed timestamp and never the plaintext token", async () => {
-  const rawToken = "plaintext-handoff-from-query-string";
-  const seen: unknown[] = [];
-
-  await releaseHandoffClaimByHash(
-    {
-      $executeRaw: async (_query: TemplateStringsArray, tokenHash: unknown, consumedAt: unknown) => {
-        seen.push(tokenHash, consumedAt);
-        return 1;
-      }
-    },
-    hashHandoffToken(rawToken),
-    claimedAt,
-  );
-
-  assert.deepEqual(seen, [hashHandoffToken(rawToken), claimedAt]);
-  assert.notEqual(seen[0], rawToken);
-});
-
-test("keeps the claim on success and on 409; releases only before any user write", async () => {
+test("a claimed handoff stays consumed after success, 409, failure, and a throw", async () => {
   const rawToken = "single-use-handoff";
   const tokenHash = hashHandoffToken(rawToken);
-  const released: Array<{ hash: string; at: Date }> = [];
+  let consumed = false;
 
   const deps = {
     claimByHash: async (hash: string) => {
       assert.equal(hash, tokenHash);
+      if (consumed) return [];
+      consumed = true;
       return [{ user_id: "user-1", consumed_at: claimedAt }];
-    },
-    releaseByHash: async (hash: string, at: Date) => {
-      released.push({ hash, at });
     }
   };
 
-  const success = await runWithHandoffClaim(rawToken, deps, async () => ({
-    value: { status: 302 },
-    disposition: "keep"
-  }));
-  assert.equal(success.outcome, "success");
-  assert.deepEqual(released, []);
-
-  const burned = await runWithHandoffClaim(rawToken, deps, async () => ({
-    value: { status: 409 },
-    disposition: "keep"
-  }));
-  assert.equal(burned.outcome, "success");
-  assert.deepEqual(released, []);
-
-  const releasedBeforeWrite = await runWithHandoffClaim(rawToken, deps, async () => ({
+  const failed = await runWithHandoffClaim(rawToken, deps, async () => ({
     value: { status: 500 },
     disposition: "release"
   }));
-  assert.equal(releasedBeforeWrite.outcome, "failure");
-  assert.deepEqual(released, [{ hash: tokenHash, at: claimedAt }]);
+  assert.equal(failed.outcome, "success");
+  if (failed.outcome === "success") {
+    assert.deepEqual(failed.value, { status: 500 });
+  }
+  assert.equal(consumed, true);
+
+  const retry = await runWithHandoffClaim(rawToken, deps, async () => ({
+    value: { status: 302 },
+    disposition: "keep"
+  }));
+  assert.equal(retry.outcome, "invalid_or_expired_handoff");
 });
 
-test("does not release after a throw (writes may already have happened)", async () => {
-  const released: unknown[] = [];
-
+test("does not clear the claim after a throw", async () => {
+  let consumed = false;
   const result = await runWithHandoffClaim(
     "throws-after-claim",
     {
-      claimByHash: async () => [{ user_id: "user-1", consumed_at: claimedAt }],
-      releaseByHash: async (hash, at) => {
-        released.push(hash, at);
+      claimByHash: async () => {
+        if (consumed) return [];
+        consumed = true;
+        return [{ user_id: "user-1", consumed_at: claimedAt }];
       }
     },
     async () => {
@@ -104,7 +79,16 @@ test("does not release after a throw (writes may already have happened)", async 
   );
 
   assert.equal(result.outcome, "error");
-  assert.deepEqual(released, []);
+  assert.equal(consumed, true);
+
+  const retry = await runWithHandoffClaim(
+    "throws-after-claim",
+    {
+      claimByHash: async () => (consumed ? [] : [{ user_id: "user-1", consumed_at: claimedAt }])
+    },
+    async () => ({ value: "ok", disposition: "keep" }),
+  );
+  assert.equal(retry.outcome, "invalid_or_expired_handoff");
 });
 
 test("concurrent claims are single-use: only the first atomic claim wins", async () => {
@@ -118,11 +102,11 @@ test("concurrent claims are single-use: only the first atomic claim wins", async
   };
 
   const [first, second] = await Promise.all([
-    runWithHandoffClaim(rawToken, { claimByHash, releaseByHash: async () => undefined }, async () => ({
+    runWithHandoffClaim(rawToken, { claimByHash }, async () => ({
       value: "ok",
       disposition: "keep"
     })),
-    runWithHandoffClaim(rawToken, { claimByHash, releaseByHash: async () => undefined }, async () => ({
+    runWithHandoffClaim(rawToken, { claimByHash }, async () => ({
       value: "ok",
       disposition: "keep"
     }))

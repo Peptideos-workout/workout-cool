@@ -12,6 +12,7 @@ test("never releases after a user, link, or session write", () => {
   assert.equal(handoffDisposition(302, true), "keep");
 });
 
-test("releases only when the failure happened before any write", () => {
-  assert.equal(handoffDisposition(500, false), "release");
+test("a failed sign-in before any write still keeps the claimed handoff", () => {
+  assert.equal(handoffDisposition(500, false), "keep");
+  assert.equal(handoffDisposition(400, false), "keep");
 });

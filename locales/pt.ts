@@ -1345,6 +1345,8 @@ export default {
   cant_send_email: "Não foi possível enviar o email",
   logout: "Terminar sessão",
   signout_confirm_title: "Terminar sessão?",
+  signout_pending_title: "A terminar a sessão…",
+  signout_pending_fallback: "Continuar a terminar a sessão",
   verify_email: "Verifique o seu email",
   verify_email_subtitle: "Por favor, verifique o seu email para continuar.",
   resend_email: "Reenviar email",

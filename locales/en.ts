@@ -1340,6 +1340,8 @@ export default {
   cant_send_email: "Can't send email",
   logout: "Logout",
   signout_confirm_title: "Sign out?",
+  signout_pending_title: "Signing you out…",
+  signout_pending_fallback: "Continue signing out",
   verify_email: "Verify your email. ⚠️ Don't forget to check your spam folder.",
   verify_email_subtitle: "Please verify your email to continue.",
   resend_email: "Resend email",

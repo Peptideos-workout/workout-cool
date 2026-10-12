@@ -473,6 +473,8 @@ export default {
   cant_send_email: "无法发送邮件",
   logout: "登出",
   signout_confirm_title: "退出登录？",
+  signout_pending_title: "正在退出登录…",
+  signout_pending_fallback: "继续退出登录",
   verify_email: "验证您的电子邮件。⚠️ 请检查您的垃圾邮件文件夹。",
   verify_email_subtitle: "请验证您的电子邮件以继续。",
   resend_email: "重新发送邮件",

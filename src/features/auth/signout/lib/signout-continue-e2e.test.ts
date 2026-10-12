@@ -86,6 +86,21 @@ async function waitForHealth(base: string, child: ReturnType<typeof spawn>, time
   throw new Error(`next start did not become ready: ${stderr}`);
 }
 
+function signoutHandoffForm(html: string): string {
+  const match = html.match(/<form\b[^>]*\/api\/workouts\/signout[^>]*>[\s\S]*?<\/form>/i);
+  assert.ok(match, "expected the PeptideOS sign-out form");
+  return match[0];
+}
+
+function visibleButtons(html: string): string[] {
+  const stripped = html.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, "");
+  const buttons = stripped.match(/<button\b[^>]*>[\s\S]*?<\/button>/gi) ?? [];
+  return buttons.filter((button) => {
+    const open = button.slice(0, button.indexOf(">") + 1);
+    return !(/\shidden(?:=|\s|>)/.test(open) || /display:\s*none/.test(open));
+  });
+}
+
 function handoffKind(html: string): "auto-submit" | "confirm" | "unknown" {
   if (/data-signout-handoff="auto-submit"/.test(html)) {
     return "auto-submit";
@@ -137,6 +152,11 @@ test("next start auto-submits a valid continue token and shows the click page on
     assert.match(first.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
     assert.match(first.headers.get("content-security-policy") ?? "", /form-action/);
     assert.doesNotMatch(firstHtml, /<h1[^>]*>\s*Sign out\?\s*<\/h1>/);
+    assert.match(firstHtml, /Signing you out…/);
+    const autoForm = signoutHandoffForm(firstHtml);
+    assert.match(autoForm, /display:\s*none/);
+    assert.match(autoForm, /Continue signing out/);
+    assert.equal(visibleButtons(autoForm).length, 0, autoForm);
 
     const replay = await fetch(`${base}/auth/signout/continue`, {
       headers: { cookie, "accept-language": "en" },
@@ -147,6 +167,11 @@ test("next start auto-submits a valid continue token and shows the click page on
     assert.equal(handoffKind(replayHtml), "confirm", replayHtml.slice(0, 800));
     assert.match(replayHtml, /<h1[^>]*>\s*Sign out\?\s*<\/h1>/);
     assert.doesNotMatch(replayHtml, /data-signout-handoff="auto-submit"/);
+    assert.doesNotMatch(replayHtml, /Signing you out…/);
+    const replayForm = signoutHandoffForm(replayHtml);
+    const replayButtons = visibleButtons(replayForm);
+    assert.equal(replayButtons.length, 1, replayForm);
+    assert.match(replayButtons[0], />Logout</);
   } finally {
     child.kill("SIGTERM");
     await new Promise((resolve) => {

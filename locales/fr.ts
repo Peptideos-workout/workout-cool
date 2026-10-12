@@ -1365,6 +1365,8 @@ export default {
   cant_send_email: "Impossible d'envoyer l'email",
   logout: "Déconnexion",
   signout_confirm_title: "Se déconnecter ?",
+  signout_pending_title: "Déconnexion en cours…",
+  signout_pending_fallback: "Continuer la déconnexion",
   verify_email: "Vérifier votre email. ⚠️ Pensez à vérifier votre dossier SPAM.",
   verify_email_subtitle: "Veuillez vérifier votre email pour continuer.",
   resend_email: "Renvoyer l'email",

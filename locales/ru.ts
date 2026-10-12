@@ -1331,6 +1331,8 @@ export default {
   cant_send_email: "Не удается отправить письмо",
   logout: "Выйти",
   signout_confirm_title: "Выйти?",
+  signout_pending_title: "Выходим из аккаунта…",
+  signout_pending_fallback: "Продолжить выход",
   verify_email: "Подтвердите вашу электронную почту. ⚠️ Не забудьте проверить папку спам.",
   verify_email_subtitle: "Пожалуйста, подтвердите вашу электронную почту, чтобы продолжить.",
   resend_email: "Отправить письмо повторно",

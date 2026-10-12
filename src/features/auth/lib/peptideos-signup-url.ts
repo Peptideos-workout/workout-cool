@@ -24,7 +24,7 @@ export const PEPTIDEOS_SETTINGS_PATH = "/settings";
 /** In-page password section on PeptideOS `/settings`. */
 export const PEPTIDEOS_SETTINGS_PASSWORD_HASH = "password";
 
-const MAX_URI_DECODE_ROUNDS = 8;
+const MAX_URI_DECODE_ROUNDS = 5;
 
 /**
  * Resolve the PeptideOS origin already paired with this app's SSO flow.
@@ -90,8 +90,90 @@ function containsForbiddenReturnChars(value: string): boolean {
   return containsControlChars(decoded) || decoded.includes("\\") || /%5c/i.test(decoded);
 }
 
-/** Same-origin workout-cool return URL. Fail closed (undefined) on anything unsafe. */
-export function safeWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
+function stripQueryAndHash(value: string): string {
+  const index = value.search(/[?#]/);
+  return index === -1 ? value : value.slice(0, index);
+}
+
+function stripMatrixParams(pathname: string): string {
+  return pathname
+    .split("/")
+    .map((segment) => {
+      const cut = segment.indexOf(";");
+      return cut === -1 ? segment : segment.slice(0, cut);
+    })
+    .join("/");
+}
+
+function collapseSlashes(pathname: string): string {
+  return pathname.replace(/\/{2,}/g, "/");
+}
+
+/**
+ * Original still-encoded path + search + hash. Never use URL.pathname here — WHATWG
+ * decoding turns `/%2F%2Fevil.com` into `///evil.com`.
+ */
+function stillEncodedPath(dest: string, origin: string): string | undefined {
+  if (dest.startsWith("//")) {
+    return undefined;
+  }
+  if (dest.startsWith("/")) {
+    return dest;
+  }
+  if (!/^https?:\/\//i.test(dest)) {
+    return `/${dest}`;
+  }
+
+  let destUrl: URL;
+  try {
+    destUrl = new URL(dest);
+  } catch {
+    return undefined;
+  }
+  if (destUrl.username || destUrl.password || destUrl.origin !== origin) {
+    return undefined;
+  }
+
+  const authority = /^https?:\/\/[^/?#]*/i.exec(dest);
+  if (!authority) {
+    return undefined;
+  }
+  const rest = dest.slice(authority[0].length);
+  if (!rest) {
+    return "/";
+  }
+  if (rest.startsWith("?") || rest.startsWith("#")) {
+    return `/${rest}`;
+  }
+  if (rest.startsWith("/")) {
+    return rest;
+  }
+  return undefined;
+}
+
+/** Decoded pathname for checks only: reject `//` / `\` first, then strip ;params and collapse slashes. */
+function decodedPathForChecks(encodedPath: string): string | null {
+  const decoded = loopDecodeUri(encodedPath);
+  if (decoded === null) {
+    return null;
+  }
+  const path = stripQueryAndHash(decoded);
+  if (path.startsWith("//") || path.startsWith("\\")) {
+    return null;
+  }
+  return collapseSlashes(stripMatrixParams(path));
+}
+
+interface InspectedWorkoutReturn {
+  href: string;
+  checkPath: string;
+}
+
+/**
+ * Same-origin WC return. Decode is used only for checks; `href` is the original
+ * still-encoded path on the WC origin, never a decoded rewrite.
+ */
+function inspectWorkoutReturnTo(returnTo: string | undefined, appUrl: string): InspectedWorkoutReturn | undefined {
   const dest = returnTo?.trim();
   const base = appUrl.trim();
   if (!dest || !base || containsForbiddenReturnChars(dest)) {
@@ -103,30 +185,43 @@ export function safeWorkoutReturnTo(returnTo: string | undefined, appUrl: string
     return undefined;
   }
 
-  let destUrl: URL;
+  let origin: string;
   try {
-    if (decoded.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
-      if (!/^https?:\/\//i.test(decoded)) {
-        return undefined;
-      }
-      destUrl = new URL(decoded);
-    } else {
-      const path = decoded.startsWith("/") ? decoded : `/${decoded}`;
-      destUrl = new URL(path, `${new URL(base).origin}/`);
-    }
+    origin = new URL(base).origin;
   } catch {
     return undefined;
   }
 
-  if (destUrl.username || destUrl.password) {
+  if (decoded.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
+    if (!/^https?:\/\//i.test(decoded)) {
+      return undefined;
+    }
+    try {
+      const decodedUrl = new URL(decoded);
+      if (decodedUrl.username || decodedUrl.password || decodedUrl.origin !== origin) {
+        return undefined;
+      }
+    } catch {
+      return undefined;
+    }
+  }
+
+  const originalPath = stillEncodedPath(dest, origin);
+  if (!originalPath) {
     return undefined;
   }
 
-  if (destUrl.origin !== new URL(base).origin) {
+  const checkPath = decodedPathForChecks(originalPath);
+  if (checkPath === null) {
     return undefined;
   }
 
-  return destUrl.toString();
+  return { href: `${origin}${originalPath}`, checkPath };
+}
+
+/** Same-origin workout-cool return URL. Fail closed (undefined) on anything unsafe. */
+export function safeWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
+  return inspectWorkoutReturnTo(returnTo, appUrl)?.href;
 }
 
 /** Leftover WC auth pages: logout confirm, removed sign-in, removed sign-up. */
@@ -139,14 +234,14 @@ function isDeniedSsoReturnPath(pathname: string): boolean {
 
 /** Same-origin WC return, minus leftover auth pages that 404 or sign the user back out. */
 function plannedWorkoutReturnTo(returnTo: string | undefined, appUrl: string): string | undefined {
-  const safe = safeWorkoutReturnTo(returnTo, appUrl);
-  if (!safe) {
+  const inspected = inspectWorkoutReturnTo(returnTo, appUrl);
+  if (!inspected) {
     return undefined;
   }
-  if (isDeniedSsoReturnPath(new URL(safe).pathname)) {
+  if (isDeniedSsoReturnPath(inspected.checkPath)) {
     return undefined;
   }
-  return safe;
+  return inspected.href;
 }
 
 /** PeptideOS `/api/workouts/sso` launcher with a sanitized WC `redirect`. */
@@ -292,12 +387,9 @@ function isDeniedHopCReturnPath(pathname: string): boolean {
  */
 export function peptideOsSignoutFinalizeLocation(peptideOsOriginUrl: string, redirectParam?: string): string {
   const origin = new URL(peptideOsOriginUrl).origin;
-  const safe = safeWorkoutReturnTo(redirectParam, origin);
-  if (!safe) {
+  const inspected = inspectWorkoutReturnTo(redirectParam, origin);
+  if (!inspected || isDeniedHopCReturnPath(inspected.checkPath)) {
     return `${origin}/`;
   }
-  if (isDeniedHopCReturnPath(new URL(safe).pathname)) {
-    return `${origin}/`;
-  }
-  return safe;
+  return inspected.href;
 }

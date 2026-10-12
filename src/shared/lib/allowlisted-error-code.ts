@@ -3,7 +3,7 @@
  * Node errno, HTTP-style names, and Better Auth codes from this app's auth dependency
  * (`BASE_ERROR_CODES` and the admin plugin enabled in `better-auth.ts`).
  */
-export const KNOWN_ERROR_CODES = new Set([
+export const KNOWN_ERROR_CODES = Object.freeze([
   "ECONNREFUSED",
   "ECONNRESET",
   "ETIMEDOUT",
@@ -51,7 +51,9 @@ export const KNOWN_ERROR_CODES = new Set([
   "YOU_ARE_NOT_ALLOWED_TO_DELETE_USERS",
   "YOU_ARE_NOT_ALLOWED_TO_SET_USERS_PASSWORD",
   "BANNED_USER"
-]);
+] as const);
+
+const knownErrorCodeSet = new Set<string>(KNOWN_ERROR_CODES);
 
 /** Prisma `P####`, a 5-character SQL state, or a short `BAD_REQUEST`-style word code. */
 const SHORT_ERROR_CODE = /^(?:P\d{4}|[0-9A-Z]{5}|[A-Z]{2,10}(?:_[A-Z]{2,10}){0,4})$/;
@@ -59,7 +61,7 @@ const SHORT_ERROR_CODE = /^(?:P\d{4}|[0-9A-Z]{5}|[A-Z]{2,10}(?:_[A-Z]{2,10}){0,4
 /** Known codes are accepted as-is. Everything else must match the short shape and be at most 24 characters. */
 export function isAllowlistedErrorCode(value: string): boolean {
   const trimmed = value.trim();
-  if (KNOWN_ERROR_CODES.has(trimmed)) return true;
+  if (knownErrorCodeSet.has(trimmed)) return true;
   if (trimmed.length > 24) return false;
   return SHORT_ERROR_CODE.test(trimmed);
 }

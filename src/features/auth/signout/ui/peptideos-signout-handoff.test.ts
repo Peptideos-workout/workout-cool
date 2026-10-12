@@ -37,15 +37,25 @@ test("auto-submit handoff does not paint a visible sign-out button", () => {
   const buttons = buttonsOutsideNoscript(html);
   assert.ok(buttons.length >= 1, "no-JS still needs a submit control in the form");
   assert.ok(buttons.every(isHiddenButton), `visible button flashed:\n${buttons.join("\n")}`);
-  assert.match(html, /signout-continue-fallback/);
+  const fallback = buttons.find((button) => /signout-continue-fallback/.test(button));
+  assert.ok(fallback, "hidden no-JS submit control is missing");
+  assert.match(fallback, /\btext-lg\b/);
+  assert.match(fallback, /\bmin-h-12\b/);
+  assert.match(fallback, /\bpx-8\b/);
+  assert.match(fallback, /\bpy-3\b/);
+  assert.match(fallback, /display:\s*none/);
   assert.match(html, /Continue signing out/);
 });
 
-test("pending notice is large status text and a spinner, with no button", () => {
+test("pending notice heading is outside the status region", () => {
   const html = renderToStaticMarkup(createElement(SignoutPendingNotice, { label: "Signing you out…" }));
+  const status = html.match(/<([a-z0-9]+)[^>]*\brole="status"[^>]*>[\s\S]*?<\/\1>/i);
 
-  assert.match(html, /<h1[^>]*>Signing you out…<\/h1>/);
-  assert.match(html, /role="status"/);
+  assert.ok(status, html);
+  assert.match(status[0], /Signing you out…/);
+  assert.doesNotMatch(status[0], /<h1/i);
+  const withoutStatus = html.replace(status[0], "");
+  assert.match(withoutStatus, /<h1[^>]*>Signing you out…<\/h1>/);
   assert.match(html, /animate-spin/);
   assert.doesNotMatch(html, /<button/i);
   assert.doesNotMatch(html, /Sign out/i);

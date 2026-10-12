@@ -31,7 +31,7 @@ export function PeptideOsSignoutHandoff({
     <form action={actionUrl} className="flex flex-col items-center gap-4" method="post" ref={formRef}>
       <input name="redirect" type="hidden" value={redirect} />
       {autoSubmit ? (
-        <Button className="signout-continue-fallback" style={{ display: "none" }} type="submit">
+        <Button className="signout-continue-fallback min-h-12 px-8 py-3 text-lg" style={{ display: "none" }} type="submit">
           {fallbackLabel}
         </Button>
       ) : (

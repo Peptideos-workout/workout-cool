@@ -25,7 +25,7 @@ export function ChangePasswordSection() {
     <section className="mt-6 rounded-lg border border-slate-200 p-4 dark:border-gray-800" id="password">
       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t("commons.change_password")}</h3>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("change_peptideos_password_description")}</p>
-      <Link className="mt-3 inline-flex !no-underline" href={href} size="base" variant="button">
+      <Link className="mt-3 inline-flex !no-underline" href={href} prefetch={false} size="base" variant="button">
         {t("change_peptideos_password_cta")}
       </Link>
     </section>

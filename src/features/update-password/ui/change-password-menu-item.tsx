@@ -25,7 +25,7 @@ export function ChangePasswordMenuItem() {
 
   return (
     <li>
-      <Link className="!no-underline" href={href} size="base" variant="nav">
+      <Link className="!no-underline" href={href} prefetch={false} size="base" variant="nav">
         <LockKeyhole className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         {t("commons.change_password")}
       </Link>

@@ -20,8 +20,28 @@ const PLACEHOLDER_ENV: NodeJS.ProcessEnv = {
   GOOGLE_CLIENT_SECRET: "test-google-client-secret"
 };
 
-function hasProductionBuild(): boolean {
+export function hasProductionBuild(): boolean {
   return existsSync(join(process.cwd(), ".next", "BUILD_ID"));
+}
+
+/** Locally skip when `.next` is missing; in CI that is a hard failure. */
+export function missingProductionBuildDisposition(ci: string | undefined, hasBuild: boolean): "run" | "skip" | "fail" {
+  if (hasBuild) {
+    return "run";
+  }
+  return ci ? "fail" : "skip";
+}
+
+function requireProductionBuild(t: { skip: (msg?: string) => void }): boolean {
+  const disposition = missingProductionBuildDisposition(process.env.CI, hasProductionBuild());
+  if (disposition === "run") {
+    return true;
+  }
+  if (disposition === "fail") {
+    throw new Error("CI requires `pnpm build` so `next start` can boot");
+  }
+  t.skip("requires `pnpm build` so `next start` can boot");
+  return false;
 }
 
 function unusedPort(): Promise<number> {
@@ -76,9 +96,17 @@ function handoffKind(html: string): "auto-submit" | "confirm" | "unknown" {
   return "unknown";
 }
 
+test("missing production build fails in CI and skips locally", () => {
+  assert.equal(missingProductionBuildDisposition("true", false), "fail");
+  assert.equal(missingProductionBuildDisposition("1", false), "fail");
+  assert.equal(missingProductionBuildDisposition(undefined, false), "skip");
+  assert.equal(missingProductionBuildDisposition("", false), "skip");
+  assert.equal(missingProductionBuildDisposition("true", true), "run");
+  assert.equal(missingProductionBuildDisposition(undefined, true), "run");
+});
+
 test("next start auto-submits a valid continue token and shows the click page on replay", async (t) => {
-  if (!hasProductionBuild()) {
-    t.skip("requires `pnpm build` so `next start` can boot");
+  if (!requireProductionBuild(t)) {
     return;
   }
 
@@ -119,6 +147,45 @@ test("next start auto-submits a valid continue token and shows the click page on
     assert.equal(handoffKind(replayHtml), "confirm", replayHtml.slice(0, 800));
     assert.match(replayHtml, /<h1[^>]*>\s*Sign out\?\s*<\/h1>/);
     assert.doesNotMatch(replayHtml, /data-signout-handoff="auto-submit"/);
+  } finally {
+    child.kill("SIGTERM");
+    await new Promise((resolve) => {
+      if (child.exitCode !== null) {
+        resolve(undefined);
+        return;
+      }
+      child.once("exit", () => resolve(undefined));
+      setTimeout(() => {
+        child.kill("SIGKILL");
+        resolve(undefined);
+      }, 3_000);
+    });
+  }
+});
+
+test("next start confirm page sends CSP frame-ancestors none and X-Frame-Options DENY", async (t) => {
+  if (!requireProductionBuild(t)) {
+    return;
+  }
+
+  const port = await unusedPort();
+  const base = `http://127.0.0.1:${port}`;
+  const nextBin = join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
+  const child = spawn(process.execPath, [nextBin, "start", "-p", String(port), "-H", "127.0.0.1"], {
+    cwd: process.cwd(),
+    env: { ...PLACEHOLDER_ENV, PORT: String(port) },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  try {
+    await waitForHealth(base, child);
+    const response = await fetch(`${base}/auth/signout`, {
+      headers: { "accept-language": "en" },
+      redirect: "follow"
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("x-frame-options") ?? "", /DENY/i);
+    assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
   } finally {
     child.kill("SIGTERM");
     await new Promise((resolve) => {

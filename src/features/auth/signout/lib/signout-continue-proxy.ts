@@ -10,7 +10,7 @@ import {
   signSignoutContinueDecision,
   signoutContinueCookieOptions
 } from "./signout-continue-token";
-import { signoutContinueContentSecurityPolicy } from "./signout-continue-csp";
+import { mergeFrameAncestorsNone, signoutContinueContentSecurityPolicy } from "./signout-continue-csp";
 
 import type { NextRequest } from "next/server";
 
@@ -39,6 +39,12 @@ export function applySignoutContinueSecurityHeaders(response: NextResponse, pept
   response.headers.set("Content-Security-Policy", signoutContinueContentSecurityPolicy(peptideOsOrigin, appUrl));
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Cache-Control", "private, no-store");
+}
+
+/** Confirm page: keep any existing CSP directives and lock framing. */
+export function applySignoutConfirmSecurityHeaders(response: { headers: Headers }) {
+  response.headers.set("Content-Security-Policy", mergeFrameAncestorsNone(response.headers.get("Content-Security-Policy")));
+  response.headers.set("X-Frame-Options", "DENY");
 }
 
 /**

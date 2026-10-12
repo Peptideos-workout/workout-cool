@@ -146,3 +146,14 @@ jobs:
           NEXT_PUBLIC_TOP_CUNNINGHAM_CALCULATOR_AD_SLOT: 1234567890
           NEXT_PUBLIC_TOP_CALORIE_CALCULATOR_COMPARISON_AD_SLOT: 1234567890
           NEXT_PUBLIC_BOTTOM_CALORIE_CALCULATOR_COMPARISON_AD_SLOT: 1234567890
+
+      - name: Run next-start sign-out e2e
+        run: pnpm exec tsx --test src/features/auth/signout/lib/signout-continue-e2e.test.ts
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://user:password@localhost:5432/test_db
+          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          BETTER_AUTH_SECRET: test_secret_key_32_chars_minimum
+          GOOGLE_CLIENT_ID: test_client_id
+          GOOGLE_CLIENT_SECRET: test_client_secret

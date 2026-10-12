@@ -221,6 +221,7 @@ test("hop C treats a genuine Better Auth no-session 400 as info and still 303s t
   assert.doesNotMatch(errorLog, /signout_not_ok/);
   assert.doesNotMatch(errorLog, /\[peptideos-wc-sso\]/);
   assert.match(infos.join("\n"), /signout_no_session/);
+  assert.match(infos.join("\n"), /"status":400/);
 });
 
 test("hop C still logs signout_not_ok for a 400 that is not Better Auth no-session", async () => {
@@ -248,7 +249,8 @@ test("hop C still logs signout_not_ok for a 400 that is not Better Auth no-sessi
   assert.match(logged, /\[peptideos-wc-sso\]/);
   assert.match(logged, /wc_signout/);
   assert.match(logged, /signout_not_ok/);
-  assert.match(logged, /400/);
+  assert.match(logged, /"status":400/);
+  assert.doesNotMatch(logged, /"code"/);
   assert.doesNotMatch(logged, /secret-session|token=/);
 });
 
@@ -273,7 +275,8 @@ test("hop C logs through logSsoEvent when signOut returns a non-ok Response othe
   assert.match(logged, /\[peptideos-wc-sso\]/);
   assert.match(logged, /wc_signout/);
   assert.match(logged, /signout_not_ok/);
-  assert.match(logged, /500/);
+  assert.match(logged, /"status":500/);
+  assert.doesNotMatch(logged, /"code"/);
   assert.doesNotMatch(logged, /secret-session|hunter2|password=/);
 });
 

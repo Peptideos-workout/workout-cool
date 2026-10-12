@@ -4,6 +4,14 @@ import { prefersBrowserSsoErrorPage, ssoErrorHtml } from "./sso-error-page";
 
 import type { NextRequest } from "next/server";
 
+const SAFE_SSO_ERROR_CODE = /^[a-z][a-z0-9_]{0,63}$/;
+
+/** Client bodies are a stable error code only. Never dev_detail, messages, emails, or tokens. */
+export function safeSsoErrorBody(body: Record<string, unknown>): { error: string } {
+  const code = typeof body.error === "string" && SAFE_SSO_ERROR_CODE.test(body.error) ? body.error : "sso_internal_error";
+  return { error: code };
+}
+
 export function ssoJson(body: Record<string, unknown>, status: number): NextResponse {
   const response = NextResponse.json(body, { status });
   response.headers.set("Cache-Control", "private, no-store");
@@ -16,11 +24,12 @@ export function ssoClientError(
   status: number,
   tryAgainHref: string
 ): NextResponse {
+  const safeBody = safeSsoErrorBody(body);
   if (!prefersBrowserSsoErrorPage(request.headers.get("accept"))) {
-    return ssoJson(body, status);
+    return ssoJson(safeBody, status);
   }
 
-  const error = typeof body.error === "string" ? body.error : "sso_internal_error";
+  const error = safeBody.error;
   const locale = request.headers.get("accept-language")?.split(",")[0]?.split(";")[0] ?? "en";
   const response = new NextResponse(ssoErrorHtml({ locale, error, tryAgainHref }), {
     status,

@@ -139,9 +139,9 @@ export async function runPeptideOsWcSignout(
       signOutResponse = result;
       if (!result.ok) {
         if (await isNoSessionSignOutResponse(result)) {
-          logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_no_session", SSO_LOG_LEVEL.info);
+          logSsoEvent("wc_signout", { name: "Response", status: result.status }, "signout_no_session", SSO_LOG_LEVEL.info);
         } else {
-          logSsoEvent("wc_signout", { name: "Response", code: String(result.status) }, "signout_not_ok");
+          logSsoEvent("wc_signout", { name: "Response", status: result.status }, "signout_not_ok");
         }
       }
     }

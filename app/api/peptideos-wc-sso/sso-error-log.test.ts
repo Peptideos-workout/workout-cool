@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { logSsoEmailCollision, logSsoEvent, sanitizeSsoErrorForLog } from "./sso-error-log";
 
+import { KNOWN_ERROR_CODES } from "@/shared/lib/allowlisted-error-code";
+
 function captureErrorLogs(run: () => void): string[] {
   const lines: string[] = [];
   const original = console.error;
@@ -46,6 +48,135 @@ test("keeps prisma-style codes and an allowlisted unique-constraint message, nev
   assert.equal(sanitized.message, "Unique constraint failed on the fields: (`email`)");
   assert.doesNotMatch(JSON.stringify(sanitized), /victim@example.com/);
   assert.ok(!("meta" in sanitized));
+});
+
+test("a Prisma error whose message or meta contains a handoff token and an email logs neither", () => {
+  const handoffToken = "plaintext-handoff-from-query-string";
+  const email = "athlete@example.test";
+  const query = `UPDATE public.workout_cool_handoffs SET consumed_at = NOW() WHERE secret_token = '${handoffToken}'`;
+  const error = Object.assign(new Error(`Invalid prisma.$queryRaw() invocation:\n${query}\n${email}`), {
+    name: "PrismaClientKnownRequestError",
+    code: "P2002",
+    clientVersion: "6.5.0",
+    meta: {
+      email,
+      target: ["email"],
+      query,
+      args: [handoffToken, email]
+    }
+  });
+
+  const sanitized = sanitizeSsoErrorForLog(error);
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("handoff_consume", error);
+  });
+  const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+
+  assert.equal(sanitized.name, "PrismaClientKnownRequestError");
+  assert.equal(sanitized.code, "P2002");
+  assert.equal(sanitized.message, undefined);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0] ?? "", /\[peptideos-wc-sso\]/);
+  assert.match(lines[0] ?? "", /handoff_consume/);
+  assert.match(lines[0] ?? "", /P2002/);
+  assert.doesNotMatch(logged, /plaintext-handoff-from-query-string/);
+  assert.doesNotMatch(logged, /athlete@example\.test/);
+  assert.doesNotMatch(logged, /secret_token/);
+  assert.doesNotMatch(logged, /\$queryRaw/);
+  assert.doesNotMatch(logged, /workout_cool_handoffs/);
+  assert.doesNotMatch(logged, /clientVersion/);
+  assert.doesNotMatch(logged, /"meta"/);
+  assert.doesNotMatch(logged, /"args"/);
+});
+
+test("drops a 20-32 character token with no hyphen", () => {
+  const token = "sk_live_fixturetoken01";
+  assert.ok(token.length >= 20 && token.length <= 32);
+  assert.equal(token.includes("-"), false);
+
+  const error = Object.assign(new Error(`signup failed ${token} athlete@example.test`), {
+    name: "Error",
+    code: token,
+    meta: { token, email: "athlete@example.test" }
+  });
+  const sanitized = sanitizeSsoErrorForLog(error);
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("handoff_consume", error);
+  });
+  const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+
+  assert.equal(sanitized.name, "Error");
+  assert.equal(sanitized.code, "");
+  assert.equal(sanitized.message, undefined);
+  assert.doesNotMatch(logged, /sk_live_fixturetoken01/);
+  assert.doesNotMatch(logged, /athlete@example\.test/);
+  assert.doesNotMatch(logged, /"meta"/);
+});
+
+test("drops an all-caps random token used as a code", () => {
+  const token = "ABCDEFGHJKLMNPQRSTUVWX";
+  assert.equal(token.includes("_"), false);
+  assert.equal(token.length, 22);
+
+  const error = Object.assign(new Error("signup failed"), { name: "APIError", code: token });
+  const sanitized = sanitizeSsoErrorForLog(error);
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("handoff_consume", error);
+  });
+  const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+
+  assert.equal(sanitized.name, "APIError");
+  assert.equal(sanitized.code, "");
+  assert.doesNotMatch(logged, /ABCDEFGHJKLMNPQRSTUVWX/);
+  assert.equal(sanitizeSsoErrorForLog({ name: "APIError", code: "BAD_REQUEST" }).code, "BAD_REQUEST");
+  assert.equal(sanitizeSsoErrorForLog({ name: "PrismaClientKnownRequestError", code: "P2002" }).code, "P2002");
+  assert.equal(sanitizeSsoErrorForLog({ name: "Error", code: "42P01" }).code, "42P01");
+});
+
+test("logs an integer HTTP status and drops a non-integer status", () => {
+  const lines = captureErrorLogs(() => {
+    logSsoEvent("wc_signout", { name: "Response", status: 400, code: "ABCDEFGHJKLMNPQRSTUVWX" }, "signout_not_ok");
+  });
+  const logged = lines.join("\n");
+
+  assert.equal(lines.length, 1);
+  assert.match(logged, /"status":400/);
+  assert.doesNotMatch(logged, /"status":"400"/);
+  assert.doesNotMatch(logged, /ABCDEFGHJKLMNPQRSTUVWX/);
+  assert.doesNotMatch(logged, /Response/);
+
+  const rejected = captureErrorLogs(() => {
+    logSsoEvent("wc_signout", { status: "400" }, "signout_not_ok");
+    logSsoEvent("wc_signout", { status: 400.5 }, "signout_not_ok");
+    logSsoEvent("wc_signout", { status: 99 }, "signout_not_ok");
+    logSsoEvent("wc_signout", { status: 600 }, "signout_not_ok");
+  });
+  assert.doesNotMatch(rejected.join("\n"), /status/);
+  assert.doesNotMatch(rejected.join("\n"), /400/);
+  assert.doesNotMatch(rejected.join("\n"), /600/);
+});
+
+test("logs every known error code and still drops token-like codes", () => {
+  const dropped = ["sk_live_fixturetoken01", "ABCDEFGHJKLMNPQRSTUVWX", "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD"];
+
+  for (const code of KNOWN_ERROR_CODES) {
+    const sanitized = sanitizeSsoErrorForLog({ name: "APIError", code });
+    const lines = captureErrorLogs(() => {
+      logSsoEvent("handoff_consume", { name: "APIError", code });
+    });
+    assert.equal(sanitized.code, code, code);
+    assert.match(lines[0] ?? "", new RegExp(`"code":"${code}"`), code);
+  }
+
+  for (const token of dropped) {
+    const sanitized = sanitizeSsoErrorForLog({ name: "Error", code: token });
+    const lines = captureErrorLogs(() => {
+      logSsoEvent("handoff_consume", { name: "Error", code: token });
+    });
+    const logged = `${JSON.stringify(sanitized)}\n${lines.join("\n")}`;
+    assert.equal(sanitized.code, "", token);
+    assert.doesNotMatch(logged, new RegExp(token), token);
+  }
 });
 
 test("drops a collision message that is not on the allowlist", () => {
@@ -93,6 +224,8 @@ test("logSsoEvent info and debug do not write console.error", () => {
   assert.equal(errors.length, 0);
   assert.match(infos.join("\n"), /signout_no_session/);
   assert.match(infos.join("\n"), /\[peptideos-wc-sso\]/);
+  assert.doesNotMatch(infos.join("\n"), /Response/);
+  assert.doesNotMatch(infos.join("\n"), /400/);
 });
 
 test("logSsoEvent never prints stacks or raw Error objects", () => {

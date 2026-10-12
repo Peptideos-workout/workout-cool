@@ -42,7 +42,6 @@ function fakeWorld(overrides: {
 } = {}) {
   const tokenHash = hashHandoffToken(rawToken);
   const handoff: FakeHandoff = { user_id: peptideosUserId, consumed_at: null };
-  const released: Array<{ hash: string; at: Date }> = [];
   const accounts: Array<{ userId: string; peptideosUserId: string }> = [];
   const deletedSessions: string[] = [];
 
@@ -80,12 +79,6 @@ function fakeWorld(overrides: {
 
   const deps: PeptideOsSsoDeps = {
     claimByHash,
-    releaseByHash: async (hash, at) => {
-      released.push({ hash, at });
-      if (hash === tokenHash && handoff.consumed_at?.getTime() === at.getTime()) {
-        handoff.consumed_at = null;
-      }
-    },
     lookupAuthUser:
       overrides.lookupAuthUser ??
       (async (hid) => (hid === peptideosUserId ? { email, meta: { full_name: "Ada Athlete" } } : null)),
@@ -113,11 +106,11 @@ function fakeWorld(overrides: {
     deps.findUserByEmail = async () => overrides.snapshot?.existingUser ?? null;
   }
 
-  return { deps, handoff, released, accounts, deletedSessions, tokenHash };
+  return { deps, handoff, accounts, deletedSessions, tokenHash };
 }
 
 test("new PeptideOS user: consume, create user, session, and signed cookie; token stays consumed", async () => {
-  const { deps, handoff, released, accounts } = fakeWorld();
+  const { deps, handoff, accounts } = fakeWorld();
 
   const response = await runPeptideOsSso(ssoRequest(), deps);
 
@@ -125,7 +118,6 @@ test("new PeptideOS user: consume, create user, session, and signed cookie; toke
   assert.equal(response.headers.get("location"), "https://workouts.example.test/");
   assert.match(response.headers.get("set-cookie") ?? "", /better-auth\.session_token=/);
   assert.ok(handoff.consumed_at);
-  assert.deepEqual(released, []);
   assert.deepEqual(accounts, [{ userId: "new-user", peptideosUserId }]);
 });
 
@@ -174,7 +166,7 @@ test("finalizeSession denies leftover WC auth pages and falls back to home", asy
 });
 
 test("linked PeptideOS user: consume, skip signup, session, and signed cookie", async () => {
-  const { deps, released, accounts } = fakeWorld({
+  const { deps, accounts } = fakeWorld({
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId }
   });
 
@@ -183,7 +175,6 @@ test("linked PeptideOS user: consume, skip signup, session, and signed cookie", 
   assert.equal(response.status, 307);
   assert.match(response.headers.get("set-cookie") ?? "", /better-auth\.session_token=/);
   assert.deepEqual(accounts, []);
-  assert.deepEqual(released, []);
 });
 
 test("email collision returns a generic 409 and burns the handoff", async () => {
@@ -194,7 +185,7 @@ test("email collision returns a generic 409 and burns the handoff", async () => 
   };
 
   try {
-    const { deps, handoff, released, accounts } = fakeWorld({
+    const { deps, handoff, accounts } = fakeWorld({
       snapshot: { existingUser: null, peptideosAccountId: null },
       signUp: async () => {
         throw new Error("User already exists: athlete@example.test");
@@ -208,7 +199,6 @@ test("email collision returns a generic 409 and burns the handoff", async () => 
     assert.equal(response.status, 409);
     assert.deepEqual(body, { error: "sso_email_collision" });
     assert.ok(handoff.consumed_at);
-    assert.deepEqual(released, []);
     assert.deepEqual(accounts, []);
     assert.match(lines.join("\n"), /sso_email_collision/);
     assert.doesNotMatch(lines.join("\n"), /athlete@example.test/);
@@ -303,7 +293,7 @@ test("browser SSO error Try again drops leftover WC auth redirects", async () =>
 });
 
 test("cookie failure after createSession cleans up the session and does not release the handoff", async () => {
-  const { deps, handoff, released, deletedSessions } = fakeWorld({
+  const { deps, handoff, deletedSessions } = fakeWorld({
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },
     createSignedSession: async (userId) =>
       attachTrustedSession(userId, {
@@ -331,12 +321,11 @@ test("cookie failure after createSession cleans up the session and does not rele
   assert.equal(response.status, 500);
   assert.deepEqual(body, { error: "sso_signin_failed" });
   assert.ok(handoff.consumed_at);
-  assert.deepEqual(released, []);
   assert.deepEqual(deletedSessions, ["orphaned-session-token"]);
 });
 
 test("deleteSession throw after a session write keeps the handoff consumed", async () => {
-  const { deps, handoff, released, deletedSessions } = fakeWorld({
+  const { deps, handoff, deletedSessions } = fakeWorld({
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },
     createSignedSession: async (userId) =>
       attachTrustedSession(userId, {
@@ -364,7 +353,6 @@ test("deleteSession throw after a session write keeps the handoff consumed", asy
   assert.equal(response.status, 500);
   assert.deepEqual(body, { error: "sso_signin_failed" });
   assert.ok(handoff.consumed_at);
-  assert.deepEqual(released, []);
   assert.deepEqual(deletedSessions, []);
 });
 
@@ -384,6 +372,7 @@ test("auth.users lookup logs stay allowlisted and never dump the raw stack", asy
 
     const response = await runPeptideOsSso(ssoRequest(), deps);
     assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: "auth_users_lookup_failed" });
     const joined = lines.join("\n");
     assert.match(joined, /auth_users_lookup/);
     assert.match(joined, /42P01/);
@@ -395,7 +384,7 @@ test("auth.users lookup logs stay allowlisted and never dump the raw stack", asy
 });
 
 test("createSession throw after persist does not release the handoff", async () => {
-  const { deps, handoff, released } = fakeWorld({
+  const { deps, handoff } = fakeWorld({
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId },
     createSignedSession: async (userId) =>
       attachTrustedSession(userId, {
@@ -414,21 +403,121 @@ test("createSession throw after persist does not release the handoff", async () 
   assert.equal(response.status, 500);
   assert.deepEqual(body, { error: "sso_signin_failed" });
   assert.ok(handoff.consumed_at);
-  assert.deepEqual(released, []);
 });
 
-test("auth.users lookup failure before any write releases the single-use claim", async () => {
-  const { deps, handoff, released } = fakeWorld({
+test("a failed sign-in keeps the handoff consumed; Try again starts a new PeptideOS handoff", async () => {
+  const { deps, handoff } = fakeWorld({
     lookupAuthUser: async () => {
       throw Object.assign(new Error("relation auth.users does not exist"), { code: "42P01" });
     }
   });
 
+  const failed = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
+  const html = await failed.text();
+
+  assert.equal(failed.status, 500);
+  assert.ok(handoff.consumed_at);
+  assert.match(html, /Try again/i);
+  assert.match(html, /href="https:\/\/example\.test\/api\/workouts\/sso"/);
+  assert.doesNotMatch(html, /plaintext-handoff-from-query-string/);
+  assert.doesNotMatch(html, /token=/);
+
+  const retry = await runPeptideOsSso(ssoRequest(), deps);
+  const retryBody = await retry.json();
+  assert.equal(retry.status, 400);
+  assert.deepEqual(retryBody, { error: "invalid_or_expired_handoff" });
+  assert.ok(handoff.consumed_at);
+
+  const freshToken = "fresh-handoff-from-peptideos";
+  const freshHash = hashHandoffToken(freshToken);
+  const freshHandoff: FakeHandoff = { user_id: peptideosUserId, consumed_at: null };
+  deps.claimByHash = async (hash) => {
+    if (hash !== freshHash || freshHandoff.consumed_at) return [];
+    freshHandoff.consumed_at = claimedAt;
+    return [{ user_id: freshHandoff.user_id, consumed_at: claimedAt }];
+  };
+  deps.lookupAuthUser = async (hid) => (hid === peptideosUserId ? { email, meta: { full_name: "Ada Athlete" } } : null);
+
+  const again = await runPeptideOsSso(ssoRequest(freshToken), deps);
+  assert.equal(again.status, 307);
+  assert.equal(again.headers.get("location"), "https://workouts.example.test/");
+  assert.ok(freshHandoff.consumed_at);
+  assert.ok(handoff.consumed_at);
+});
+
+test("signup failure before a user write keeps the handoff consumed", async () => {
+  const { deps, handoff } = fakeWorld({
+    signUp: async () => null
+  });
+  deps.findUserByEmail = async () => null;
+
   const response = await runPeptideOsSso(ssoRequest(), deps);
   const body = await response.json();
 
   assert.equal(response.status, 500);
-  assert.equal(body.error, "auth_users_lookup_failed");
-  assert.equal(handoff.consumed_at, null);
-  assert.deepEqual(released, [{ hash: hashHandoffToken(rawToken), at: claimedAt }]);
+  assert.deepEqual(body, { error: "sso_signup_failed" });
+  assert.ok(handoff.consumed_at);
+
+  const retry = await runPeptideOsSso(ssoRequest(), deps);
+  assert.equal(retry.status, 400);
+  assert.deepEqual(await retry.json(), { error: "invalid_or_expired_handoff" });
+});
+
+test("handoff consume Prisma errors log and return neither the handoff token nor the email", async () => {
+  const handoffToken = "plaintext-handoff-from-query-string";
+  const email = "athlete@example.test";
+  const query = `UPDATE public.workout_cool_handoffs SET consumed_at = NOW() WHERE secret_token = '${handoffToken}'`;
+  const lines: string[] = [];
+  const originalError = console.error;
+  const env = process.env as Record<string, string | undefined>;
+  const previousDiagnostics = env.SSO_DIAGNOSTICS;
+  const previousNodeEnv = env.NODE_ENV;
+  console.error = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  env.SSO_DIAGNOSTICS = "1";
+  env.NODE_ENV = "development";
+
+  try {
+    const { deps } = fakeWorld();
+    deps.claimByHash = async () => {
+      throw Object.assign(new Error(`Invalid prisma.$queryRaw() invocation:\n${query}\n${email}`), {
+        name: "PrismaClientKnownRequestError",
+        code: "P2010",
+        meta: { email, query, args: [handoffToken, email] }
+      });
+    };
+
+    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const body = await response.json();
+    const logged = lines.join("\n");
+    const serialized = `${logged}\n${JSON.stringify(body)}`;
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(body, { error: "sso_internal_error" });
+    assert.equal("dev_detail" in body, false);
+    assert.match(logged, /PrismaClientKnownRequestError/);
+    assert.match(logged, /P2010/);
+    assert.match(logged, /unhandled/);
+    assert.doesNotMatch(serialized, /plaintext-handoff-from-query-string/);
+    assert.doesNotMatch(serialized, /athlete@example\.test/);
+    assert.doesNotMatch(serialized, /secret_token/);
+    assert.doesNotMatch(serialized, /\$queryRaw/);
+    assert.doesNotMatch(serialized, /workout_cool_handoffs/);
+    assert.doesNotMatch(serialized, /dev_detail/);
+
+    const htmlResponse = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
+    const html = await htmlResponse.text();
+    assert.equal(htmlResponse.status, 500);
+    assert.doesNotMatch(html, /plaintext-handoff-from-query-string/);
+    assert.doesNotMatch(html, /athlete@example\.test/);
+    assert.doesNotMatch(html, /secret_token/);
+    assert.doesNotMatch(html, /dev_detail/);
+  } finally {
+    console.error = originalError;
+    if (previousDiagnostics === undefined) delete env.SSO_DIAGNOSTICS;
+    else env.SSO_DIAGNOSTICS = previousDiagnostics;
+    if (previousNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = previousNodeEnv;
+  }
 });

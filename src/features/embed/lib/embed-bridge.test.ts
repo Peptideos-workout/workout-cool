@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
+import { embedSignedOutDocumentResponse } from "./embed-signed-out-document";
 import { resolveEmbedOutboundOrigins } from "./embed-mode";
 import {
   acceptParentThemeMessage,
@@ -298,15 +299,38 @@ test("a www parent with no referrer or ancestorOrigins locks targetOrigin after 
   assert.equal(JSON.stringify(calls).includes("*"), false);
 });
 
-test("sign-out is reported from the sign-out path, not from a missing session", () => {
-  const calls: Array<{ message: unknown; origin: string }> = [];
-  const frames: Array<() => void> = [];
-  const host = bridgeHost(calls, frames, { height: 400, path: "/fr/auth/signout" });
-  startEmbedBridge(host);
-  assert.deepEqual(calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out"), [
-    { message: { type: "wc:signed-out", reason: "logout" }, origin: POS }
-  ]);
-  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
+test("a framed sign-out fallback and an embedded sign-out page send no postMessage", async () => {
+  const response = embedSignedOutDocumentResponse("https://peptideos.us", "https://workouts.peptideos.us", {
+    postSession: false
+  });
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(html, /postMessage/);
+  assert.doesNotMatch(html, /wc:session/);
+  assert.doesNotMatch(html, /wc:signed-out/);
+
+  for (const path of ["/auth/signout", "/fr/auth/signout", "/en/auth/signout/continue"]) {
+    const calls: Array<{ message: unknown; origin: string }> = [];
+    const frames: Array<() => void> = [];
+    const host = bridgeHost(calls, frames, { height: 400, path });
+    startEmbedBridge(host);
+    while (frames.length > 0) frames.shift()?.();
+    host.resize?.();
+    while (frames.length > 0) frames.shift()?.();
+    assert.deepEqual(calls, [], path);
+
+    assert.equal(embedReportedSession({ embed: true, sessionResolved: true, hasSession: true, pathname: path }), null);
+    assert.equal(embedReportedSession({ embed: true, sessionResolved: true, hasSession: false, pathname: path }), null);
+    const state = sessionReportToSend(null, embedReportedSession({
+      embed: true,
+      sessionResolved: true,
+      hasSession: false,
+      pathname: path
+    }));
+    assert.equal(state, null);
+    assert.equal(postEmbedSession(POS, state, { embed: true, topLevel: false, parent: port(calls) }), false);
+    assert.deepEqual(calls, [], path);
+  }
 });
 
 test("outbound messages keep their exact keys and never use a wildcard origin", () => {
@@ -394,7 +418,7 @@ test("sign-out paths and an explicit logout do not send wc:session signed-out", 
   assert.equal(embedReportedSession({ ...signedOut, pathname: "/en/profile" }), "signed-out");
   assert.equal(
     embedReportedSession({ embed: true, sessionResolved: true, hasSession: true, pathname: "/auth/signout" }),
-    "signed-in"
+    null
   );
   assert.equal(
     embedReportedSession({ embed: true, sessionResolved: false, hasSession: false, ssoError: true, pathname: "/en/auth/signout" }),
@@ -410,12 +434,13 @@ test("sign-out paths and an explicit logout do not send wc:session signed-out", 
   assert.equal(explicitEmbedLogoutOnPath("/en/profile"), false);
 
   const calls: Array<{ message: unknown; origin: string }> = [];
-  startEmbedBridge(bridgeHost(calls, [], { height: 400, path: "/auth/signout/continue" }));
-  assert.deepEqual(
-    calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out").map((call) => call.message),
-    [{ type: "wc:signed-out", reason: "logout" }]
-  );
-  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
+  const frames: Array<() => void> = [];
+  const host = bridgeHost(calls, frames, { height: 400, path: "/auth/signout/continue" });
+  startEmbedBridge(host);
+  while (frames.length > 0) frames.shift()?.();
+  host.resize?.();
+  while (frames.length > 0) frames.shift()?.();
+  assert.deepEqual(calls, []);
   clearExplicitEmbedLogout();
 });
 

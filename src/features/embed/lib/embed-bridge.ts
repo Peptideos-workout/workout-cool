@@ -230,7 +230,10 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
 
   const parent = host.parent;
   let stopped = false;
+  // A sign-out page posts nothing: no height, no path, no session, no logout.
+  let suppressPosts = isEmbedSignedOutPath(host.readPath());
   const post = (message: EmbedChildMessage) => {
+    if (suppressPosts) return;
     for (const origin of targets) postToParent(parent, origin, message);
   };
   const reporter = createHeightReporter((height) => {
@@ -242,9 +245,10 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
     if (stopped) return;
     const raw = host.readPath();
     if (isEmbedSignedOutPath(raw)) {
-      post(embedLogoutMessage());
+      suppressPosts = true;
       return;
     }
+    suppressPosts = false;
     const path = reportableEmbedPath(raw);
     if (!path) return;
     post({ type: EMBED_CHILD_MESSAGE.navigate, path });
@@ -284,14 +288,14 @@ export function embedLogoutMessage(): EmbedChildMessageMap["signedOut"] {
 
 /**
  * Null until the session is known. Signed-out matches the Log in / Sign up fallback.
- * A sign-out path, or the page that started logout, does not also send signed-out.
- * That page's only auth signal is wc:signed-out.
+ * A /auth/signout* page posts nothing, including when a session is still present.
+ * An explicit logout also skips wc:session; useLogout posts wc:signed-out itself.
  */
 export function embedReportedSession(input: EmbedSessionInput): EmbedSessionState | null {
   if (!input.embed) return null;
-  const onSignOutPath = input.pathname ? isEmbedSignedOutPath(input.pathname) : false;
+  if (input.pathname && isEmbedSignedOutPath(input.pathname)) return null;
   if (shouldShowEmbedAuthFallback(input)) {
-    if (onSignOutPath || input.explicitLogout) return null;
+    if (input.explicitLogout) return null;
     return EMBED_SESSION_STATE.signedOut;
   }
   if (!input.sessionResolved) return null;

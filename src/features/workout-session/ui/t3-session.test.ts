@@ -185,6 +185,10 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
   assert.match(quit, /t\("workout_builder\.session\.continue_workout"\)/);
 
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
+  assert.match(timer, /fixed bottom-36 left-1\/2 z-50 mb-3 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-20/);
+  assert.match(timer, /rounded-full border border-\[var\(--wc-dash-border\)\] bg-\[var\(--wc-dash-card\)\] px-4 py-2 shadow-lg/);
+  assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
+  assert.match(sets, /px-3 pb-8 sm:px-6 \[html\[data-wc-embed='1'\]_&\]:pb-8/);
   assert.match(header, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(quit, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(timer, /onClick=\{toggleTimer\}/);

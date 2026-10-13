@@ -7,6 +7,12 @@ export interface HandoffClaimRow {
   consumed_at: Date | string;
 }
 
+/**
+ * Atomically consume one handoff row.
+ * PeptideOS mints `expires_at` on a 120-second lifetime. This UPDATE claims a row only when it
+ * is still unused (`consumed_at IS NULL`) and unexpired (`expires_at > NOW()`). An expired token
+ * is left untouched. A claimed row stays consumed after success or any later failure.
+ */
 export async function lookupUnconsumedHandoffByHash(
   db: Pick<PrismaClient, "$queryRaw">,
   tokenHash: string,

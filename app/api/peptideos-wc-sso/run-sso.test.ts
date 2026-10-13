@@ -116,6 +116,8 @@ test("new PeptideOS user: consume, create user, session, and signed cookie; toke
 
   assert.equal(response.status, 307);
   assert.equal(response.headers.get("location"), "https://workouts.example.test/");
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
   assert.match(response.headers.get("set-cookie") ?? "", /better-auth\.session_token=/);
   assert.ok(handoff.consumed_at);
   assert.deepEqual(accounts, [{ userId: "new-user", peptideosUserId }]);

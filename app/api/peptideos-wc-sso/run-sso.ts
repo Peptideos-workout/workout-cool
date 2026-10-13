@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { ssoClientError } from "./sso-response";
+import { applySsoResponseHeaders, ssoClientError } from "./sso-response";
 import { logSsoEvent } from "./sso-error-log";
 import { handoffDisposition } from "./handoff-disposition";
 import { runWithHandoffClaim } from "./consume-handoff";
@@ -56,11 +56,10 @@ function splitName(displayName: string | undefined, email: string): { firstName:
   return { firstName: local || "Athlete", lastName: "User", name: `${local} User` };
 }
 
-function finalizeSession(origin: string, signInRes: Response, redirectParam?: string): NextResponse {
-  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam));
+function finalizeSession(origin: string, signInRes: Response, redirectParam: string | undefined, status: 303 | 307): NextResponse {
+  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam), status);
   mergeSetCookies(signInRes, redirect);
-  redirect.headers.set("Cache-Control", "private, no-store");
-  return redirect;
+  return applySsoResponseHeaders(redirect);
 }
 
 function metaDisplayName(meta: unknown): string | undefined {
@@ -71,11 +70,113 @@ function metaDisplayName(meta: unknown): string | undefined {
   return full || undefined;
 }
 
-export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
-  const redirectParam = request.nextUrl.searchParams.get("redirect") ?? undefined;
+const URLENCODED_FORM = "application/x-www-form-urlencoded";
+
+/** Form POST bodies larger than this are rejected before they are parsed. */
+export const SSO_POST_MAX_BYTES = 4 * 1024;
+
+type DeclaredSsoBody = "absent" | "empty" | "oversized" | "within-cap";
+
+/**
+ * A missing Content-Length is measured from the stream.
+ * `0`, a non-numeric value, and an empty header are an empty body and are not read.
+ * A length over the cap is oversized and is not read.
+ */
+function declaredSsoPostBody(contentLength: string | null): DeclaredSsoBody {
+  if (contentLength === null) return "absent";
+  const trimmed = contentLength.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) return "empty";
+  const declared = Number(trimmed);
+  if (!Number.isSafeInteger(declared)) return "oversized";
+  if (declared === 0) return "empty";
+  if (declared > SSO_POST_MAX_BYTES) return "oversized";
+  return "within-cap";
+}
+
+/**
+ * Counts bytes and cancels the stream once the total passes the cap.
+ * A declared length over the cap never reaches this, so that body is not read.
+ */
+async function readCappedSsoPostBody(request: NextRequest): Promise<Uint8Array | "empty" | "oversized"> {
+  if (!request.body) return "empty";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let oversized = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value || value.byteLength === 0) continue;
+      if (total + value.byteLength > SSO_POST_MAX_BYTES) {
+        oversized = true;
+        break;
+      }
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  if (oversized) return "oversized";
+  if (total === 0) return "empty";
+
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
+/** Origin must equal the configured PeptideOS origin. Missing, www, and any other value are rejected. */
+export function isExactPeptideOsSsoOrigin(originHeader: string | null, expectedOrigin: string): boolean {
+  if (!originHeader || !expectedOrigin) return false;
+  return originHeader === expectedOrigin;
+}
+
+function isUrlEncodedForm(request: NextRequest): boolean {
+  const mediaType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  return mediaType === URLENCODED_FORM;
+}
+
+function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string } {
+  const params = new URLSearchParams(new TextDecoder().decode(bytes));
+  const token = params.get("token")?.trim() ?? "";
+  const redirect = params.get("redirect");
+  return {
+    token: token || undefined,
+    redirect: redirect === null ? undefined : redirect
+  };
+}
+
+type SsoPostRead = { outcome: "empty" } | { outcome: "oversized" } | { outcome: "fields"; token?: string; redirect?: string };
+
+/** Size-check the POST, then parse the kept bytes as urlencoded. Never calls `formData()`. */
+async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
+  const declared = declaredSsoPostBody(request.headers.get("content-length"));
+  if (declared === "empty") return { outcome: "empty" };
+  if (declared === "oversized") return { outcome: "oversized" };
+
+  const bytes = await readCappedSsoPostBody(request);
+  if (bytes === "empty") return { outcome: "empty" };
+  if (bytes === "oversized") return { outcome: "oversized" };
+  if (!isUrlEncodedForm(request)) return { outcome: "fields" };
+  return { outcome: "fields", ...fieldsFromUrlEncoded(bytes) };
+}
+
+interface SsoSubmission {
+  token?: string;
+  redirect?: string;
+  status: 303 | 307;
+}
+
+async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps, submission: SsoSubmission): Promise<NextResponse> {
+  const redirectParam = submission.redirect;
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin, redirectParam);
   const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref);
-  const tokenParam = request.nextUrl.searchParams.get("token")?.trim();
+  const tokenParam = submission.token?.trim();
   if (!tokenParam) return reply({ error: "missing_token" }, 400);
 
   try {
@@ -133,7 +234,7 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
           };
         }
         return {
-          value: finalizeSession(deps.workoutOrigin, sessionResponse, request.nextUrl.searchParams.get("redirect") ?? undefined),
+          value: finalizeSession(deps.workoutOrigin, sessionResponse, redirectParam, submission.status),
           disposition: "keep" as const
         };
       },
@@ -151,4 +252,59 @@ export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDe
     logSsoEvent("unhandled", e);
     return reply({ error: "sso_internal_error" }, 500);
   }
+}
+
+function ssoEmptyBody(request: NextRequest, workoutOrigin: string): NextResponse {
+  logSsoEvent("sso_body", undefined, "empty_body");
+  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
+  return ssoClientError(request, { error: "empty_body" }, 400, tryAgainHref);
+}
+
+function ssoPayloadTooLarge(request: NextRequest, workoutOrigin: string): NextResponse {
+  logSsoEvent("sso_body", undefined, "payload_too_large");
+  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
+  return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref);
+}
+
+/** GET `?token=` rollout path. Redirect stays 307 so a navigation remains a GET. */
+export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
+  return executePeptideOsSso(request, deps, {
+    token: request.nextUrl.searchParams.get("token")?.trim(),
+    redirect: request.nextUrl.searchParams.get("redirect") ?? undefined,
+    status: 307
+  });
+}
+
+/**
+ * Form POST from PeptideOS. Origin is checked before the handoff is read or consumed.
+ * Success is 303 so the browser GETs the sanitized workout URL instead of re-POSTing it.
+ * The consume, account, and session steps are the same as GET.
+ */
+export async function runPeptideOsSsoPost(
+  request: NextRequest,
+  deps: PeptideOsSsoDeps,
+  expectedOrigin: string
+): Promise<NextResponse> {
+  if (!isExactPeptideOsSsoOrigin(request.headers.get("origin"), expectedOrigin)) {
+    logSsoEvent("sso_origin", undefined, "forbidden_origin");
+    const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+    return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref);
+  }
+
+  let read: SsoPostRead;
+  try {
+    read = await readSsoPost(request);
+  } catch (e) {
+    logSsoEvent("sso_body", e);
+    const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+    return ssoClientError(request, { error: "sso_internal_error" }, 500, tryAgainHref);
+  }
+  if (read.outcome === "empty") return ssoEmptyBody(request, deps.workoutOrigin);
+  if (read.outcome === "oversized") return ssoPayloadTooLarge(request, deps.workoutOrigin);
+
+  return executePeptideOsSso(request, deps, {
+    token: read.token,
+    redirect: read.redirect,
+    status: 303
+  });
 }

@@ -12,10 +12,15 @@ export function safeSsoErrorBody(body: Record<string, unknown>): { error: string
   return { error: code };
 }
 
-export function ssoJson(body: Record<string, unknown>, status: number): NextResponse {
-  const response = NextResponse.json(body, { status });
+/** Every SSO response, success or error, must be uncacheable and must not leak the handoff URL. */
+export function applySsoResponseHeaders(response: NextResponse): NextResponse {
   response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
+}
+
+export function ssoJson(body: Record<string, unknown>, status: number): NextResponse {
+  return applySsoResponseHeaders(NextResponse.json(body, { status }));
 }
 
 export function ssoClientError(
@@ -34,9 +39,8 @@ export function ssoClientError(
   const response = new NextResponse(ssoErrorHtml({ locale, error, tryAgainHref }), {
     status,
     headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "private, no-store"
+      "Content-Type": "text/html; charset=utf-8"
     }
   });
-  return response;
+  return applySsoResponseHeaders(response);
 }

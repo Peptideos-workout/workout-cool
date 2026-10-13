@@ -256,7 +256,6 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
               async
               crossOrigin="anonymous"
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${env.NEXT_PUBLIC_AD_CLIENT}`}
-              suppressHydrationWarning
             />
 
             {env.NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT === true && (
@@ -270,7 +269,8 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             )}
 
             {/* Ezoic Header Script */}
-            <script async src="//www.ezojs.com/ezoic/sa.min.js" suppressHydrationWarning />
+            <script async src="//www.ezojs.com/ezoic/sa.min.js" />
+            {/* the ad loader inserts a script before hydration and shifts this tag */}
             <script
               dangerouslySetInnerHTML={{
                 __html: `
@@ -288,7 +288,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
                     window.ezRewardedAds = window.ezRewardedAds || {};
                     window.ezRewardedAds.cmd = window.ezRewardedAds.cmd || [];
                   `,
-              }}
+                }}
               suppressHydrationWarning
             />
           </>

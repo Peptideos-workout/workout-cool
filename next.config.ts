@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { FRAME_ANCESTORS_CSP } from "./src/shared/lib/frame-ancestors";
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -14,6 +16,19 @@ const nextConfig: NextConfig = {
     "/[locale]/legal/privacy": ["./content/**/*.mdx"],
     "/[locale]/legal/terms": ["./content/**/*.mdx"],
     "/[locale]/legal/sales-terms": ["./content/**/*.mdx"],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: FRAME_ANCESTORS_CSP
+          }
+        ]
+      }
+    ];
   },
   reactStrictMode: true,
   images: {

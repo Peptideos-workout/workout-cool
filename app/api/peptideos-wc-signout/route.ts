@@ -17,6 +17,7 @@ import { runPeptideOsWcSignout } from "./run-wc-signout";
 import type { NextRequest } from "next/server";
 
 import { workoutCoolPublicOrigin } from "@/shared/lib/workout-cool-public-origin";
+import { applyFrameAncestorsHeader } from "@/shared/lib/frame-ancestors";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 import { auth } from "@/features/auth/lib/better-auth";
 import { env } from "@/env";
@@ -27,6 +28,7 @@ function methodNotAllowed(): NextResponse {
   const response = new NextResponse(null, { status: 405 });
   response.headers.set("Allow", "POST");
   response.headers.set("Cache-Control", "private, no-store");
+  applyFrameAncestorsHeader(response.headers);
   return response;
 }
 

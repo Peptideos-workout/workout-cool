@@ -263,11 +263,52 @@ test("POST ignores a query-string token and a non-form body", async () => {
   assert.equal(json.claimCount(), 0);
 });
 
-function assertPayloadTooLarge(response: Response, handoff: FakeHandoff, claimCount: () => number) {
-  assert.equal(response.status, 413);
+function assertRejectedWithoutConsume(
+  response: Response,
+  status: number,
+  handoff: FakeHandoff,
+  claimCount: () => number
+) {
+  assert.equal(response.status, status);
   assertSsoResponseHeaders(response);
   assert.equal(handoff.consumed_at, null);
   assert.equal(claimCount(), 0);
+}
+
+function chunkedPostRequest(options: {
+  chunks: Uint8Array[];
+  contentLength?: string;
+  onPull?: () => void;
+  onCancel?: () => void;
+}) {
+  let index = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      options.onPull?.();
+      if (index >= options.chunks.length) {
+        controller.close();
+        return;
+      }
+      const next = options.chunks[index];
+      index += 1;
+      controller.enqueue(next);
+    },
+    cancel() {
+      options.onCancel?.();
+    }
+  });
+  const headers = new Headers({
+    origin: POS,
+    accept: "application/json",
+    "content-type": "application/x-www-form-urlencoded"
+  });
+  if (options.contentLength !== undefined) headers.set("content-length", options.contentLength);
+  return new NextRequest(`${WC}/api/peptideos-wc-sso`, {
+    method: "POST",
+    headers,
+    body: stream,
+    duplex: "half"
+  });
 }
 
 test("POST rejects a content-length over 4KB, a missing body, and an oversized body without consuming", async () => {
@@ -276,12 +317,17 @@ test("POST rejects a content-length over 4KB, a missing body, and an oversized b
   try {
     const declared = fakeWorld();
     const declaredResponse = await runPeptideOsSsoPost(
-      postRequest({ token: rawToken, contentLength: String(SSO_POST_MAX_BYTES + 1) }),
+      chunkedPostRequest({
+        contentLength: String(SSO_POST_MAX_BYTES + 1),
+        chunks: [new TextEncoder().encode(`token=${encodeURIComponent(rawToken)}`)]
+      }),
       declared.deps,
       POS
     );
-    assert.deepEqual(await declaredResponse.json(), { error: "payload_too_large" });
-    assertPayloadTooLarge(declaredResponse, declared.handoff, declared.claimCount);
+    const declaredJson = await declaredResponse.json();
+    assert.deepEqual(declaredJson, { error: "payload_too_large" });
+    assert.doesNotMatch(JSON.stringify(declaredJson), new RegExp(rawToken));
+    assertRejectedWithoutConsume(declaredResponse, 413, declared.handoff, declared.claimCount);
 
     const missing = fakeWorld();
     const missingRequest = new NextRequest(`${WC}/api/peptideos-wc-sso`, {
@@ -293,13 +339,13 @@ test("POST rejects a content-length over 4KB, a missing body, and an oversized b
       }
     });
     const missingResponse = await runPeptideOsSsoPost(missingRequest, missing.deps, POS);
-    assert.deepEqual(await missingResponse.json(), { error: "payload_too_large" });
-    assertPayloadTooLarge(missingResponse, missing.handoff, missing.claimCount);
+    assert.deepEqual(await missingResponse.json(), { error: "empty_body" });
+    assertRejectedWithoutConsume(missingResponse, 400, missing.handoff, missing.claimCount);
 
     const empty = fakeWorld();
     const emptyResponse = await runPeptideOsSsoPost(postRequest({ rawBody: "" }), empty.deps, POS);
-    assert.deepEqual(await emptyResponse.json(), { error: "payload_too_large" });
-    assertPayloadTooLarge(emptyResponse, empty.handoff, empty.claimCount);
+    assert.deepEqual(await emptyResponse.json(), { error: "empty_body" });
+    assertRejectedWithoutConsume(emptyResponse, 400, empty.handoff, empty.claimCount);
 
     const oversized = fakeWorld();
     const tokenPart = `token=${encodeURIComponent(rawToken)}&pad=`;
@@ -313,7 +359,7 @@ test("POST rejects a content-length over 4KB, a missing body, and an oversized b
     const oversizedJson = await oversizedResponse.json();
     assert.deepEqual(oversizedJson, { error: "payload_too_large" });
     assert.doesNotMatch(JSON.stringify(oversizedJson), new RegExp(rawToken));
-    assertPayloadTooLarge(oversizedResponse, oversized.handoff, oversized.claimCount);
+    assertRejectedWithoutConsume(oversizedResponse, 413, oversized.handoff, oversized.claimCount);
 
     const htmlWorld = fakeWorld();
     const html = await runPeptideOsSsoPost(
@@ -336,6 +382,66 @@ test("POST rejects a content-length over 4KB, a missing body, and an oversized b
     assert.equal(cappedResponse.status, 303);
     assert.ok(capped.handoff.consumed_at);
     assertSsoResponseHeaders(cappedResponse);
+  } finally {
+    console.error = original;
+  }
+});
+
+test("POST treats Content-Length 0, abc, and an empty value as empty_body without reading", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+  try {
+    for (const contentLength of ["0", "abc", ""]) {
+      const world = fakeWorld();
+      const response = await runPeptideOsSsoPost(
+        chunkedPostRequest({
+          contentLength,
+          chunks: [new TextEncoder().encode(`token=${encodeURIComponent(rawToken)}`)]
+        }),
+        world.deps,
+        POS
+      );
+      const body = await response.json();
+      assert.deepEqual(body, { error: "empty_body" });
+      assert.doesNotMatch(JSON.stringify(body), new RegExp(rawToken));
+      assertRejectedWithoutConsume(response, 400, world.handoff, world.claimCount);
+    }
+  } finally {
+    console.error = original;
+  }
+});
+
+test("POST aborts a chunked body once it passes 4KB and does not consume", async () => {
+  const original = console.error;
+  console.error = () => undefined;
+  try {
+    let pulls = 0;
+    let cancelled = false;
+    const chunkCount = 8;
+    const chunks = Array.from({ length: chunkCount }, () => new Uint8Array(1024));
+    const tokenBytes = new TextEncoder().encode(`token=${encodeURIComponent(rawToken)}&pad=`);
+    chunks[0].set(tokenBytes);
+    const world = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      chunkedPostRequest({
+        chunks,
+        onPull: () => {
+          pulls += 1;
+        },
+        onCancel: () => {
+          cancelled = true;
+        }
+      }),
+      world.deps,
+      POS
+    );
+    const body = await response.json();
+    assert.deepEqual(body, { error: "payload_too_large" });
+    assert.doesNotMatch(JSON.stringify(body), new RegExp(rawToken));
+    assert.equal(cancelled, true);
+    assert.ok(pulls > SSO_POST_MAX_BYTES / 1024);
+    assert.ok(pulls < chunkCount);
+    assertRejectedWithoutConsume(response, 413, world.handoff, world.claimCount);
   } finally {
     console.error = original;
   }

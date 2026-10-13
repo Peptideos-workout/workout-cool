@@ -75,29 +75,59 @@ const URLENCODED_FORM = "application/x-www-form-urlencoded";
 /** Form POST bodies larger than this are rejected before they are parsed. */
 export const SSO_POST_MAX_BYTES = 4 * 1024;
 
-type SsoPostBodyLimit = "ok" | "missing" | "oversized";
+type DeclaredSsoBody = "absent" | "empty" | "oversized" | "within-cap";
 
-/** `Content-Length` over the cap, or an unusable length. Absent means the body itself must be measured. */
-function declaredSsoPostBodyLimit(contentLength: string | null): SsoPostBodyLimit | "absent" {
+/**
+ * A missing Content-Length is measured from the stream.
+ * `0`, a non-numeric value, and an empty header are an empty body and are not read.
+ * A length over the cap is oversized and is not read.
+ */
+function declaredSsoPostBody(contentLength: string | null): DeclaredSsoBody {
   if (contentLength === null) return "absent";
   const trimmed = contentLength.trim();
-  if (!trimmed || !/^\d+$/.test(trimmed)) return "missing";
+  if (!trimmed || !/^\d+$/.test(trimmed)) return "empty";
   const declared = Number(trimmed);
-  if (!Number.isSafeInteger(declared) || declared === 0) return "missing";
+  if (!Number.isSafeInteger(declared)) return "oversized";
+  if (declared === 0) return "empty";
   if (declared > SSO_POST_MAX_BYTES) return "oversized";
-  return "ok";
+  return "within-cap";
 }
 
 /**
- * Byte length of a body whose declared length is missing or within the cap.
- * A `Content-Length` over the cap is rejected before this runs, so `formData()` is never called on it.
- * Returns 0 when the request has no body.
+ * Counts bytes and cancels the stream once the total passes the cap.
+ * A declared length over the cap never reaches this, so that body is not read.
  */
-async function measuredSsoPostBodyLength(request: NextRequest): Promise<number | "oversized"> {
-  if (!request.body) return 0;
-  const bytes = await request.clone().arrayBuffer();
-  if (bytes.byteLength > SSO_POST_MAX_BYTES) return "oversized";
-  return bytes.byteLength;
+async function readCappedSsoPostBody(request: NextRequest): Promise<Uint8Array | "empty" | "oversized"> {
+  if (!request.body) return "empty";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let oversized = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value || value.byteLength === 0) continue;
+      if (total + value.byteLength > SSO_POST_MAX_BYTES) {
+        oversized = true;
+        break;
+      }
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  if (oversized) return "oversized";
+  if (total === 0) return "empty";
+
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
 }
 
 /** Origin must equal the configured PeptideOS origin. Missing, www, and any other value are rejected. */
@@ -111,21 +141,29 @@ function isUrlEncodedForm(request: NextRequest): boolean {
   return mediaType === URLENCODED_FORM;
 }
 
-async function readSsoForm(request: NextRequest): Promise<{ token?: string; redirect?: string }> {
-  if (!isUrlEncodedForm(request)) return {};
-  let form: FormData;
-  try {
-    form = await request.formData();
-  } catch {
-    return {};
-  }
-  const tokenValue = form.get("token");
-  const redirectValue = form.get("redirect");
-  const token = typeof tokenValue === "string" ? tokenValue.trim() : "";
+function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string } {
+  const params = new URLSearchParams(new TextDecoder().decode(bytes));
+  const token = params.get("token")?.trim() ?? "";
+  const redirect = params.get("redirect");
   return {
     token: token || undefined,
-    redirect: typeof redirectValue === "string" ? redirectValue : undefined
+    redirect: redirect === null ? undefined : redirect
   };
+}
+
+type SsoPostRead = { outcome: "empty" } | { outcome: "oversized" } | { outcome: "fields"; token?: string; redirect?: string };
+
+/** Size-check the POST, then parse the kept bytes as urlencoded. Never calls `formData()`. */
+async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
+  const declared = declaredSsoPostBody(request.headers.get("content-length"));
+  if (declared === "empty") return { outcome: "empty" };
+  if (declared === "oversized") return { outcome: "oversized" };
+
+  const bytes = await readCappedSsoPostBody(request);
+  if (bytes === "empty") return { outcome: "empty" };
+  if (bytes === "oversized") return { outcome: "oversized" };
+  if (!isUrlEncodedForm(request)) return { outcome: "fields" };
+  return { outcome: "fields", ...fieldsFromUrlEncoded(bytes) };
 }
 
 interface SsoSubmission {
@@ -216,24 +254,16 @@ async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps,
   }
 }
 
+function ssoEmptyBody(request: NextRequest, workoutOrigin: string): NextResponse {
+  logSsoEvent("sso_body", undefined, "empty_body");
+  const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
+  return ssoClientError(request, { error: "empty_body" }, 400, tryAgainHref);
+}
+
 function ssoPayloadTooLarge(request: NextRequest, workoutOrigin: string): NextResponse {
   logSsoEvent("sso_body", undefined, "payload_too_large");
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
   return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref);
-}
-
-/** 413 before `formData()`. A declared length over the cap is rejected without reading the body. */
-async function rejectOversizedSsoPost(request: NextRequest, workoutOrigin: string): Promise<NextResponse | null> {
-  const declared = declaredSsoPostBodyLimit(request.headers.get("content-length"));
-  if (declared === "missing" || declared === "oversized") {
-    return ssoPayloadTooLarge(request, workoutOrigin);
-  }
-
-  const measured = await measuredSsoPostBodyLength(request);
-  if (measured === "oversized" || measured === 0) {
-    return ssoPayloadTooLarge(request, workoutOrigin);
-  }
-  return null;
 }
 
 /** GET `?token=` rollout path. Redirect stays 307 so a navigation remains a GET. */
@@ -261,13 +291,20 @@ export async function runPeptideOsSsoPost(
     return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref);
   }
 
-  const tooLarge = await rejectOversizedSsoPost(request, deps.workoutOrigin);
-  if (tooLarge) return tooLarge;
+  let read: SsoPostRead;
+  try {
+    read = await readSsoPost(request);
+  } catch (e) {
+    logSsoEvent("sso_body", e);
+    const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+    return ssoClientError(request, { error: "sso_internal_error" }, 500, tryAgainHref);
+  }
+  if (read.outcome === "empty") return ssoEmptyBody(request, deps.workoutOrigin);
+  if (read.outcome === "oversized") return ssoPayloadTooLarge(request, deps.workoutOrigin);
 
-  const form = await readSsoForm(request);
   return executePeptideOsSso(request, deps, {
-    token: form.token,
-    redirect: form.redirect,
+    token: read.token,
+    redirect: read.redirect,
     status: 303
   });
 }

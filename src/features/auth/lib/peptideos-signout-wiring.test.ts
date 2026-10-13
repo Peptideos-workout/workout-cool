@@ -216,16 +216,24 @@ test("SSO entry points are plain navigation links and never prefetch cross-origi
   }
 });
 
-test("CI runs the next-start sign-out e2e after the build step with placeholder env", () => {
+test("CI runs the full suite once after the build so the sign-out e2e can boot", () => {
   const ci = read(".github/workflows/ci.yml");
-  const buildAt = ci.search(/pnpm build|Build project/);
-  const e2eAt = ci.search(/signout-continue-e2e|next-start sign-out e2e|next start auto-submits/);
+  const buildJobAt = ci.search(/\n {2}build:/);
+  assert.notEqual(buildJobAt, -1, "CI must keep a build job");
+  const lintJob = ci.slice(0, buildJobAt);
+  const buildJob = ci.slice(buildJobAt);
+  assert.doesNotMatch(lintJob, /pnpm test/);
+
+  const buildAt = buildJob.search(/pnpm build/);
+  const testAt = buildJob.search(/pnpm test/);
   assert.notEqual(buildAt, -1, "CI must keep a build step");
-  assert.notEqual(e2eAt, -1, "CI must run the next-start sign-out e2e");
-  assert.ok(e2eAt > buildAt, "e2e must run after the build step so .next/BUILD_ID exists");
+  assert.notEqual(testAt, -1, "CI must run pnpm test after the build");
+  assert.ok(testAt > buildAt, "tests must run after the build step so .next/BUILD_ID exists");
+  assert.doesNotMatch(buildJob, /signout-continue-e2e\.test\.ts/);
   assert.match(ci, /BETTER_AUTH_SECRET/);
   assert.match(ci, /DATABASE_URL/);
   assert.match(ci, /GOOGLE_CLIENT_ID/);
+  assert.match(read("package.json"), /signout-continue-e2e\.test\.ts/);
 
   const e2e = read("src/features/auth/signout/lib/signout-continue-e2e.test.ts");
   assert.match(e2e, /process\.env\.CI/);

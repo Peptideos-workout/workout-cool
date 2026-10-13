@@ -142,8 +142,8 @@ export function isExactPeptideOsSsoOrigin(originHeader: string | null, expectedO
 }
 
 function isUrlEncodedForm(request: NextRequest): boolean {
-  const mediaType = request.headers.get("content-type")?.trim().toLowerCase() ?? "";
-  return mediaType.startsWith(URLENCODED_FORM);
+  const mediaType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  return mediaType === URLENCODED_FORM;
 }
 
 function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string } {

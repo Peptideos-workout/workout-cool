@@ -265,6 +265,19 @@ test("application/json Content-Type returns 415 and does not consume the handoff
   assert.equal(world.claimCount(), 0);
 });
 
+test("application/x-www-form-urlencodedx returns 415 and does not consume the handoff", async () => {
+  const world = fakeWorld();
+  const response = await runPeptideOsSsoPost(
+    postRequest({ token: rawToken, contentType: "application/x-www-form-urlencodedx" }),
+    world.deps,
+    POS
+  );
+  assert.equal(response.status, 415);
+  assert.deepEqual(await response.json(), { error: "unsupported_media_type" });
+  assert.equal(world.handoff.consumed_at, null);
+  assert.equal(world.claimCount(), 0);
+});
+
 test("a missing Content-Type returns 415 and does not consume the handoff", async () => {
   const world = fakeWorld();
   const response = await runPeptideOsSsoPost(postRequest({ token: rawToken, contentType: null }), world.deps, POS);

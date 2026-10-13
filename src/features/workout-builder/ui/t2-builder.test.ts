@@ -162,6 +162,7 @@ test("builder handlers and conditionals stay byte-identical", () => {
   assert.match(listItem, /setModalTab\("statistics"\)/);
   assert.match(listItem, /disabled=\{isShuffling\}/);
   assert.match(footer, /disabled=\{!canContinue\}\n\s+onClick=\{onNext\}/);
+  assert.equal(footer.split("disabled={!canContinue}").length - 1, 2);
   assert.equal(card.split("h-12 w-12 min-h-12 min-w-12").length - 1, 2);
   assert.match(listItem, /className="p-2 min-h-12 min-w-12 touch-manipulation"/);
   assert.match(listItem, /className="inline-flex min-h-12 min-w-12 items-center justify-center/);

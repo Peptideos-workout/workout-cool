@@ -847,6 +847,86 @@ test("a missing Sec-Fetch-Dest plus only the wc-embed cookie is not framed", asy
   }
 });
 
+async function withPeptideEnv<T>(run: () => Promise<T>): Promise<T> {
+  const previousPeptide = process.env.NEXT_PUBLIC_PEPTIDEOS_URL;
+  const previousApp = process.env.NEXT_PUBLIC_APP_URL;
+  process.env.NEXT_PUBLIC_PEPTIDEOS_URL = POS;
+  process.env.NEXT_PUBLIC_APP_URL = APP;
+  try {
+    return await run();
+  } finally {
+    if (previousPeptide === undefined) delete process.env.NEXT_PUBLIC_PEPTIDEOS_URL;
+    else process.env.NEXT_PUBLIC_PEPTIDEOS_URL = previousPeptide;
+    if (previousApp === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previousApp;
+  }
+}
+
+test("a top-level ?embed=1 with no Sec-Fetch-Dest header does not turn on embed chrome", async () => {
+  assert.equal(isEmbedDocumentRequest("?embed=1", null, null), true);
+  assert.equal(isEmbedDocumentRequest("?embed=1", "1", undefined), true);
+
+  const topLevel = boot("?embed=1", "1", { topLevel: true });
+  assert.equal(topLevel.root.getAttribute("data-wc-embed"), null);
+  assert.equal(topLevel.store.has(EMBED_SESSION_KEY), false);
+  assert.match(topLevel.cookie(), /Max-Age=0/);
+
+  const framed = boot("?embed=1", null);
+  assert.equal(framed.root.getAttribute("data-wc-embed"), "1");
+
+  await withPeptideEnv(async () => {
+    const response = await proxy(new NextRequest(`${APP}/en/profile?embed=1`));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("location"), null);
+    const html = await response.text();
+    assert.match(html, /window\.parent!==window/);
+    assert.match(html, /enable=framed&&/);
+    assert.doesNotMatch(html, /data-wc-embed="1"/);
+  });
+});
+
+test("a framed request with no session posts wc:session immediately and sign-out posts nothing", async () => {
+  await withPeptideEnv(async () => {
+    const framed = await proxy(
+      new NextRequest(`${APP}/en/profile`, {
+        headers: { "sec-fetch-dest": "iframe" }
+      })
+    );
+    assert.equal(framed.status, 200);
+    assert.equal(framed.headers.get("location"), null);
+    const html = await framed.text();
+    assert.match(html, /data-wc-embed-fallback/);
+    const bootstrap = embedSignedOutSessionBootstrap();
+    assert.match(html, /wc:session/);
+    assert.match(html, /signed-out/);
+    assert.doesNotMatch(bootstrap, /setTimeout/);
+    assert.equal(html.includes(bootstrap), true);
+    const posts = runSessionBootstrap({});
+    assert.deepEqual(
+      posts.map((call) => call.origin),
+      [...EMBED_PARENT_ORIGINS]
+    );
+    assert.deepEqual(
+      posts.map((call) => call.message),
+      EMBED_PARENT_ORIGINS.map(() => ({ type: "wc:session", state: "signed-out" }))
+    );
+    assert.equal(JSON.stringify(posts).includes("*"), false);
+
+    const signout = await proxy(
+      new NextRequest(`${APP}/en/auth/signout`, {
+        headers: { "sec-fetch-dest": "iframe" }
+      })
+    );
+    assert.equal(signout.status, 200);
+    assert.equal(signout.headers.get("location"), null);
+    const signoutHtml = await signout.text();
+    assert.match(signoutHtml, /data-wc-embed-fallback/);
+    assert.doesNotMatch(signoutHtml, /postMessage/);
+    assert.doesNotMatch(signoutHtml, /wc:session/);
+    assert.doesNotMatch(signoutHtml, /wc:signed-out/);
+  });
+});
+
 test("Sec-Fetch-Dest decides framing and the embed cookie never does", () => {
   const cleared = boot("?embed=1", "1", { topLevel: true });
   assert.match(cleared.cookie(), /Max-Age=0/);

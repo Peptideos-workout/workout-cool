@@ -81,10 +81,7 @@ export function BottomNavigation() {
     },
   ];
 
-  const tabs =
-    SiteConfig.allPremiumFeaturesFree ?
-      tabsRaw.filter((tab) => tab.id !== "premium")
-    : tabsRaw;
+  const tabs = tabsRaw;
 
   return (
     <nav
@@ -95,7 +92,7 @@ export function BottomNavigation() {
       <div className="absolute inset-0 bg-gradient-to-r from-[#4F8EF7]/3 via-transparent to-[#25CB78]/3 pointer-events-none" />
 
       <div className="relative sm:px-3 py-2">
-        <div className="flex justify-center items-center sm:gap-2 max-w-full mx-auto">
+        <div className="flex justify-center items-center sm:gap-2 max-w-full mx-auto" data-wc-nav-grid="">
           {tabs.map((tab) => {
             const isActive = tab.isActive;
             const isPremium = tab.id === "premium";
@@ -106,6 +103,7 @@ export function BottomNavigation() {
                 className={cn(
                   "group relative flex flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 sm:px-4 py-1 rounded-2xl transition-all duration-300 ease-out",
                   "hover:scale-105 active:scale-95",
+                  SiteConfig.allPremiumFeaturesFree && isPremium && "hidden",
                   isActive && isPremium
                     ? "bg-gradient-to-br from-[#FFD93D]/8 to-[#FFA500]/8 border border-[#FFD93D]/20"
                     : isActive
@@ -114,7 +112,9 @@ export function BottomNavigation() {
                         ? "hover:bg-[#FFD93D]/5 dark:hover:bg-[#FFD93D]/10"
                         : "hover:bg-gray-50/80 dark:hover:bg-slate-800/50",
                 )}
+                data-active={isActive ? "true" : "false"}
                 data-wc-entry={tab.id === "leaderboard" || tab.id === "premium" ? tab.id : undefined}
+                data-wc-nav-premium={isPremium ? "" : undefined}
                 href={tab.href}
                 key={tab.id}
               >

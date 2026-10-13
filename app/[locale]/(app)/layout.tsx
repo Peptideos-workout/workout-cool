@@ -4,6 +4,7 @@ import { Header } from "@/features/layout/Header";
 import { Footer } from "@/features/layout/Footer";
 import { BottomNavigation } from "@/features/layout/BottomNavigation";
 import { EmbedAuthFallback } from "@/features/embed/ui/embed-auth-fallback";
+import { Version } from "@/components/version";
 
 interface RootLayoutProps {
   params: Promise<{ locale: string }>;
@@ -22,6 +23,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <Header />
       <div className="flex-1 flex flex-col max-sm:pb-16" data-wc-main="">
         {children}
+        <Version variant="meta" />
       </div>
       <BottomNavigation />
       <Footer />

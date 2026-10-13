@@ -32,8 +32,38 @@ const DARK = {
   "--dash-error": "#fecdd3"
 } as const;
 
+function flattenMedia(css: string): string {
+  const parts: string[] = [];
+  let index = 0;
+  while (index < css.length) {
+    const mediaAt = css.indexOf("@media", index);
+    if (mediaAt === -1) {
+      parts.push(css.slice(index));
+      break;
+    }
+    parts.push(css.slice(index, mediaAt));
+    const open = css.indexOf("{", mediaAt);
+    assert.match(css.slice(mediaAt, open), /@media\s*\(\s*max-width:\s*639px\s*\)/);
+    let depth = 0;
+    let cursor = open;
+    for (; cursor < css.length; cursor += 1) {
+      if (css[cursor] === "{") depth += 1;
+      else if (css[cursor] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          parts.push(css.slice(open + 1, cursor));
+          cursor += 1;
+          break;
+        }
+      }
+    }
+    index = cursor;
+  }
+  return parts.join("\n");
+}
+
 function rules(css: string): Array<{ selector: string; body: string }> {
-  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const withoutComments = flattenMedia(css.replace(/\/\*[\s\S]*?\*\//g, ""));
   return withoutComments
     .split("}")
     .map((block) => block.trim())

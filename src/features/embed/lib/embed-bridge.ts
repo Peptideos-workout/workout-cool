@@ -14,7 +14,17 @@ const THEME_STORAGE_KEY = "theme";
 const MIN_REPORTED_HEIGHT = 200;
 const MAX_REPORTED_HEIGHT = 20000;
 
-const REPORTABLE_PREFIXES = ["/programs", "/statistics", "/tools", "/profile", "/about", "/legal", "/onboarding"] as const;
+const REPORTABLE_PREFIXES = [
+  "/programs",
+  "/statistics",
+  "/tools",
+  "/profile",
+  "/about",
+  "/legal",
+  "/onboarding",
+  "/leaderboard",
+  "/premium"
+] as const;
 
 export interface EmbedChildMessageMap {
   height: { type: typeof EMBED_CHILD_MESSAGE.height; height: number };

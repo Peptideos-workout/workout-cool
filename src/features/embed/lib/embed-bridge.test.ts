@@ -94,13 +94,19 @@ test("reportable paths keep locale and search, and drop auth, admin, and protoco
   assert.equal(reportableEmbedPath("/onboarding"), "/onboarding");
   assert.equal(reportableEmbedPath("/legal/privacy"), "/legal/privacy");
   assert.equal(reportableEmbedPath("/profile"), "/profile");
+  assert.equal(reportableEmbedPath("/premium"), "/premium");
+  assert.equal(reportableEmbedPath("/en/premium?return=%2Fen"), "/en/premium?return=%2Fen");
+  assert.equal(reportableEmbedPath("/premium/plans"), "/premium/plans");
+  assert.equal(reportableEmbedPath("/leaderboard"), "/leaderboard");
+  assert.equal(reportableEmbedPath("/fr/leaderboard"), "/fr/leaderboard");
+  assert.equal(reportableEmbedPath("/leaderboard/weekly"), "/leaderboard/weekly");
 
-  assert.equal(reportableEmbedPath("/premium"), null);
-  assert.equal(reportableEmbedPath("/leaderboard"), null);
   assert.equal(reportableEmbedPath("/auth/signout"), null);
   assert.equal(reportableEmbedPath("/admin/users"), null);
   assert.equal(reportableEmbedPath("/api/workouts"), null);
   assert.equal(reportableEmbedPath("/programs/../admin"), null);
+  assert.equal(reportableEmbedPath("/premium/../admin"), null);
+  assert.equal(reportableEmbedPath("/leaderboard?next=https://evil.example"), null);
   assert.equal(reportableEmbedPath("//peptideos.us/programs"), null);
   assert.equal(reportableEmbedPath("https://peptideos.us/programs"), null);
   assert.equal(reportableEmbedPath("/programs?next=https://evil.example"), null);
@@ -200,10 +206,20 @@ test("sign-out is reported from the sign-out path and from an explicit notify, n
   assert.equal(signedOut.every((call) => call.origin === POS), true);
 });
 
-test("hidden and foreign paths are not reported, and a top-level page stays silent", () => {
+test("premium and leaderboard paths in the pane are reported", () => {
+  const premium: Array<{ message: unknown; origin: string }> = [];
+  startEmbedBridge(bridgeHost(premium, [], { height: 500, path: "/en/premium?return=%2Fen" }));
+  assert.deepEqual(premium.map((call) => call.message), [{ type: "wc:navigate", path: "/en/premium?return=%2Fen" }]);
+
+  const board: Array<{ message: unknown; origin: string }> = [];
+  startEmbedBridge(bridgeHost(board, [], { height: 500, path: "/fr/leaderboard/weekly" }));
+  assert.deepEqual(board.map((call) => call.message), [{ type: "wc:navigate", path: "/fr/leaderboard/weekly" }]);
+});
+
+test("unlisted paths are not reported, and a top-level page stays silent", () => {
   const calls: Array<{ message: unknown; origin: string }> = [];
   const frames: Array<() => void> = [];
-  startEmbedBridge(bridgeHost(calls, frames, { height: 500, path: "/premium" }));
+  startEmbedBridge(bridgeHost(calls, frames, { height: 500, path: "/admin/users" }));
   frames[0]?.();
   assert.deepEqual(calls.map((call) => call.message), [{ type: "wc:height", height: 500 }]);
 

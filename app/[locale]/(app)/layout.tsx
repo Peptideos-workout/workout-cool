@@ -21,7 +21,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <EmbedAuthFallback />
       </Suspense>
       <Header />
-      <div className="flex-1 flex flex-col max-sm:pb-16" data-wc-main="">
+      <div className="flex-1 flex flex-col max-sm:pb-36" data-wc-main="">
         {children}
         <Version variant="meta" />
       </div>

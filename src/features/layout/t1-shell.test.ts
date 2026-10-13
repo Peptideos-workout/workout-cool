@@ -44,8 +44,14 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onPrevious=\{prevStep\}/);
   assert.match(stepper, /onStartWorkout=\{handleStartWorkout\}/);
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
-  assert.match(stepper, /bottom_navigation\.workouts/);
   assert.doesNotMatch(stepper, /Build your workout/);
+  assert.doesNotMatch(stepper, /data-wc-intro/);
+  assert.doesNotMatch(stepper, /data-wc-step-sheet/);
+  assert.doesNotMatch(footer, /data-wc-step-next/);
+  assert.doesNotMatch(read("src/features/workout-builder/ui/stepper-header.tsx"), /data-wc-step-mark/);
+  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-intro/);
+  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-step-sheet/);
+  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /order:\s*-1/);
 });
 
 test("T1 public shell classes stay in place and the embed line is a separate node", () => {
@@ -64,12 +70,14 @@ test("T1 public shell classes stay in place and the embed line is a separate nod
   assert.match(root, /<Version \/>/);
   assert.match(root, /bg-hero-light/);
   assert.match(version, /data-wc-chrome="version"/);
-  assert.match(version, /text-xs text-gray-500/);
+  assert.match(version, /text-lg leading-snug text-\[#33414a\] dark:text-\[#b4becb\]/);
+  assert.doesNotMatch(version, /text-xs/);
   assert.match(version, /data-wc-version-meta/);
   assert.match(version, /className="hidden"/);
   assert.match(version, /v\{appVersion\}/);
-  assert.match(nav, /text-\[9px\]/);
-  assert.match(nav, /allPremiumFeaturesFree && isPremium && "hidden"/);
+  assert.doesNotMatch(nav, /text-\[9px\]/);
+  assert.doesNotMatch(nav, /sm:text-xs/);
+  assert.doesNotMatch(nav, /isPremium && "hidden"/);
 });
 
 test("T1 embed presentation is scoped, 18px, and does not letter-wrap", () => {
@@ -84,4 +92,76 @@ test("T1 embed presentation is scoped, 18px, and does not letter-wrap", () => {
   assert.doesNotMatch(css, /@media \(min-width/);
   assert.match(css, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /\[data-wc-chrome="version"\][\s\S]*display:\s*none/);
+});
+
+test("the premium tab filter is restored", () => {
+  const nav = read("src/features/layout/BottomNavigation.tsx");
+  assert.match(
+    nav,
+    /const tabs =\s*SiteConfig\.allPremiumFeaturesFree \?\s*tabsRaw\.filter\(\(tab\) => tab\.id !== "premium"\)\s*: tabsRaw;/,
+  );
+  assert.doesNotMatch(nav, /isPremium && "hidden"/);
+  assert.doesNotMatch(nav, /const tabs = tabsRaw;/);
+});
+
+test("embed nav labels stay visible", () => {
+  const css = read("src/features/embed/embed-theme.css");
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a > span \{[^}]*display:\s*block\s*!important/);
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a span \{[^}]*white-space:\s*normal\s*!important/);
+  assert.doesNotMatch(css, /\[data-wc-chrome="nav"\] a > span \{[^}]*display:\s*none/);
+  assert.doesNotMatch(css, /\[data-wc-chrome="nav"\] a span \{[^}]*white-space:\s*nowrap/);
+});
+
+test("embed active and meta contrast colors hold", () => {
+  const css = read("src/features/embed/embed-theme.css");
+  assert.match(
+    css,
+    /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a\[data-active="true"\] \{[^}]*background:\s*var\(--dash-accent\)\s*!important;[^}]*color:\s*var\(--dash-ink\)\s*!important/,
+  );
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\] \{[^}]*color:\s*var\(--dash-secondary\)\s*!important/);
+});
+
+test("embed nav icons stay visible at 24px", () => {
+  const css = read("src/features/embed/embed-theme.css");
+  const nav = read("src/features/layout/BottomNavigation.tsx");
+  assert.match(nav, /data-wc-nav-icon=""/);
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-nav-icon\] \{[^}]*display:\s*flex\s*!important/);
+  assert.match(
+    css,
+    /html\[data-wc-embed="1"\] \[data-wc-nav-icon\] svg \{[^}]*width:\s*24px\s*!important;[^}]*height:\s*24px\s*!important/,
+  );
+  assert.doesNotMatch(css, /\[data-wc-chrome="nav"\] a > div \{\s*display:\s*none/);
+});
+
+test("public Sign up, nav labels, and the version chip are at least 18px", () => {
+  const header = read("src/features/layout/Header.tsx");
+  const nav = read("src/features/layout/BottomNavigation.tsx");
+  const version = read("src/components/version.tsx");
+  const signupCall = "{t(\"commons.signup\")}";
+  const signupAt = header.indexOf(signupCall);
+  assert.ok(signupAt > 0);
+  const signup = header.slice(Math.max(0, signupAt - 800), signupAt + signupCall.length);
+  assert.match(signup, /!text-lg/);
+  assert.match(signup, /!min-h-12/);
+  assert.match(signup, /whitespace-nowrap/);
+  assert.match(signup, /commons\.signup/);
+  assert.match(nav, /text-lg/);
+  assert.match(nav, /whitespace-normal/);
+  assert.doesNotMatch(nav, /truncate/);
+  assert.doesNotMatch(nav, /text-xs/);
+  assert.doesNotMatch(nav, /text-\[9px\]/);
+  assert.match(version, /text-lg/);
+  assert.doesNotMatch(version, /text-xs/);
+});
+
+test("embed colors outside the token blocks use dash variables", () => {
+  const css = read("src/features/embed/embed-theme.css");
+  const withoutTokens = css
+    .replace(/html\[data-wc-embed="1"\] \{[\s\S]*?\n\}/, "")
+    .replace(/html\[data-wc-embed="1"\]\.dark \{[\s\S]*?\n\}/, "");
+  assert.doesNotMatch(withoutTokens, /#(?:5eead4|2dd4bf|10211e|f2f5f8|0a5c52|075e56|33414a|b4becb|ffffff)/i);
+  assert.match(css, /var\(--dash-accent\)/);
+  assert.match(css, /var\(--dash-link\)/);
+  assert.match(css, /var\(--dash-ink\)/);
+  assert.match(css, /var\(--dash-secondary\)/);
 });

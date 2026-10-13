@@ -3,7 +3,21 @@ import { stripLocalePrefix } from "@/features/auth/lib/locale-path";
 /** sessionStorage key. Tab-scoped, so a normal tab never inherits embed mode. */
 export const EMBED_SESSION_KEY = "wc-embed";
 
+/** Same name as the session flag, so the proxy can see an embed navigation. */
+export const EMBED_COOKIE_NAME = EMBED_SESSION_KEY;
+
 export const EMBED_HTML_ATTR = "data-wc-embed";
+
+/**
+ * Exact parent origins. These are the frame-ancestors allowlist without `'self'`.
+ * `'self'` is this app, not a parent we post to.
+ */
+export const EMBED_PARENT_ORIGINS = ["https://peptideos.us", "https://www.peptideos.us"] as const;
+
+export const EMBED_PARENT_ORIGIN_DEFAULT = EMBED_PARENT_ORIGINS[0];
+
+/** Frameable page used when /auth/signout* would be refused inside the iframe. */
+export const EMBED_FRAMEABLE_LOGOUT_PATH = "/?embed=1";
 
 const SIGNOUT_PREFIXES = ["/auth/signout", "/api/workouts/signout"] as const;
 const AUTH_BREAKOUT_PREFIXES = ["/login", "/signup", "/api/workouts/sso", "/dashboard"] as const;
@@ -69,6 +83,78 @@ export function isEmbedQuery(search: string): boolean {
   return new URLSearchParams(raw).get("embed") === "1";
 }
 
+export function isEmbedParentOrigin(origin: string): boolean {
+  return (EMBED_PARENT_ORIGINS as readonly string[]).includes(origin);
+}
+
+/**
+ * Parent postMessage origin. ancestorOrigins, then referrer, and only when the
+ * value is exactly one of the frame-ancestors origins. Otherwise the apex.
+ */
+export function resolveEmbedParentOrigin(input: {
+  referrer?: string | null;
+  ancestorOrigins?: ArrayLike<string> | null;
+}): string {
+  const ancestors = input.ancestorOrigins;
+  if (ancestors) {
+    for (let index = 0; index < ancestors.length; index += 1) {
+      const origin = ancestors[index];
+      if (typeof origin === "string" && isEmbedParentOrigin(origin)) return origin;
+    }
+  }
+  if (input.referrer) {
+    try {
+      const origin = new URL(input.referrer).origin;
+      if (isEmbedParentOrigin(origin)) return origin;
+    } catch {
+      // Ignore an unparseable referrer and use the apex.
+    }
+  }
+  return EMBED_PARENT_ORIGIN_DEFAULT;
+}
+
+export interface EmbedLogoutRuntime {
+  embed: boolean;
+  topLevel: boolean;
+  parent: { postMessage: (message: unknown, origin: string) => void } | null;
+  referrer?: string | null;
+  ancestorOrigins?: ArrayLike<string> | null;
+}
+
+/** wc:signed-out before the server action. No-ops outside a real frame. Never uses '*'. */
+export function postEmbedLogoutToParent(runtime: EmbedLogoutRuntime = readEmbedLogoutRuntime()): boolean {
+  if (!runtime.embed || runtime.topLevel || !runtime.parent) return false;
+  const origin = resolveEmbedParentOrigin(runtime);
+  if (!isEmbedParentOrigin(origin)) return false;
+  runtime.parent.postMessage({ type: "wc:signed-out", reason: "logout" }, origin);
+  return true;
+}
+
+/** Inline script for a framed signed-out document that has no React bridge. */
+export function embedSignedOutSessionBootstrap(): string {
+  const allowed = JSON.stringify([...EMBED_PARENT_ORIGINS]);
+  const apex = JSON.stringify(EMBED_PARENT_ORIGIN_DEFAULT);
+  return `(function(){
+var allowed=${allowed};
+var target=${apex};
+try{
+var matched=false;
+var ancestors=location.ancestorOrigins;
+if(ancestors){
+for(var i=0;i<ancestors.length;i++){
+if(allowed.indexOf(ancestors[i])!==-1){target=ancestors[i];matched=true;break;}
+}
+}
+if(!matched&&document.referrer){
+var ref=new URL(document.referrer).origin;
+if(allowed.indexOf(ref)!==-1){target=ref;}
+}
+}catch(e){}
+if(!window.parent||window.parent===window){return;}
+window.parent.postMessage({type:"wc:session",state:"signed-out"},target);
+})();`;
+}
+
 function matchesPrefix(pathname: string, prefixes: readonly string[]): boolean {
   const path = stripLocalePrefix(pathname);
   return prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -120,15 +206,17 @@ export function assignCheckoutUrl(href: string, runtime: CheckoutAssignRuntime =
 }
 
 /**
- * While embedded, sign-out breaks out only for this page or PeptideOS.
- * Every other cross-origin navigation opens a new tab. Same-origin links stay put.
+ * While embedded, sign-out never breaks out of the frame. PeptideOS logout is
+ * the parent's job. https payment hosts still leave via the top window.
+ * An http payment host is an ordinary cross-origin link. Same-origin links stay put.
  * Outside embed mode the caller must not set a target.
+ * `peptideOrigin` cannot widen the frame-ancestors allowlist.
  */
 export function embedFrameTarget(
   embed: boolean,
   href: string,
   pageOrigin: string,
-  peptideOrigin = "https://peptideos.us"
+  peptideOrigin = EMBED_PARENT_ORIGIN_DEFAULT
 ): "_top" | "_blank" | null {
   if (!embed) return null;
   const raw = href.trim();
@@ -143,31 +231,47 @@ export function embedFrameTarget(
     return "_blank";
   }
 
-  let parentOrigin = peptideOrigin;
-  try {
-    parentOrigin = new URL(peptideOrigin).origin;
-  } catch {
-    parentOrigin = peptideOrigin;
-  }
-
-  const trustedSignOut = url.origin === pageOrigin || url.origin === parentOrigin;
-  if (trustedSignOut && matchesPrefix(url.pathname, SIGNOUT_PREFIXES)) {
+  if (isBlockedEmbedSignoutUrl(url, pageOrigin)) return null;
+  if (isTrustedParentOrigin(url.origin, peptideOrigin) && matchesPrefix(url.pathname, AUTH_BREAKOUT_PREFIXES)) {
     return "_top";
   }
-
-  if (url.origin === parentOrigin && matchesPrefix(url.pathname, AUTH_BREAKOUT_PREFIXES)) {
-    return "_top";
-  }
-
-  if (url.protocol === "https:" && isPaymentCheckoutHost(url.hostname)) {
-    return "_top";
-  }
-
-  if (url.origin === pageOrigin) {
-    return null;
-  }
-
+  if (url.protocol === "https:" && isPaymentCheckoutHost(url.hostname)) return "_top";
+  if (url.origin === pageOrigin) return null;
   return "_blank";
+}
+
+/** Same-origin sign-out and PeptideOS sign-out must not navigate the top window. */
+export function isBlockedEmbedSignoutUrl(url: URL, pageOrigin: string): boolean {
+  if (!matchesPrefix(url.pathname, SIGNOUT_PREFIXES)) return false;
+  return url.origin === pageOrigin || isEmbedParentOrigin(url.origin);
+}
+
+export function isEmbedUnframeableSignoutPath(pathname: string): boolean {
+  return matchesPrefix(pathname, ["/auth/signout"]);
+}
+
+function isTrustedParentOrigin(origin: string, peptideOrigin: string): boolean {
+  if (isEmbedParentOrigin(origin)) return true;
+  try {
+    const requested = new URL(peptideOrigin).origin;
+    return requested === origin && isEmbedParentOrigin(requested);
+  } catch {
+    return false;
+  }
+}
+
+function readEmbedLogoutRuntime(): EmbedLogoutRuntime {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return { embed: false, topLevel: true, parent: null };
+  }
+  const location = window.location as Location & { ancestorOrigins?: ArrayLike<string> };
+  return {
+    embed: document.documentElement.getAttribute(EMBED_HTML_ATTR) === "1",
+    topLevel: window.parent === window,
+    parent: window.parent,
+    referrer: document.referrer,
+    ancestorOrigins: location.ancestorOrigins ?? null
+  };
 }
 
 function browserCheckoutRuntime(): CheckoutAssignRuntime {

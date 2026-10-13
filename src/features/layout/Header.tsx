@@ -45,7 +45,7 @@ export const Header = () => {
   return (
     <>
       <div
-        className="navbar h-auto flex-wrap gap-y-2 bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg"
+        className="navbar h-auto max-sm:overflow-x-clip flex-wrap gap-y-2 bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg"
         data-wc-chrome="header"
       >
         {/* Logo and Title */}
@@ -79,11 +79,22 @@ export const Header = () => {
 
           {!session.data ? (
             <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
-              <Link className="!no-underline" href={getConfiguredPeptideOsLoginUrl()} prefetch={false} size="sm" variant="nav">
+              <Link
+                className="!no-underline !text-lg !min-h-12 inline-flex items-center"
+                href={getConfiguredPeptideOsLoginUrl()}
+                prefetch={false}
+                size="sm"
+                variant="nav"
+              >
                 {t("commons.login")}
               </Link>
               <Link
-                className="inline-flex !h-auto !min-h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 bg-[#0a5c52] px-4 !text-lg !font-bold !leading-none !text-white !no-underline shadow-none hover:bg-[#0a5c52] dark:bg-[#2dd4bf] dark:!text-[#04201c] dark:shadow-[0_0_22px_color-mix(in_srgb,#2dd4bf_55%,transparent)]"
+                className={
+                  "inline-flex !h-auto !min-h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 " +
+                  "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
+                  "shadow-none hover:bg-[var(--wc-dash-accent)] " +
+                  "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]"
+                }
                 href={getConfiguredPeptideOsSignupUrl()}
                 prefetch={false}
                 size="lg"

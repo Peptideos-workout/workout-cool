@@ -81,15 +81,18 @@ export function BottomNavigation() {
     },
   ];
 
-  const tabs = SiteConfig.allPremiumFeaturesFree ? tabsRaw.filter((tab) => tab.id !== "premium") : tabsRaw;
+  const tabs =
+    SiteConfig.allPremiumFeaturesFree ?
+      tabsRaw.filter((tab) => tab.id !== "premium")
+    : tabsRaw;
 
   return (
     <nav
-      className="relative bg-white/90 dark:bg-[#232324]/90 backdrop-blur-xl border-t border-[#4F8EF7]/15 dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40"
+      className="relative bg-white/90 dark:bg-[color-mix(in_srgb,var(--wc-dash-card)_90%,transparent)] backdrop-blur-xl border-t border-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)] dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40"
       data-wc-chrome="nav"
     >
       {/* Subtle background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#4F8EF7]/3 via-transparent to-[#25CB78]/3 pointer-events-none" />
+      <div className="pointer-events-none absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-accent)_3%,transparent)]" />
 
       <div className="relative sm:px-3 py-2">
         <div className="grid grid-cols-3 gap-1 max-w-full mx-auto sm:flex sm:items-center sm:justify-center sm:gap-2" data-wc-nav-grid="">
@@ -104,11 +107,11 @@ export function BottomNavigation() {
                   "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 sm:px-4 py-1 rounded-2xl transition-all duration-300 ease-out",
                   "hover:scale-105 active:scale-95",
                   isActive && isPremium
-                    ? "bg-gradient-to-br from-[#FFD93D]/8 to-[#FFA500]/8 border border-[#FFD93D]/20"
+                    ? "border border-[color-mix(in_srgb,var(--wc-dash-link)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-link)_8%,transparent)]"
                     : isActive
-                      ? "bg-gradient-to-br from-[#4F8EF7]/8 to-[#25CB78]/8 border border-[#4F8EF7]/20"
+                      ? "border border-[color-mix(in_srgb,var(--wc-dash-accent)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-accent)_8%,transparent)]"
                       : isPremium
-                        ? "hover:bg-[#FFD93D]/5 dark:hover:bg-[#FFD93D]/10"
+                        ? "hover:bg-[color-mix(in_srgb,var(--wc-dash-link)_5%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--wc-dash-link)_10%,transparent)]"
                         : "hover:bg-gray-50/80 dark:hover:bg-slate-800/50",
                 )}
                 data-active={isActive ? "true" : "false"}
@@ -122,7 +125,7 @@ export function BottomNavigation() {
                   <div
                     className={cn(
                       "absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-4 sm:w-6 h-0.5 rounded-full",
-                      isPremium ? "bg-gradient-to-r from-[#FFD93D] to-[#FFA500]" : "bg-gradient-to-r from-[#4F8EF7] to-[#25CB78]",
+                      isPremium ? "bg-[var(--wc-dash-link)]" : "bg-[var(--wc-dash-accent)]",
                     )}
                   />
                 )}
@@ -135,8 +138,8 @@ export function BottomNavigation() {
                       className={cn(
                         "absolute inset-0 rounded-full blur-sm scale-150",
                         isPremium
-                          ? "bg-gradient-to-br from-[#FFD93D]/15 to-[#FFA500]/15"
-                          : "bg-gradient-to-br from-[#4F8EF7]/15 to-[#25CB78]/15",
+                          ? "bg-[color-mix(in_srgb,var(--wc-dash-link)_15%,transparent)]"
+                          : "bg-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)]",
                       )}
                     />
                   )}
@@ -146,11 +149,11 @@ export function BottomNavigation() {
                     className={cn(
                       "relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full transition-all duration-300 ease-out",
                       isActive && isPremium
-                        ? "bg-gradient-to-br from-[#FFD93D] to-[#FFA500] text-white scale-110"
+                        ? "scale-110 bg-[var(--wc-dash-link)] text-[var(--wc-dash-ink)]"
                         : isActive
-                          ? "bg-gradient-to-br from-[#4F8EF7] to-[#25CB78] text-white scale-110"
+                          ? "scale-110 bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]"
                           : isPremium
-                            ? "text-[#FFD93D] dark:text-[#FFD93D] group-hover:text-[#FFA500] dark:group-hover:text-[#FFA500]"
+                            ? "text-[var(--wc-dash-link)]"
                             : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300",
                     )}
                   >
@@ -158,7 +161,7 @@ export function BottomNavigation() {
 
                     {/* Premium sparkle effect */}
                     {isPremium && !isActive && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#FFD93D] rounded-full opacity-80 animate-pulse" />
+                      <div className="absolute -top-1 -right-1 h-2 w-2 animate-pulse rounded-full bg-[var(--wc-dash-link)] opacity-80" />
                     )}
                   </div>
                 </div>
@@ -167,7 +170,7 @@ export function BottomNavigation() {
                 <span
                   className={cn(
                     "text-lg font-semibold transition-all duration-300 ease-out leading-tight whitespace-normal text-center",
-                    isActive || isPremium ? "text-[#075e56] dark:text-[#5eead4]" : "text-[#10211e] dark:text-[#f2f5f8]",
+                    isActive || isPremium ? "text-[var(--wc-dash-link)]" : "text-[var(--wc-dash-text)]",
                   )}
                 >
                   <span className="hidden sm:inline">{tab.shortLabel}</span>

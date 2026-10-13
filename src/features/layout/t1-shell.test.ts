@@ -70,7 +70,7 @@ test("T1 public shell classes stay in place and the embed line is a separate nod
   assert.match(root, /<Version \/>/);
   assert.match(root, /bg-hero-light/);
   assert.match(version, /data-wc-chrome="version"/);
-  assert.match(version, /text-lg leading-snug text-\[#33414a\] dark:text-\[#b4becb\]/);
+  assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
   assert.doesNotMatch(version, /text-xs/);
   assert.match(version, /data-wc-version-meta/);
   assert.match(version, /className="hidden"/);
@@ -96,12 +96,46 @@ test("T1 embed presentation is scoped, 18px, and does not letter-wrap", () => {
 
 test("the premium tab filter is restored", () => {
   const nav = read("src/features/layout/BottomNavigation.tsx");
-  assert.match(
-    nav,
-    /const tabs =\s*SiteConfig\.allPremiumFeaturesFree \?\s*tabsRaw\.filter\(\(tab\) => tab\.id !== "premium"\)\s*: tabsRaw;/,
-  );
+  const premiumFilter = [
+    "  const tabs =",
+    "    SiteConfig.allPremiumFeaturesFree ?",
+    "      tabsRaw.filter((tab) => tab.id !== \"premium\")",
+    "    : tabsRaw;",
+  ].join("\n");
+  assert.ok(nav.includes(premiumFilter));
   assert.doesNotMatch(nav, /isPremium && "hidden"/);
   assert.doesNotMatch(nav, /const tabs = tabsRaw;/);
+});
+
+test("public Log in is 18px and at least 48px", () => {
+  const header = read("src/features/layout/Header.tsx");
+  const loginCall = "{t(\"commons.login\")}";
+  const loginAt = header.indexOf(loginCall);
+  assert.ok(loginAt > 0);
+  const login = header.slice(Math.max(0, loginAt - 500), loginAt + loginCall.length);
+  assert.match(login, /!text-lg/);
+  assert.match(login, /!min-h-12/);
+  assert.match(login, /inline-flex/);
+  assert.match(login, /items-center/);
+  assert.match(login, /getConfiguredPeptideOsLoginUrl\(\)/);
+  assert.match(login, /commons\.login/);
+});
+
+test("header, nav, and version use wc-dash variables and contain no raw hex", () => {
+  const files = ["src/features/layout/Header.tsx", "src/features/layout/BottomNavigation.tsx", "src/components/version.tsx"];
+  const globals = read("src/shared/styles/globals.css");
+  for (const file of files) {
+    assert.doesNotMatch(read(file), /#[0-9a-fA-F]{3,8}\b/, file);
+  }
+  assert.match(read(files[0]), /var\(--wc-dash-accent\)/);
+  assert.match(read(files[0]), /var\(--wc-dash-ink\)/);
+  assert.match(read(files[1]), /var\(--wc-dash-link\)/);
+  assert.match(read(files[1]), /var\(--wc-dash-text\)/);
+  assert.match(read(files[2]), /var\(--wc-dash-secondary\)/);
+  assert.match(globals, /:root \{[\s\S]*--wc-dash-accent:\s*#0a5c52/);
+  assert.match(globals, /\.dark \{[\s\S]*--wc-dash-accent:\s*#2dd4bf/);
+  assert.match(globals, /--wc-dash-ink:\s*#ffffff/);
+  assert.match(globals, /--wc-dash-ink:\s*#04201c/);
 });
 
 test("embed nav labels stay visible", () => {

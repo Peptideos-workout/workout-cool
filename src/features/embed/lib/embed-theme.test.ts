@@ -92,8 +92,14 @@ test("embed theme rules never apply outside embed mode", () => {
   const globals = readFileSync("src/shared/styles/globals.css", "utf8");
   assert.match(globals, /embed-theme\.css/);
   assert.doesNotMatch(globals, /--dash-accent/);
-  assert.doesNotMatch(globals, /#0a5c52/);
-  assert.doesNotMatch(globals, /#2dd4bf/);
+  const outsideWcDash = globals
+    .split("\n")
+    .filter((line) => !line.includes("--wc-dash-"))
+    .join("\n");
+  assert.doesNotMatch(outsideWcDash, /#0a5c52/);
+  assert.doesNotMatch(outsideWcDash, /#2dd4bf/);
+  assert.match(globals, /--wc-dash-accent:\s*#0a5c52/);
+  assert.match(globals, /--wc-dash-accent:\s*#2dd4bf/);
 });
 
 test("embed tokens match PeptideOS light and dark values and keep the page transparent", () => {

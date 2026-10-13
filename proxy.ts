@@ -69,7 +69,8 @@ export async function proxy(request: NextRequest) {
   if (embedNeedsFallback) {
     return embedSignedOutDocumentResponse(
       process.env.NEXT_PUBLIC_PEPTIDEOS_URL,
-      process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL
+      process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL,
+      { postSession: !isEmbedUnframeableSignoutPath(pathname) }
     );
   }
 

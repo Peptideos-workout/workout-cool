@@ -3,8 +3,9 @@ import { EMBED_FRAMEABLE_LOGOUT_PATH, EMBED_PARENT_ORIGINS, EMBED_SESSION_KEY, i
 /**
  * Blocking head script. It turns on the tab-scoped embed flag before first paint
  * and retargets navigations that would otherwise leave the frame.
- * Embed mode applies only while this document is actually framed. A duplicated
- * tab clears the flag. A new tab opened with target=_blank, a modifier click,
+ * Embed mode applies only while this document is actually framed
+ * (`window.parent !== window`). A top-level `?embed=1` does not set the flag.
+ * A duplicated tab clears the flag. A new tab opened with target=_blank, a modifier click,
  * a middle click, or window.open has the flag removed before that tab is
  * created, then restored on this frame. Theme persistence is added by the
  * postMessage bridge.
@@ -26,9 +27,9 @@ var framed=false;
 try{framed=window.parent!==window;}catch(e){framed=false;}
 var enable=false;
 try{
-if(!framed){sessionStorage.removeItem(KEY);}
-else if(params.get("embed")==="1"){sessionStorage.setItem(KEY,"1");}
+if(framed&&params.get("embed")==="1"){sessionStorage.setItem(KEY,"1");}
 enable=framed&&sessionStorage.getItem(KEY)==="1";
+if(!framed){sessionStorage.removeItem(KEY);}
 }catch(e){enable=framed&&params.get("embed")==="1";}
 try{
 if(!framed){document.cookie=KEY+"=; Path=/; Max-Age=0";}

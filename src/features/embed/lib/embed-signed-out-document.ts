@@ -16,13 +16,20 @@ export function isTopLevelDocumentNavigation(secFetchDest: string | null | undef
   return secFetchDest === "document";
 }
 
+/**
+ * Framed only when Sec-Fetch-Dest is iframe or frame.
+ * Any other present value is not framed, even with ?embed=1 or the wc-embed cookie.
+ * A missing header falls back to ?embed=1. The cookie is never a framed signal.
+ */
 export function isEmbedDocumentRequest(
   search: string,
   cookie: string | null | undefined,
   secFetchDest?: string | null
 ): boolean {
-  if (isTopLevelDocumentNavigation(secFetchDest)) return false;
-  return isEmbedQuery(search) || cookie === "1";
+  void cookie;
+  if (secFetchDest === "iframe" || secFetchDest === "frame") return true;
+  if (secFetchDest != null && secFetchDest !== "") return false;
+  return isEmbedQuery(search);
 }
 
 export function readEmbedDocumentCookie(header: string | null | undefined): string | null {
@@ -39,11 +46,20 @@ function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+export interface EmbedSignedOutDocumentOptions {
+  /** False on /auth/signout*. That page posts no session and no logout message. */
+  postSession?: boolean;
+}
+
 /** Framed signed-out page. CSP frame-ancestors is the allowlist. X-Frame-Options is not set. */
-export function embedSignedOutFallbackHtml(links: { loginHref: string; signupHref: string; dashboardHref: string }): string {
+export function embedSignedOutFallbackHtml(
+  links: { loginHref: string; signupHref: string; dashboardHref: string },
+  options?: EmbedSignedOutDocumentOptions
+): string {
   const login = escapeHtml(links.loginHref);
   const signup = escapeHtml(links.signupHref);
   const dashboard = escapeHtml(links.dashboardHref);
+  const session = options?.postSession === false ? "" : `<script>${embedSignedOutSessionBootstrap()}</script>`;
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -51,7 +67,7 @@ export function embedSignedOutFallbackHtml(links: { loginHref: string; signupHre
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Signed out</title>
     <script>${embedBootScript()}</script>
-    <script>${embedSignedOutSessionBootstrap()}</script>
+    ${session}
   </head>
   <body>
     <main data-wc-embed-fallback="">
@@ -63,13 +79,20 @@ export function embedSignedOutFallbackHtml(links: { loginHref: string; signupHre
 </html>`;
 }
 
-export function embedSignedOutDocumentResponse(explicitUrl?: string, appUrl?: string): NextResponse {
+export function embedSignedOutDocumentResponse(
+  explicitUrl?: string,
+  appUrl?: string,
+  options?: EmbedSignedOutDocumentOptions
+): NextResponse {
   const origin = peptideOsOrigin(explicitUrl, appUrl);
-  const html = embedSignedOutFallbackHtml({
-    loginHref: resolvePeptideOsLoginUrl(explicitUrl, appUrl),
-    signupHref: resolvePeptideOsSignupUrl(explicitUrl, appUrl),
-    dashboardHref: new URL("/dashboard", `${origin}/`).toString()
-  });
+  const html = embedSignedOutFallbackHtml(
+    {
+      loginHref: resolvePeptideOsLoginUrl(explicitUrl, appUrl),
+      signupHref: resolvePeptideOsSignupUrl(explicitUrl, appUrl),
+      dashboardHref: new URL("/dashboard", `${origin}/`).toString()
+    },
+    options
+  );
   const headers = new Headers();
   headers.set("Content-Type", "text/html; charset=utf-8");
   headers.set("Cache-Control", "private, no-store");

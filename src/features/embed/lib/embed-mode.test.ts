@@ -15,11 +15,14 @@ import {
   checkoutBreakoutTarget,
   embedFrameTarget,
   isEmbedSsoSignal,
+  isExplicitEmbedSignOutSignal,
   isSsoFailureCode,
   postEmbedLogoutToParent,
   resolveEmbedEnabled,
   resolveEmbedParentOrigin,
-  shouldShowEmbedAuthFallback
+  shouldAutoSubmitSignoutHandoff,
+  shouldShowEmbedAuthFallback,
+  shouldSkipEmbedSignOut
 } from "./embed-mode";
 import { embedBootScript } from "./embed-boot-script";
 
@@ -589,8 +592,50 @@ test("framed logout posts wc:signed-out and does not run the server action", () 
   assert.ok(cookieAt < signOutAt && signOutAt < continueRedirect);
 
   const handoff = readFileSync("src/features/auth/signout/ui/peptideos-signout-handoff.tsx", "utf8");
-  assert.match(handoff, /autoSubmit && !embedded/);
+  assert.match(handoff, /window\.parent !== window/);
+  assert.match(handoff, /shouldAutoSubmitSignoutHandoff\(autoSubmit, framed\)/);
   assert.doesNotMatch(handoff, /form\.target|_top/);
+});
+
+test("a top-level sign-out with the wc-embed cookie still signs out", () => {
+  assert.equal(shouldSkipEmbedSignOut({ clientEmbedded: false, embedCookie: "1" }), false);
+  assert.equal(shouldSkipEmbedSignOut({ clientEmbedded: false, embedCookie: null }), false);
+  assert.equal(shouldSkipEmbedSignOut({ clientEmbedded: true, embedCookie: null }), false);
+  assert.equal(shouldSkipEmbedSignOut({ clientEmbedded: true, embedCookie: "0" }), false);
+  assert.equal(shouldSkipEmbedSignOut({ clientEmbedded: true, embedCookie: "1" }), true);
+  assert.equal(isExplicitEmbedSignOutSignal(undefined), false);
+  assert.equal(isExplicitEmbedSignOutSignal({}), false);
+  assert.equal(isExplicitEmbedSignOutSignal({ embedded: false }), false);
+  assert.equal(isExplicitEmbedSignOutSignal({ embedded: true }), true);
+  assert.equal(isExplicitEmbedSignOutSignal(new FormData()), false);
+
+  const action = readFileSync("src/features/auth/signout/model/signout.action.ts", "utf8");
+  const skipAt = action.indexOf("shouldSkipEmbedSignOut(");
+  const signOutAt = action.indexOf("auth.api.signOut");
+  const continueAt = action.indexOf("redirect(\"/auth/signout/continue\")");
+  assert.ok(skipAt !== -1 && signOutAt !== -1 && continueAt !== -1);
+  assert.ok(skipAt < signOutAt && signOutAt < continueAt);
+  assert.match(action, /isExplicitEmbedSignOutSignal\(input\)/);
+  assert.doesNotMatch(action, /EMBED_COOKIE_NAME\)\?\.value === "1"/);
+
+  const logout = readFileSync("src/features/auth/model/useLogout.ts", "utf8");
+  const body = logout.slice(logout.indexOf("mutationFn"));
+  assert.match(body, /\(\) => signOutAction\(\)/);
+  assert.doesNotMatch(body, /signOutAction\(\s*\{\s*embedded:\s*true/);
+});
+
+test("an embedded sign-out never navigates the top window", () => {
+  assert.equal(embedFrameTarget(true, "/en/auth/signout", APP), null);
+  assert.notEqual(embedFrameTarget(true, `${APP}/auth/signout`, APP), "_top");
+  assert.notEqual(embedFrameTarget(true, `${POS}/auth/signout`, APP), "_top");
+  assert.notEqual(embedFrameTarget(true, `${POS}/api/workouts/signout`, APP), "_top");
+  assert.equal(shouldAutoSubmitSignoutHandoff(true, true), false);
+  assert.equal(shouldAutoSubmitSignoutHandoff(true, false), true);
+  assert.equal(shouldAutoSubmitSignoutHandoff(false, false), false);
+
+  const handoff = readFileSync("src/features/auth/signout/ui/peptideos-signout-handoff.tsx", "utf8");
+  assert.match(handoff, /window\.parent !== window/);
+  assert.doesNotMatch(handoff, /form\.target|\btarget\s*=\s*["']_top["']/);
 });
 
 test("parent origin is an exact frame-ancestors match, otherwise the apex", () => {

@@ -121,6 +121,27 @@ export interface EmbedLogoutRuntime {
   ancestorOrigins?: ArrayLike<string> | null;
 }
 
+/**
+ * Skip the server sign-out only when this request explicitly says it is the
+ * frame and the shared embed cookie is also set. The cookie alone is not
+ * tab-scoped, so a normal top-level tab must still sign out.
+ */
+export function shouldSkipEmbedSignOut(input: { clientEmbedded: boolean; embedCookie: string | null | undefined }): boolean {
+  return input.clientEmbedded === true && input.embedCookie === "1";
+}
+
+/** PeptideOS handoff auto-submit. A real frame must not navigate the top window. */
+export function shouldAutoSubmitSignoutHandoff(autoSubmit: boolean, framed: boolean): boolean {
+  return autoSubmit && !framed;
+}
+
+/** True only for `{ embedded: true }`. A form post is not that signal. */
+export function isExplicitEmbedSignOutSignal(input: unknown): boolean {
+  if (!input || typeof input !== "object") return false;
+  if (typeof FormData !== "undefined" && input instanceof FormData) return false;
+  return (input as { embedded?: unknown }).embedded === true;
+}
+
 /** True only while this document is the embedded frame. A copied tab is not. */
 export function isEmbedFrame(): boolean {
   if (typeof document === "undefined" || typeof window === "undefined") return false;

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { shouldAutoSubmitSignoutHandoff } from "@/features/embed/lib/embed-mode";
 import { Button } from "@/components/ui/button";
 
 interface PeptideOsSignoutHandoffProps {
@@ -24,8 +25,13 @@ export function PeptideOsSignoutHandoff({
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
-    const embedded = document.documentElement.getAttribute("data-wc-embed") === "1";
-    if (autoSubmit && !embedded) {
+    let framed = true;
+    try {
+      framed = window.parent !== window;
+    } catch {
+      framed = true;
+    }
+    if (shouldAutoSubmitSignoutHandoff(autoSubmit, framed)) {
       form.submit();
     }
   }, [actionUrl, autoSubmit]);

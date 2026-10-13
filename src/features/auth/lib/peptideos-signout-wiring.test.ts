@@ -87,7 +87,7 @@ test("WC-initiated hop B POSTs to PeptideOS sign-out?redirect=WC home from a WC-
   assert.match(ui, /type=["']submit["']/);
   assert.match(ui, /autoSubmit/);
   assert.match(ui, /useEffect|\.submit\(/);
-  assert.match(ui, /if\s*\(\s*autoSubmit|autoSubmit\s*&&/);
+  assert.match(ui, /if\s*\(\s*autoSubmit|autoSubmit\s*&&|shouldAutoSubmitSignoutHandoff\(\s*autoSubmit/);
   assert.doesNotMatch(page, /from-peptideos|peptideos-wc-signout/);
   assert.match(proxy, /isSignoutContinuePath/);
   assert.match(proxy, /signoutContinueProxyResponse/);

@@ -308,11 +308,6 @@ export function postEmbedSession(
   return postToParent(runtime.parent, origin, embedSessionMessage(state));
 }
 
-export function notifyEmbedSignedOut(origin: string, runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()): boolean {
-  if (!runtime.embed || runtime.topLevel) return false;
-  return postToParent(runtime.parent, origin, embedLogoutMessage());
-}
-
 function isSafePathname(pathname: string): boolean {
   if (pathname === "/") return true;
   return /^\/(?:[A-Za-z0-9._~%-]+\/)*[A-Za-z0-9._~%-]+$/.test(pathname);

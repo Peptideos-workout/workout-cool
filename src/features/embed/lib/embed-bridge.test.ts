@@ -13,7 +13,6 @@ import {
   embedSessionMessage,
   explicitEmbedLogoutOnPath,
   markExplicitEmbedLogout,
-  notifyEmbedSignedOut,
   postEmbedSession,
   postToParent,
   releaseExplicitEmbedLogout,
@@ -197,7 +196,7 @@ test("a theme message updates theme and cannot sign in or sign out", () => {
   assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
 });
 
-test("sign-out is reported from the sign-out path and from an explicit notify, not from a missing session", () => {
+test("sign-out is reported from the sign-out path, not from a missing session", () => {
   const calls: Array<{ message: unknown; origin: string }> = [];
   const frames: Array<() => void> = [];
   const host = bridgeHost(calls, frames, { height: 400, path: "/fr/auth/signout" });
@@ -205,16 +204,6 @@ test("sign-out is reported from the sign-out path and from an explicit notify, n
   assert.deepEqual(calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out"), [
     { message: { type: "wc:signed-out", reason: "logout" }, origin: POS }
   ]);
-
-  const parent = port(calls);
-  assert.equal(notifyEmbedSignedOut(POS, { embed: true, topLevel: false, parent }), true);
-  assert.equal(notifyEmbedSignedOut("*", { embed: true, topLevel: false, parent }), false);
-  assert.equal(notifyEmbedSignedOut(POS, { embed: false, topLevel: false, parent }), false);
-  assert.equal(notifyEmbedSignedOut(POS, { embed: true, topLevel: true, parent }), false);
-  const signedOut = calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out");
-  assert.equal(signedOut.length, 2);
-  assert.deepEqual(signedOut[1], { message: { type: "wc:signed-out", reason: "logout" }, origin: POS });
-  assert.equal(signedOut.every((call) => call.origin === POS), true);
   assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
 });
 
@@ -243,11 +232,11 @@ test("outbound messages keep their exact keys and never use a wildcard origin", 
   assert.equal(postToParent(parent, POS, navigate), true);
   assert.equal(postEmbedSession(POS, "signed-in", runtime), true);
   assert.equal(postEmbedSession(POS, "signed-out", runtime), true);
-  assert.equal(notifyEmbedSignedOut(POS, runtime), true);
+  assert.equal(postToParent(parent, POS, logout), true);
   assert.equal(postToParent(parent, "*", height), false);
   assert.equal(postToParent(parent, "*", navigate), false);
   assert.equal(postEmbedSession("*", "signed-out", runtime), false);
-  assert.equal(notifyEmbedSignedOut("*", runtime), false);
+  assert.equal(postToParent(parent, "*", logout), false);
   assert.equal(postEmbedSession(POS, null, runtime), false);
 
   assert.deepEqual(

@@ -172,7 +172,7 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
           </div>
 
           <Button
-            className="p-2 sm:p-2 min-h-[44px] min-w-[44px] sm:min-h-min sm:min-w-min touch-manipulation"
+            className="p-2 min-h-12 min-w-12 touch-manipulation"
             disabled={isShuffling}
             onClick={handleShuffle}
             size="small"
@@ -183,7 +183,7 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
           </Button>
 
           <button
-            className="p-1 sm:p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             onClick={() => { setModalTab("statistics"); playVideo.setTrue(); }}
           >
             <BarChart3 className="h-4 w-4" />

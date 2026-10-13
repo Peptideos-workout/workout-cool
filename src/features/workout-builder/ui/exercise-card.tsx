@@ -80,7 +80,7 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
             <div className="absolute top-3 right-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="h-8 w-8 bg-white/90 hover:bg-white" size="small" variant="ghost">
+                  <Button className="h-12 w-12 min-h-12 min-w-12 bg-white/90 hover:bg-white" size="small" variant="ghost">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -108,7 +108,7 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
             <h4 className="font-semibold text-slate-900 dark:text-slate-200 text-sm leading-tight line-clamp-2">{exercise.name}</h4>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button className="h-8 w-8 ml-2 flex-shrink-0" size="small" variant="ghost">
+                <Button className="h-12 w-12 min-h-12 min-w-12 ml-2 flex-shrink-0" size="small" variant="ghost">
                   <Info className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>

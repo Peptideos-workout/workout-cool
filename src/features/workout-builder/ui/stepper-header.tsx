@@ -38,8 +38,7 @@ function StepperStep({
           className={cn(
             "flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-200 flex-shrink-0",
             {
-              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isCompleted,
-              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive,
+              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive || isCompleted,
               "border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             },
             canClick ? "cursor-pointer" : "cursor-default",
@@ -55,8 +54,7 @@ function StepperStep({
         <div className="ml-4">
           <h3
             className={cn("font-semibold text-lg transition-colors", {
-              "text-[var(--wc-dash-accent)]": isCompleted,
-              "text-[var(--wc-dash-accent)]": isActive,
+              "text-[var(--wc-dash-accent)]": isActive || isCompleted,
               "text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             })}
             data-wc-step-title=""
@@ -82,8 +80,7 @@ function StepperStep({
           className={cn(
             "flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-200",
             {
-              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isCompleted,
-              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive,
+              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive || isCompleted,
               "border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             },
             canClick ? "cursor-pointer" : "cursor-default",
@@ -99,8 +96,7 @@ function StepperStep({
         <div className="mt-3">
           <h3
             className={cn("font-semibold text-lg transition-colors", {
-              "text-[var(--wc-dash-accent)]": isCompleted,
-              "text-[var(--wc-dash-accent)]": isActive,
+              "text-[var(--wc-dash-accent)]": isActive || isCompleted,
               "text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             })}
             data-wc-step-title=""

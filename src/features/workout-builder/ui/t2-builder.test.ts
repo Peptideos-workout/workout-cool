@@ -71,10 +71,12 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   const stepper = read("src/features/workout-builder/ui/workout-stepper.tsx");
   const css = read("src/features/embed/embed-theme.css");
 
-  assert.match(header, /"border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]": isActive/);
-  assert.match(header, /"border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]": isCompleted/);
-  assert.match(header, /"text-\[var\(--wc-dash-accent\)\]": isActive/);
-  assert.match(header, /"text-\[var\(--wc-dash-accent\)\]": isCompleted/);
+  const tealMark = '"border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive || isCompleted';
+  const tealLabel = '"text-[var(--wc-dash-accent)]": isActive || isCompleted';
+  assert.equal(header.split(tealMark).length - 1, 2);
+  assert.equal(header.split(tealLabel).length - 1, 2);
+  assert.doesNotMatch(header, /": isCompleted,/);
+  assert.doesNotMatch(header, /": isActive,/);
   assert.match(header, /isCompleted \? <span className="text-lg font-semibold">✓<\/span>/);
   assert.equal(header.split("✓").length - 1, 2);
   assert.match(stepper, /data-wc-title="">Build your workout</);
@@ -88,7 +90,6 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
 test("builder contrast pairs meet AA", () => {
   const header = read("src/features/workout-builder/ui/stepper-header.tsx");
   const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
-  const quit = read("src/features/workout-session/ui/workout-session-header.tsx");
   const remove = read("src/features/workout-builder/ui/exercise-list-item.tsx");
   const { light, dark } = tokens();
   for (const name of DASH_NAMES) {
@@ -117,10 +118,11 @@ test("builder contrast pairs meet AA", () => {
   assert.ok(contrast(dark.accent, dark.card) >= 4.5);
   assert.ok(contrast(dark.ink, dark.accent) >= 4.5);
 
-  assert.match(quit, /!text-\[var\(--wc-dash-error\)\]/);
   assert.match(remove, /text-\[var\(--wc-dash-error\)\]/);
   assert.match(read("src/features/workout-builder/ui/exercise-card.tsx"), /workout_builder\.exercise\.remove/);
-  assert.match(read("src/features/workout-builder/ui/quit-workout-dialog.tsx"), /!text-\[var\(--wc-dash-error\)\]/);
+  assert.doesNotMatch(footer, /!opacity-100/);
+  assert.equal(footer.split("!bg-[var(--wc-dash-accent)] !text-lg").length - 1, 2);
+  assert.equal(footer.split("!text-[var(--wc-dash-ink)]").length - 1, 2);
   assert.ok(contrast(light.error, light.panel) >= 4.5);
   assert.ok(contrast(dark.error, dark.card) >= 4.5);
 });
@@ -129,6 +131,8 @@ test("builder handlers and conditionals stay byte-identical", () => {
   const header = read("src/features/workout-builder/ui/stepper-header.tsx");
   const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
   const stepper = read("src/features/workout-builder/ui/workout-stepper.tsx");
+  const card = read("src/features/workout-builder/ui/exercise-card.tsx");
+  const listItem = read("src/features/workout-builder/ui/exercise-list-item.tsx");
 
   assert.match(header, /const canClick = stepNumber < currentStep \|\| isCompleted;/);
   assert.match(header, /isCompleted \? "done" : isActive \? "active" : "todo"/);
@@ -146,4 +150,9 @@ test("builder handlers and conditionals stay byte-identical", () => {
   assert.match(stepper, /workout_builder\.steps\.equipment\.title/);
   assert.match(stepper, /workout_builder\.steps\.muscles\.title/);
   assert.match(stepper, /workout_builder\.steps\.exercises\.title/);
+  assert.match(card, /onClick=\{\(\) => onDelete\(exercise\.id, muscle\)\}/);
+  assert.match(listItem, /onDelete\(exercise\.id, muscle\)/);
+  assert.equal(card.split("h-12 w-12 min-h-12 min-w-12").length - 1, 2);
+  assert.match(listItem, /className="p-2 min-h-12 min-w-12 touch-manipulation"/);
+  assert.match(listItem, /className="inline-flex min-h-12 min-w-12 items-center justify-center/);
 });

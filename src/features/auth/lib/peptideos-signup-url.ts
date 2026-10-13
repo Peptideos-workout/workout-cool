@@ -326,8 +326,59 @@ export function resolvePeptideOsWorkoutsSsoUrl(explicitUrl?: string, appUrl?: st
   return peptideOsWorkoutsSsoUrl(origin, app, returnTo);
 }
 
-/** Honour PeptideOS `redirect` only when it is a safe same-origin WC URL. Fail closed to `${origin}/`. */
-export function ssoFinalizeLocation(workoutOrigin: string, redirectParam?: string): string {
+/**
+ * Exact PeptideOS browser origins. Hop C's Origin allowlist is this list.
+ * The dashboard `return` may name www only when www is already here.
+ */
+export const PEPTIDEOS_BROWSER_ORIGINS = ["https://peptideos.us", "https://www.peptideos.us"] as const;
+
+/** Exact post-SSO dashboard URL. Not a prefix. */
+const PEPTIDEOS_DASHBOARD_RETURN = "https://peptideos.us/workouts";
+
+const PEPTIDEOS_WWW_ORIGIN = "https://www.peptideos.us";
+
+/** Exact www dashboard URL. Included only when www is already an allowlisted origin. */
+const PEPTIDEOS_WWW_DASHBOARD_RETURN = "https://www.peptideos.us/workouts";
+
+/**
+ * Exact dashboard returns. Apex is always listed. www is listed only when
+ * `trustedOrigins` already contains `https://www.peptideos.us`. No patterns.
+ */
+export function ssoDashboardReturnAllowlist(trustedOrigins: readonly string[] = PEPTIDEOS_BROWSER_ORIGINS): readonly string[] {
+  const allowlist = [PEPTIDEOS_DASHBOARD_RETURN];
+  if (trustedOrigins.includes(PEPTIDEOS_WWW_ORIGIN)) {
+    allowlist.push(PEPTIDEOS_WWW_DASHBOARD_RETURN);
+  }
+  return allowlist;
+}
+
+function exactDashboardReturn(returnParam: string | undefined, trustedOrigins: readonly string[]): string | undefined {
+  if (typeof returnParam !== "string") {
+    return undefined;
+  }
+  for (const allowed of ssoDashboardReturnAllowlist(trustedOrigins)) {
+    if (returnParam === allowed) {
+      return allowed;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * After a successful SSO POST, honour an exact dashboard `return` when present.
+ * Otherwise honour PeptideOS `redirect` only when it is a safe same-origin WC URL.
+ * Anything else fails closed to `${origin}/`.
+ */
+export function ssoFinalizeLocation(
+  workoutOrigin: string,
+  redirectParam?: string,
+  returnParam?: string,
+  trustedOrigins: readonly string[] = PEPTIDEOS_BROWSER_ORIGINS
+): string {
+  const dashboard = exactDashboardReturn(returnParam, trustedOrigins);
+  if (dashboard) {
+    return dashboard;
+  }
   const origin = new URL(workoutOrigin).origin;
   return plannedWorkoutReturnTo(redirectParam, origin) ?? `${origin}/`;
 }

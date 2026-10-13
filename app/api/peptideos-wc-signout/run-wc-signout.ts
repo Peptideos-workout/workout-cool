@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { logSsoEvent, SSO_LOG_LEVEL } from "../peptideos-wc-sso/sso-error-log";
 
 import { applyFrameAncestorsHeader } from "@/shared/lib/frame-ancestors";
-import { peptideOsSignoutFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
+import { PEPTIDEOS_BROWSER_ORIGINS, peptideOsSignoutFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
 
 export interface PeptideOsWcSignoutDeps {
   signOut: (args: { headers: Headers }) => Promise<unknown>;
@@ -13,7 +13,7 @@ export interface PeptideOsWcSignoutDeps {
 }
 
 /** Exact PeptideOS browser origins always allowed to POST hop C. No wildcards. */
-export const TRUSTED_HOP_C_ORIGINS = ["https://peptideos.us", "https://www.peptideos.us"] as const;
+export const TRUSTED_HOP_C_ORIGINS = PEPTIDEOS_BROWSER_ORIGINS;
 
 function headerOrigin(value: string | null | undefined): string | undefined {
   const raw = value?.trim();

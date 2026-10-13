@@ -35,20 +35,24 @@ function assertSsoResponseHeaders(response: Response) {
 function postRequest(options: {
   token?: string;
   redirect?: string;
+  returnTo?: string;
   origin?: string | null;
   contentType?: string | null;
   accept?: string;
   cookie?: string;
   referer?: string;
   queryToken?: string;
+  queryReturn?: string;
   rawBody?: string;
   contentLength?: string;
 }) {
   const url = new URL(`${WC}/api/peptideos-wc-sso`);
   if (options.queryToken) url.searchParams.set("token", options.queryToken);
+  if (options.queryReturn) url.searchParams.set("return", options.queryReturn);
   const params = new URLSearchParams();
   if (options.token !== undefined) params.set("token", options.token);
   if (options.redirect !== undefined) params.set("redirect", options.redirect);
+  if (options.returnTo !== undefined) params.set("return", options.returnTo);
   const headers = new Headers();
   if (options.origin !== null) headers.set("origin", options.origin ?? POS);
   if (options.contentType !== null) {
@@ -164,6 +168,133 @@ test("POST success consumes the handoff, sets a session, and does not store or r
   assert.equal(seenSignUpHeaders[0]?.get("origin"), POS);
 });
 
+const DASHBOARD = "https://peptideos.us/workouts";
+const DASHBOARD_WWW = "https://www.peptideos.us/workouts";
+
+test("POST return field sends the browser to the exact PeptideOS workouts page", async () => {
+  const dest = `${WC}/en/profile?tab=history`;
+  for (const returnTo of [DASHBOARD, DASHBOARD_WWW]) {
+    const { deps } = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      postRequest({ token: rawToken, redirect: dest, returnTo }),
+      deps,
+      POS
+    );
+    assert.equal(response.status, 303, returnTo);
+    assert.notEqual(response.status, 302, returnTo);
+    assert.equal(response.headers.get("location"), returnTo);
+    assert.match(response.headers.get("set-cookie") ?? "", /better-auth\.session_token=/);
+    assertSsoResponseHeaders(response);
+    assert.equal(response.headers.get("content-security-policy"), "frame-ancestors 'self' https://peptideos.us https://www.peptideos.us");
+  }
+});
+
+test("POST rejects every non-exact return and falls back to the in-app redirect", async () => {
+  const dest = `${WC}/en/profile`;
+  const rejected = [
+    "",
+    "https://peptideos.us/workouts?next=1",
+    "https://peptideos.us/workouts#evil",
+    "https://peptideos.us/workouts/",
+    "https://peptideos.us/workouts/extra",
+    "https://peptideos.us/workouts.evil.example",
+    "http://peptideos.us/workouts",
+    "https://peptideos.us:443/workouts",
+    "https://evil.example/workouts",
+    "https://peptideos.us.evil.test/workouts",
+    "https://evil@peptideos.us/workouts",
+    "//peptideos.us/workouts",
+    "https://peptideos.us//workouts",
+    "/workouts",
+    "https://peptideos.us/workouts/../admin",
+    "https://peptideos.us/workouts%2F%2Fevil.com",
+    "https://peptideos.us/workouts%252F%252Fevil.com",
+    "https://peptideos.us/%2F%2Fevil.com",
+    "https://peptideos.us/workouts%5C%5Cevil.com",
+    "https://peptideos.us\\@evil.com/workouts",
+    "https://peptideos.us/workouts\nhttps://evil.example",
+    "https://peptideos.us/workouts\u0000",
+    "https://www.peptideos.us/workouts/extra",
+    "https://www.peptideos.us/workouts?x=1",
+    "http://www.peptideos.us/workouts",
+    "https://www.peptideos.us//workouts",
+    "//www.peptideos.us/workouts",
+    " https://peptideos.us/workouts",
+    "https://peptideos.us/workouts "
+  ];
+
+  for (const returnTo of rejected) {
+    const { deps } = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      postRequest({ token: rawToken, redirect: dest, returnTo }),
+      deps,
+      POS
+    );
+    assert.equal(response.status, 303, JSON.stringify(returnTo));
+    assert.equal(response.headers.get("location"), dest, JSON.stringify(returnTo));
+    assert.doesNotMatch(response.headers.get("location") ?? "", /evil|peptideos\.us\/workouts/, JSON.stringify(returnTo));
+  }
+});
+
+test("POST encoded return tricks in the raw body do not match the dashboard URL", async () => {
+  const dest = `${WC}/en/profile`;
+  const encoded = [
+    "return=https%3A%2F%2Fpeptideos.us%2Fworkouts%2F%2Fevil.com",
+    "return=https%3A%2F%2Fpeptideos.us%2F%2Fworkouts",
+    "return=%2F%2Fpeptideos.us%2Fworkouts",
+    "return=https%3A%2F%2Fpeptideos.us%2Fworkouts%3Fnext%3D1",
+    "return=https%3A%2F%2Fevil.example%2Fworkouts&return=https%3A%2F%2Fpeptideos.us%2Fworkouts"
+  ];
+  for (const returnField of encoded) {
+    const { deps } = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      postRequest({
+        redirect: dest,
+        rawBody: `token=${encodeURIComponent(rawToken)}&redirect=${encodeURIComponent(dest)}&${returnField}`
+      }),
+      deps,
+      POS
+    );
+    assert.equal(response.status, 303, returnField);
+    assert.equal(response.headers.get("location"), dest, returnField);
+  }
+});
+
+test("a missing return keeps the in-app redirect, and a query return is ignored", async () => {
+  const dest = `${WC}/en/profile`;
+  const missing = fakeWorld();
+  const withoutReturn = await runPeptideOsSsoPost(postRequest({ token: rawToken, redirect: dest }), missing.deps, POS);
+  assert.equal(withoutReturn.status, 303);
+  assert.equal(withoutReturn.headers.get("location"), dest);
+
+  const fromQuery = fakeWorld();
+  const queryOnly = await runPeptideOsSsoPost(
+    postRequest({
+      token: rawToken,
+      redirect: dest,
+      queryReturn: DASHBOARD
+    }),
+    fromQuery.deps,
+    POS
+  );
+  assert.equal(queryOnly.status, 303);
+  assert.equal(queryOnly.headers.get("location"), dest);
+
+  const bodyWins = fakeWorld();
+  const overridden = await runPeptideOsSsoPost(
+    postRequest({
+      token: rawToken,
+      redirect: dest,
+      returnTo: DASHBOARD,
+      queryReturn: "https://evil.example/phish"
+    }),
+    bodyWins.deps,
+    POS
+  );
+  assert.equal(overridden.status, 303);
+  assert.equal(overridden.headers.get("location"), DASHBOARD);
+});
+
 test("POST drops an untrusted redirect and fails closed to the workout origin", async () => {
   const { deps } = fakeWorld();
   const response = await runPeptideOsSsoPost(
@@ -226,6 +357,80 @@ test("POST replay of a consumed handoff fails and stays consumed", async () => {
   assert.deepEqual(await replay.json(), { error: "invalid_or_expired_handoff" });
   assertSsoResponseHeaders(replay);
   assert.ok(handoff.consumed_at);
+});
+
+test("a reused handoff token does not create a second session", async () => {
+  const world = fakeWorld();
+  let sessions = 0;
+  const createSignedSession = world.deps.createSignedSession;
+  world.deps.createSignedSession = async (userId) => {
+    sessions += 1;
+    return createSignedSession(userId);
+  };
+
+  const first = await runPeptideOsSsoPost(
+    postRequest({ token: rawToken, returnTo: DASHBOARD }),
+    world.deps,
+    POS
+  );
+  assert.equal(first.status, 303);
+  assert.equal(first.headers.get("location"), DASHBOARD);
+  assert.equal(sessions, 1);
+  assert.equal(world.claimCount(), 1);
+
+  const replay = await runPeptideOsSsoPost(
+    postRequest({ token: rawToken, returnTo: DASHBOARD }),
+    world.deps,
+    POS
+  );
+  assert.equal(replay.status, 400);
+  assert.notEqual(replay.status, 500);
+  assert.equal(replay.headers.get("location"), null);
+  assert.equal(replay.headers.get("set-cookie"), null);
+  assert.deepEqual(await replay.json(), { error: "invalid_or_expired_handoff" });
+  assertSsoResponseHeaders(replay);
+  assert.equal(sessions, 1);
+  assert.equal(world.claimCount(), 2);
+  assert.ok(world.handoff.consumed_at);
+
+  const htmlReplay = await runPeptideOsSsoPost(
+    postRequest({ token: rawToken, accept: "text/html", returnTo: DASHBOARD }),
+    world.deps,
+    POS
+  );
+  assert.equal(htmlReplay.status, 400);
+  assert.match(htmlReplay.headers.get("content-type") ?? "", /text\/html/);
+  assert.equal(htmlReplay.headers.get("location"), null);
+  const page = await htmlReplay.text();
+  assert.doesNotMatch(page, new RegExp(rawToken));
+  assert.equal(sessions, 1);
+});
+
+test("double-submit of one handoff creates a single session", async () => {
+  const world = fakeWorld();
+  let sessions = 0;
+  const createSignedSession = world.deps.createSignedSession;
+  world.deps.createSignedSession = async (userId) => {
+    sessions += 1;
+    return createSignedSession(userId);
+  };
+
+  const [first, second] = await Promise.all([
+    runPeptideOsSsoPost(postRequest({ token: rawToken, returnTo: DASHBOARD }), world.deps, POS),
+    runPeptideOsSsoPost(postRequest({ token: rawToken, returnTo: DASHBOARD }), world.deps, POS)
+  ]);
+  const statuses = [first.status, second.status].sort((a, b) => a - b);
+  assert.deepEqual(statuses, [303, 400]);
+  assert.equal(sessions, 1);
+  assert.equal(world.claimCount(), 2);
+
+  const failed = first.status === 400 ? first : second;
+  const succeeded = first.status === 303 ? first : second;
+  assert.equal(succeeded.headers.get("location"), DASHBOARD);
+  assert.equal(failed.headers.get("location"), null);
+  assert.equal(failed.headers.get("set-cookie"), null);
+  assert.deepEqual(await failed.json(), { error: "invalid_or_expired_handoff" });
+  assert.notEqual(failed.status, 500);
 });
 
 test("an expired handoff fails and is not consumed", async () => {
@@ -565,6 +770,7 @@ test("GET ?token= returns 405 and does not read, log, or consume the token", asy
   const world = fakeWorld();
   const url = new URL(`${WC}/api/peptideos-wc-sso`);
   url.searchParams.set("token", legacyToken);
+  url.searchParams.set("return", DASHBOARD);
   const { response, urlReads, depCalls, logs } = guardedRejection(ssoMethodNotAllowed, new NextRequest(url), world.deps);
 
   assert.equal(response.status, 405);
@@ -657,6 +863,9 @@ test("GET is 405 and POST is Origin-checked outside Better Auth", () => {
   assert.doesNotMatch(route, /export function GET\(\) \{[^}]*searchParams/);
   assert.doesNotMatch(route, /runPeptideOsSso[^P\w]/);
   assert.doesNotMatch(runner, /searchParams\.get\(\s*["']token["']\)/);
+  assert.doesNotMatch(runner, /searchParams\.get\(\s*["']return["']\)/);
+  assert.match(runner, /params\.get\("return"\)/);
+  assert.match(runner, /status:\s*303/);
   assert.doesNotMatch(runner, /function runPeptideOsSso\b/);
   assert.match(route, /export async function POST/);
   assert.match(route, /runPeptideOsSsoPost/);

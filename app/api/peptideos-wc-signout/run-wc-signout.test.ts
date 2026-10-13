@@ -14,6 +14,8 @@ import {
   TRUSTED_HOP_C_ORIGINS
 } from "./run-wc-signout";
 
+import { PEPTIDEOS_BROWSER_ORIGINS } from "@/features/auth/lib/peptideos-signup-url";
+
 const WC = "https://workouts.peptideos.us";
 const POS = "https://peptideos.us";
 const POS_WWW = "https://www.peptideos.us";
@@ -30,6 +32,7 @@ function hopCPost(redirect?: string, headers: Record<string, string> = { origin:
 }
 
 test("trusted hop C Origins are exactly peptideos.us and www.peptideos.us", () => {
+  assert.equal(TRUSTED_HOP_C_ORIGINS, PEPTIDEOS_BROWSER_ORIGINS);
   assert.deepEqual([...TRUSTED_HOP_C_ORIGINS], ["https://peptideos.us", "https://www.peptideos.us"]);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: POS })), true);
   assert.equal(isTrustedPeptideOsHopCRequest(new Headers({ origin: POS_WWW })), true);
@@ -107,6 +110,68 @@ test("hop C POST from PeptideOS Origin ends the WC session and 303s to PeptideOS
   assert.equal(response.headers.get("location"), `${POS}/`);
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   assert.doesNotMatch(response.headers.get("location") ?? "", /workouts\/signout|auth\/signout/);
+});
+
+test("hop C sign-out still works when the request comes from the workouts embed", async () => {
+  const embedHeaders = {
+    origin: POS,
+    referer: `${POS}/workouts`,
+    "sec-fetch-dest": "iframe",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "cross-site"
+  };
+  const calls: Headers[] = [];
+  const response = await runPeptideOsWcSignout(hopCPost(`${POS}/`, embedHeaders), {
+    signOut: async ({ headers }) => {
+      calls.push(headers);
+      return new Response(null, {
+        status: 200,
+        headers: { "set-cookie": "better-auth.session_token=; Max-Age=0" }
+      });
+    },
+    peptideOsOrigin: POS
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]?.get("referer"), `${POS}/workouts`);
+  assert.equal(calls[0]?.get("sec-fetch-dest"), "iframe");
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), `${POS}/`);
+  assert.match(response.headers.get("set-cookie") ?? "", /Max-Age=0/);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+
+  const fromWwwEmbed = await runPeptideOsWcSignout(
+    hopCPost(undefined, {
+      origin: POS_WWW,
+      referer: `${POS_WWW}/workouts`,
+      "sec-fetch-dest": "iframe"
+    }),
+    {
+      signOut: async () => new Response(null, { status: 200 }),
+      peptideOsOrigin: POS
+    }
+  );
+  assert.equal(fromWwwEmbed.status, 303);
+  assert.equal(fromWwwEmbed.headers.get("location"), `${POS}/`);
+});
+
+test("an embed referer does not bypass the hop C Origin check", async () => {
+  let signedOut = false;
+  const response = await runPeptideOsWcSignout(
+    hopCPost(`${POS}/`, {
+      origin: WC,
+      referer: `${POS}/workouts`,
+      "sec-fetch-dest": "iframe"
+    }),
+    {
+      signOut: async () => {
+        signedOut = true;
+      },
+      peptideOsOrigin: POS
+    }
+  );
+  assert.equal(response.status, 403);
+  assert.equal(signedOut, false);
 });
 
 test("hop C POST with www Origin or apex Referer is allowed", async () => {

@@ -24,9 +24,11 @@ import {
   resolvePeptideOsSettingsUrl,
   resolvePeptideOsSignupUrl,
   resolvePeptideOsWorkoutsSignoutUrl,
+  PEPTIDEOS_BROWSER_ORIGINS,
   planWorkoutSso,
   resolvePeptideOsWorkoutsSsoUrl,
   safeWorkoutReturnTo,
+  ssoDashboardReturnAllowlist,
   ssoFinalizeLocation
 } from "./peptideos-signup-url";
 
@@ -219,6 +221,92 @@ test("SSO finalize honours only same-origin WC redirects and fails closed to the
   assert.equal(ssoFinalizeLocation(APP, "/en/%5cevil"), `${APP}/`);
   assert.equal(ssoFinalizeLocation(APP, "https://evil@workouts.peptideos.us/phish"), `${APP}/`);
   assert.equal(ssoFinalizeLocation(APP, `${APP}/en/profile\u0000`), `${APP}/`);
+});
+
+test("dashboard return allowlist is the apex URL, plus www only when that origin is already trusted", () => {
+  assert.deepEqual([...PEPTIDEOS_BROWSER_ORIGINS], ["https://peptideos.us", "https://www.peptideos.us"]);
+  assert.deepEqual(ssoDashboardReturnAllowlist(), ["https://peptideos.us/workouts", "https://www.peptideos.us/workouts"]);
+  assert.deepEqual(ssoDashboardReturnAllowlist(PEPTIDEOS_BROWSER_ORIGINS), [
+    "https://peptideos.us/workouts",
+    "https://www.peptideos.us/workouts"
+  ]);
+  assert.deepEqual(ssoDashboardReturnAllowlist(["https://peptideos.us"]), ["https://peptideos.us/workouts"]);
+  assert.deepEqual(ssoDashboardReturnAllowlist(["https://peptideos.us", "http://localhost:3000"]), ["https://peptideos.us/workouts"]);
+  assert.deepEqual(ssoDashboardReturnAllowlist([]), ["https://peptideos.us/workouts"]);
+});
+
+test("ssoFinalizeLocation sends an exact dashboard return back and ignores the in-app redirect", () => {
+  assert.equal(ssoFinalizeLocation(APP, "/en/profile", "https://peptideos.us/workouts"), "https://peptideos.us/workouts");
+  assert.equal(
+    ssoFinalizeLocation(APP, "https://evil.example/phish", "https://peptideos.us/workouts"),
+    "https://peptideos.us/workouts"
+  );
+  assert.equal(ssoFinalizeLocation(APP, undefined, "https://www.peptideos.us/workouts"), "https://www.peptideos.us/workouts");
+  assert.equal(
+    ssoFinalizeLocation(APP, "/en/profile", "https://www.peptideos.us/workouts", ["https://peptideos.us"]),
+    `${APP}/en/profile`
+  );
+});
+
+test("ssoFinalizeLocation rejects every non-exact return and falls back to the in-app redirect", () => {
+  const rejected = [
+    "",
+    " ",
+    "https://peptideos.us/workouts ",
+    " https://peptideos.us/workouts",
+    "https://peptideos.us/workouts?next=1",
+    "https://peptideos.us/workouts?redirect=https://evil.example",
+    "https://peptideos.us/workouts#evil",
+    "https://peptideos.us/workouts/",
+    "https://peptideos.us/workouts/extra",
+    "https://peptideos.us/workouts.evil.example",
+    "https://peptideos.us/workout",
+    "https://peptideos.us/Workouts",
+    "HTTPS://peptideos.us/workouts",
+    "http://peptideos.us/workouts",
+    "https://peptideos.us:443/workouts",
+    "https://evil.example/workouts",
+    "https://peptideos.us.evil.test/workouts",
+    "https://workouts.peptideos.us/workouts",
+    "https://evil@peptideos.us/workouts",
+    "https://peptideos.us/workouts@evil.com",
+    "//peptideos.us/workouts",
+    "https://peptideos.us//workouts",
+    "/workouts",
+    "workouts",
+    "https://peptideos.us/workouts/../admin",
+    "https://peptideos.us/workouts%2F%2Fevil.com",
+    "https://peptideos.us/workouts%252F%252Fevil.com",
+    "https://peptideos.us/%2F%2Fevil.com",
+    "https://peptideos.us/workouts%5C%5Cevil.com",
+    "https://peptideos.us\\workouts",
+    "https://peptideos.us/workouts\\@evil.com",
+    "https://peptideos.us/workouts\nhttps://evil.example",
+    "https://peptideos.us/workouts\r\nLocation: https://evil.example",
+    "https://peptideos.us/workouts\u0000",
+    "https://peptideos.us/workouts\u0009",
+    "https://peptideos.us/workouts\u200b",
+    "https://www.peptideos.us/workouts/",
+    "https://www.peptideos.us/workouts?x=1",
+    "https://www.peptideos.us/workouts/extra",
+    "http://www.peptideos.us/workouts",
+    "https://www.peptideos.us//workouts",
+    "//www.peptideos.us/workouts",
+    "https://peptideos.us/workouts/https://www.peptideos.us/workouts"
+  ];
+
+  for (const returnTo of rejected) {
+    assert.equal(ssoFinalizeLocation(APP, "/en/profile", returnTo), `${APP}/en/profile`, JSON.stringify(returnTo));
+    assert.equal(ssoFinalizeLocation(APP, undefined, returnTo), `${APP}/`, JSON.stringify(returnTo));
+    assert.equal(ssoFinalizeLocation(APP, "https://evil.example/phish", returnTo), `${APP}/`, JSON.stringify(returnTo));
+  }
+});
+
+test("a missing return keeps today's in-app finalize", () => {
+  assert.equal(ssoFinalizeLocation(APP, "/en/profile"), `${APP}/en/profile`);
+  assert.equal(ssoFinalizeLocation(APP, "/en/profile", undefined), `${APP}/en/profile`);
+  assert.equal(ssoFinalizeLocation(APP, undefined, undefined), `${APP}/`);
+  assert.equal(ssoFinalizeLocation(APP, "https://evil.example/phish", undefined), `${APP}/`);
 });
 
 test("planWorkoutSso and ssoFinalizeLocation deny leftover WC auth pages and fall back to /", () => {

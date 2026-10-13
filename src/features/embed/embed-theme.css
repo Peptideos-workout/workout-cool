@@ -111,7 +111,7 @@ html[data-wc-embed="1"] [data-wc-chrome="nav"] > .pointer-events-none {
 
 html[data-wc-embed="1"] [data-wc-nav-grid] {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   max-width: none !important;
 }

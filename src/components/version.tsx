@@ -15,7 +15,7 @@ export const Version = ({ variant = "chip" }: VersionProps) => {
   }
 
   return (
-    <div className="absolute bottom-2 right-4" data-wc-chrome="version">
+    <div className="absolute bottom-2 right-4 max-sm:bottom-36" data-wc-chrome="version">
       <span className="text-lg leading-snug text-[#33414a] dark:text-[#b4becb]">v{appVersion}</span>
     </div>
   );

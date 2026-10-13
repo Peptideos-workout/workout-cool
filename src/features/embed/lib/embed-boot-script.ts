@@ -6,7 +6,9 @@ import { EMBED_SESSION_KEY } from "./embed-mode";
  * navigations that would otherwise leave the frame.
  * The embed flag stays in sessionStorage. Embed theme is stored at `wc-embed-theme`.
  * While embed is on, next-themes' default `theme` key is redirected there so a framed
- * visit cannot overwrite the theme used by a normal tab.
+ * visit cannot overwrite the theme used by a normal tab. Storage events for that
+ * default key are ignored, so a normal tab cannot change the embed theme.
+ * The embed theme comes from `?theme=` and later `wc:theme` messages.
  */
 export function embedBootScript(peptideOrigin = "https://peptideos.us"): string {
   const parentOrigin = JSON.stringify(new URL(peptideOrigin).origin);
@@ -54,7 +56,17 @@ root.classList.add(theme);
 }
 if(root.style){root.style.colorScheme=theme;}
 }
+function ignoreDefaultThemeStorage(){
+if(!embedOn()||typeof window.addEventListener!=="function"){return;}
+try{
+window.addEventListener("storage",function(event){
+if(!event||event.key!==defaultTheme){return;}
+if(event.stopImmediatePropagation){event.stopImmediatePropagation();}
+},true);
+}catch(e){}
+}
 isolateThemeStorage();
+ignoreDefaultThemeStorage();
 applyTheme();
 function stripLocale(pathname){
 var path=String(pathname||"").split("?")[0].split("#")[0];

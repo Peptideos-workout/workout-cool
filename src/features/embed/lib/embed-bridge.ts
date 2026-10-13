@@ -1,16 +1,25 @@
+import { shouldShowEmbedAuthFallback } from "./embed-mode";
+
 import { stripLocalePrefix } from "@/features/auth/lib/locale-path";
 
 export const EMBED_CHILD_MESSAGE = {
   height: "wc:height",
   navigate: "wc:navigate",
+  session: "wc:session",
   signedOut: "wc:signed-out"
 } as const;
+
+export const EMBED_SESSION_STATE = {
+  signedIn: "signed-in",
+  signedOut: "signed-out"
+} as const;
+
+export const EMBED_LOGOUT_REASON = "logout" as const;
 
 export const EMBED_PARENT_MESSAGE = {
   theme: "wc:theme"
 } as const;
 
-const THEME_STORAGE_KEY = "theme";
 const MIN_REPORTED_HEIGHT = 200;
 const MAX_REPORTED_HEIGHT = 20000;
 
@@ -26,10 +35,20 @@ const REPORTABLE_PREFIXES = [
   "/premium"
 ] as const;
 
+export interface EmbedSessionInput {
+  embed: boolean;
+  sessionResolved: boolean;
+  hasSession: boolean;
+  ssoError?: boolean;
+}
+
+export type EmbedSessionState = (typeof EMBED_SESSION_STATE)[keyof typeof EMBED_SESSION_STATE];
+
 export interface EmbedChildMessageMap {
   height: { type: typeof EMBED_CHILD_MESSAGE.height; height: number };
   navigate: { type: typeof EMBED_CHILD_MESSAGE.navigate; path: string };
-  signedOut: { type: typeof EMBED_CHILD_MESSAGE.signedOut };
+  session: { type: typeof EMBED_CHILD_MESSAGE.session; state: EmbedSessionState };
+  signedOut: { type: typeof EMBED_CHILD_MESSAGE.signedOut; reason: typeof EMBED_LOGOUT_REASON };
 }
 
 export type EmbedChildMessage = EmbedChildMessageMap[keyof EmbedChildMessageMap];
@@ -193,7 +212,7 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
     if (stopped) return;
     const raw = host.readPath();
     if (isEmbedSignedOutPath(raw)) {
-      postToParent(parent, origin, { type: EMBED_CHILD_MESSAGE.signedOut });
+      postToParent(parent, origin, embedLogoutMessage());
       return;
     }
     const path = reportableEmbedPath(raw);
@@ -223,12 +242,48 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   };
 }
 
-export function notifyEmbedSignedOut(origin: string, runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()): boolean {
-  if (!runtime.embed || runtime.topLevel) return false;
-  return postToParent(runtime.parent, origin, { type: EMBED_CHILD_MESSAGE.signedOut });
+export function embedSessionMessage(state: EmbedSessionState): EmbedChildMessageMap["session"] {
+  return { type: EMBED_CHILD_MESSAGE.session, state };
 }
 
-export const EMBED_THEME_STORAGE_KEY = THEME_STORAGE_KEY;
+export function embedLogoutMessage(): EmbedChildMessageMap["signedOut"] {
+  return { type: EMBED_CHILD_MESSAGE.signedOut, reason: EMBED_LOGOUT_REASON };
+}
+
+/**
+ * Null until the session is known. Signed-out matches the Log in / Sign up fallback,
+ * including an SSO error before the session request settles.
+ */
+export function embedReportedSession(input: EmbedSessionInput): EmbedSessionState | null {
+  if (!input.embed) return null;
+  if (shouldShowEmbedAuthFallback(input)) return EMBED_SESSION_STATE.signedOut;
+  if (!input.sessionResolved) return null;
+  if (input.hasSession) return EMBED_SESSION_STATE.signedIn;
+  return null;
+}
+
+/** The next session post, or null when the state is still unknown or unchanged. */
+export function sessionReportToSend(
+  previous: EmbedSessionState | null,
+  next: EmbedSessionState | null
+): EmbedSessionState | null {
+  if (next === null || next === previous) return null;
+  return next;
+}
+
+export function postEmbedSession(
+  origin: string,
+  state: EmbedSessionState | null,
+  runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()
+): boolean {
+  if (!state || !runtime.embed || runtime.topLevel) return false;
+  return postToParent(runtime.parent, origin, embedSessionMessage(state));
+}
+
+export function notifyEmbedSignedOut(origin: string, runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()): boolean {
+  if (!runtime.embed || runtime.topLevel) return false;
+  return postToParent(runtime.parent, origin, embedLogoutMessage());
+}
 
 function isSafePathname(pathname: string): boolean {
   if (pathname === "/") return true;

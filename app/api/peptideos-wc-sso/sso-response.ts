@@ -4,6 +4,8 @@ import { prefersBrowserSsoErrorPage, ssoErrorHtml } from "./sso-error-page";
 
 import type { NextRequest } from "next/server";
 
+import { applyFrameAncestorsHeader } from "@/shared/lib/frame-ancestors";
+
 const SAFE_SSO_ERROR_CODE = /^[a-z][a-z0-9_]{0,63}$/;
 
 /** Client bodies are a stable error code only. Never dev_detail, messages, emails, or tokens. */
@@ -16,6 +18,7 @@ export function safeSsoErrorBody(body: Record<string, unknown>): { error: string
 export function applySsoResponseHeaders(response: NextResponse): NextResponse {
   response.headers.set("Cache-Control", "private, no-store");
   response.headers.set("Referrer-Policy", "no-referrer");
+  applyFrameAncestorsHeader(response.headers);
   return response;
 }
 

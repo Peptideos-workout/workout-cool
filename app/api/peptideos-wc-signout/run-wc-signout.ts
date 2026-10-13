@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { logSsoEvent, SSO_LOG_LEVEL } from "../peptideos-wc-sso/sso-error-log";
 
+import { applyFrameAncestorsHeader } from "@/shared/lib/frame-ancestors";
 import { peptideOsSignoutFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
 
 export interface PeptideOsWcSignoutDeps {
@@ -83,6 +84,7 @@ async function readRedirectParam(request: { url: string; formData?: () => Promis
 function forbidden(): NextResponse {
   const response = new NextResponse(null, { status: 403 });
   response.headers.set("Cache-Control", "private, no-store");
+  applyFrameAncestorsHeader(response.headers);
   return response;
 }
 
@@ -153,6 +155,7 @@ export async function runPeptideOsWcSignout(
   const location = peptideOsSignoutFinalizeLocation(deps.peptideOsOrigin, redirectParam);
   const response = NextResponse.redirect(location, 303);
   response.headers.set("Cache-Control", "private, no-store");
+  applyFrameAncestorsHeader(response.headers);
   if (signOutResponse) {
     copySetCookies(signOutResponse, response);
   }

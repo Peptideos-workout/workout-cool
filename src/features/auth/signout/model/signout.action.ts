@@ -6,11 +6,6 @@ import { cookies, headers } from "next/headers";
 import { logSsoEvent } from "../../../../../app/api/peptideos-wc-sso/sso-error-log";
 
 import {
-  EMBED_COOKIE_NAME,
-  isExplicitEmbedSignOutSignal,
-  shouldSkipEmbedSignOut
-} from "@/features/embed/lib/embed-mode";
-import {
   issueSignoutContinueToken,
   signoutContinueCookieName,
   signoutContinueCookieOptions
@@ -28,19 +23,7 @@ async function issueSignoutContinueCookie() {
   store.set(signoutContinueCookieName(secure), token, signoutContinueCookieOptions(secure));
 }
 
-export async function signOutAction(input?: FormData | { embedded?: boolean }) {
-  const store = await cookies();
-  // No-op only for an explicit framed request that also has the embed cookie.
-  // A top-level tab shares that cookie and must still sign out.
-  if (
-    shouldSkipEmbedSignOut({
-      clientEmbedded: isExplicitEmbedSignOutSignal(input),
-      embedCookie: store.get(EMBED_COOKIE_NAME)?.value
-    })
-  ) {
-    return;
-  }
-
+export async function signOutAction() {
   try {
     await auth.api.signOut({ headers: await headers() });
   } catch (error) {

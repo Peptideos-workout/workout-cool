@@ -87,30 +87,30 @@ export function isEmbedParentOrigin(origin: string): boolean {
   return (EMBED_PARENT_ORIGINS as readonly string[]).includes(origin);
 }
 
-/**
- * Parent postMessage origin. ancestorOrigins, then referrer, and only when the
- * value is exactly one of the frame-ancestors origins. Otherwise the apex.
- */
-export function resolveEmbedParentOrigin(input: {
+export interface EmbedParentLookup {
   referrer?: string | null;
   ancestorOrigins?: ArrayLike<string> | null;
-}): string {
+}
+
+/**
+ * Outbound postMessage origins. Only ancestorOrigins[0] counts, and only when
+ * it is exactly https://peptideos.us or https://www.peptideos.us. Otherwise the
+ * referrer origin, on that same exact match. Otherwise both allowlisted origins.
+ * Later ancestors, lookalikes, and http origins are ignored. Never '*'.
+ */
+export function resolveEmbedOutboundOrigins(input: EmbedParentLookup): readonly string[] {
   const ancestors = input.ancestorOrigins;
-  if (ancestors) {
-    for (let index = 0; index < ancestors.length; index += 1) {
-      const origin = ancestors[index];
-      if (typeof origin === "string" && isEmbedParentOrigin(origin)) return origin;
-    }
-  }
+  const first = ancestors && ancestors.length > 0 ? ancestors[0] : undefined;
+  if (typeof first === "string" && isEmbedParentOrigin(first)) return [first];
   if (input.referrer) {
     try {
       const origin = new URL(input.referrer).origin;
-      if (isEmbedParentOrigin(origin)) return origin;
+      if (isEmbedParentOrigin(origin)) return [origin];
     } catch {
-      // Ignore an unparseable referrer and use the apex.
+      // Ignore an unparseable referrer and post to both allowlisted origins.
     }
   }
-  return EMBED_PARENT_ORIGIN_DEFAULT;
+  return EMBED_PARENT_ORIGINS;
 }
 
 export interface EmbedLogoutRuntime {
@@ -121,25 +121,9 @@ export interface EmbedLogoutRuntime {
   ancestorOrigins?: ArrayLike<string> | null;
 }
 
-/**
- * Skip the server sign-out only when this request explicitly says it is the
- * frame and the shared embed cookie is also set. The cookie alone is not
- * tab-scoped, so a normal top-level tab must still sign out.
- */
-export function shouldSkipEmbedSignOut(input: { clientEmbedded: boolean; embedCookie: string | null | undefined }): boolean {
-  return input.clientEmbedded === true && input.embedCookie === "1";
-}
-
 /** PeptideOS handoff auto-submit. A real frame must not navigate the top window. */
 export function shouldAutoSubmitSignoutHandoff(autoSubmit: boolean, framed: boolean): boolean {
   return autoSubmit && !framed;
-}
-
-/** True only for `{ embedded: true }`. A form post is not that signal. */
-export function isExplicitEmbedSignOutSignal(input: unknown): boolean {
-  if (!input || typeof input !== "object") return false;
-  if (typeof FormData !== "undefined" && input instanceof FormData) return false;
-  return (input as { embedded?: unknown }).embedded === true;
 }
 
 /** True only while this document is the embedded frame. A copied tab is not. */
@@ -155,34 +139,42 @@ export function isEmbedFrame(): boolean {
 /** wc:signed-out for an embedded frame. No-ops outside a real frame. Never uses '*'. */
 export function postEmbedLogoutToParent(runtime: EmbedLogoutRuntime = readEmbedLogoutRuntime()): boolean {
   if (!runtime.embed || runtime.topLevel || !runtime.parent) return false;
-  const origin = resolveEmbedParentOrigin(runtime);
-  if (!isEmbedParentOrigin(origin)) return false;
-  runtime.parent.postMessage({ type: "wc:signed-out", reason: "logout" }, origin);
-  return true;
+  let posted = false;
+  for (const origin of resolveEmbedOutboundOrigins(runtime)) {
+    if (!isEmbedParentOrigin(origin)) continue;
+    runtime.parent.postMessage({ type: "wc:signed-out", reason: "logout" }, origin);
+    posted = true;
+  }
+  return posted;
 }
 
-/** Inline script for a framed signed-out document that has no React bridge. */
+/**
+ * Inline script for a framed signed-out document that has no React bridge.
+ * It posts once, immediately, and does not listen for messages. A later
+ * wc:theme cannot retarget it; the React bridge is what adopts that origin.
+ * Targets follow resolveEmbedOutboundOrigins: ancestorOrigins[0], else the
+ * referrer, else one post to each allowlisted origin.
+ */
 export function embedSignedOutSessionBootstrap(): string {
   const allowed = JSON.stringify([...EMBED_PARENT_ORIGINS]);
-  const apex = JSON.stringify(EMBED_PARENT_ORIGIN_DEFAULT);
   return `(function(){
 var allowed=${allowed};
-var target=${apex};
+var targets=[];
 try{
-var matched=false;
 var ancestors=location.ancestorOrigins;
-if(ancestors){
-for(var i=0;i<ancestors.length;i++){
-if(allowed.indexOf(ancestors[i])!==-1){target=ancestors[i];matched=true;break;}
-}
-}
-if(!matched&&document.referrer){
+var first=ancestors&&ancestors.length?ancestors[0]:"";
+if(allowed.indexOf(first)!==-1){targets=[first];}
+else if(document.referrer){
 var ref=new URL(document.referrer).origin;
-if(allowed.indexOf(ref)!==-1){target=ref;}
+if(allowed.indexOf(ref)!==-1){targets=[ref];}
 }
 }catch(e){}
+if(!targets.length){targets=allowed.slice();}
 if(!window.parent||window.parent===window){return;}
-window.parent.postMessage({type:"wc:session",state:"signed-out"},target);
+for(var i=0;i<targets.length;i++){
+if(allowed.indexOf(targets[i])===-1){continue;}
+window.parent.postMessage({type:"wc:session",state:"signed-out"},targets[i]);
+}
 })();`;
 }
 

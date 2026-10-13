@@ -246,7 +246,6 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
     <>
       <html className="h-full" dir="ltr" lang={locale} suppressHydrationWarning>
         <head>
-          <script dangerouslySetInnerHTML={{ __html: embedBootScript(getConfiguredPeptideOsOrigin()) }} />
           <meta charSet="UTF-8" />
           <meta content="width=device-width, initial-scale=1, maximum-scale=1 viewport-fit=cover" name="viewport" />
           {/* {env.NEXT_PUBLIC_AD_PROVIDER !== "custom" && ( */}
@@ -257,6 +256,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
               async
               crossOrigin="anonymous"
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${env.NEXT_PUBLIC_AD_CLIENT}`}
+              suppressHydrationWarning
             />
 
             {env.NEXT_PUBLIC_ENABLE_GATEKEEPER_CONSENT === true && (
@@ -270,7 +270,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             )}
 
             {/* Ezoic Header Script */}
-            <script async src="//www.ezojs.com/ezoic/sa.min.js" />
+            <script async src="//www.ezojs.com/ezoic/sa.min.js" suppressHydrationWarning />
             <script
               dangerouslySetInnerHTML={{
                 __html: `
@@ -289,6 +289,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
                     window.ezRewardedAds.cmd = window.ezRewardedAds.cmd || [];
                   `,
               }}
+              suppressHydrationWarning
             />
           </>
           {/* )} */}
@@ -357,6 +358,12 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
           )}
           suppressHydrationWarning
         >
+          {/*
+            Blocking embed boot. It stays the first body child, not a head child:
+            Next reorders head around metadata, so this script was hydrating against
+            the AdSense loader. It still runs before the rest of the body is parsed.
+          */}
+          <script dangerouslySetInnerHTML={{ __html: embedBootScript(getConfiguredPeptideOsOrigin()) }} />
           <Providers locale={locale}>
             <ServiceWorkerRegistration />
             <FavoriteExercisesSynchronizer />

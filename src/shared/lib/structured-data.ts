@@ -696,11 +696,12 @@ export function generateStructuredData({
 }
 
 export function StructuredDataScript({ data }: { data: object }) {
+  // the ad loader inserts a script before hydration and shifts this tag
   return React.createElement("script", {
     type: "application/ld+json",
-    suppressHydrationWarning: true,
     dangerouslySetInnerHTML: {
       __html: JSON.stringify(data),
     },
+    suppressHydrationWarning: true,
   });
 }

@@ -51,6 +51,25 @@ export interface EmbedSignedOutDocumentOptions {
   postSession?: boolean;
 }
 
+/**
+ * Old browsers omit Sec-Fetch-Dest, so a top-level ?embed=1 on a gated route
+ * receives this document. If this window is not framed, drop embed=1 and load
+ * the same path again. The next request is the normal same-origin navigation.
+ */
+export function embedTopLevelEmbedQueryEscape(): string {
+  return `(function(){
+if(!window.parent||window.parent!==window){return;}
+try{
+var url=new URL(location.href);
+if(url.searchParams.get("embed")!=="1"){return;}
+url.searchParams.delete("embed");
+var next=url.pathname+(url.search||"")+(url.hash||"");
+if(!next||next.charAt(0)!=="/"){return;}
+location.replace(next);
+}catch(e){}
+})();`;
+}
+
 /** Framed signed-out page. CSP frame-ancestors is the allowlist. X-Frame-Options is not set. */
 export function embedSignedOutFallbackHtml(
   links: { loginHref: string; signupHref: string; dashboardHref: string },
@@ -66,6 +85,7 @@ export function embedSignedOutFallbackHtml(
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Signed out</title>
+    <script>${embedTopLevelEmbedQueryEscape()}</script>
     <script>${embedBootScript()}</script>
     ${session}
   </head>

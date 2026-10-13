@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 
 import { EmbedAuthFallbackView } from "../ui/embed-auth-fallback-view";
 import { proxy } from "../../../../proxy";
-import { embedSignedOutDocumentResponse, isEmbedDocumentRequest } from "./embed-signed-out-document";
+import { embedSignedOutDocumentResponse, embedTopLevelEmbedQueryEscape, isEmbedDocumentRequest } from "./embed-signed-out-document";
 import {
   EMBED_BACK_TO_DASHBOARD,
   EMBED_PARENT_ORIGINS,
@@ -885,6 +885,41 @@ test("a top-level ?embed=1 with no Sec-Fetch-Dest header does not turn on embed 
     assert.match(html, /window\.parent!==window/);
     assert.match(html, /enable=framed&&/);
     assert.doesNotMatch(html, /data-wc-embed="1"/);
+  });
+});
+
+function runTopLevelEmbedEscape(href: string, topLevel: boolean): string | null {
+  let replaced: string | null = null;
+  const windowObj = { parent: null as unknown };
+  windowObj.parent = topLevel ? windowObj : {};
+  const location = {
+    href,
+    replace(next: string) {
+      replaced = next;
+    }
+  };
+  const run = new Function("window", "location", embedTopLevelEmbedQueryEscape());
+  run(windowObj, location);
+  return replaced;
+}
+
+test("a top-level fallback drops embed=1 and stays on the same path", async () => {
+  const script = embedTopLevelEmbedQueryEscape();
+  assert.doesNotMatch(script, /https?:/);
+  assert.doesNotMatch(script, /peptideos\.us/);
+  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, true), "/en/profile");
+  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1&theme=dark`, true), "/en/profile?theme=dark");
+  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?foo=1&embed=1#sets`, true), "/en/profile?foo=1#sets");
+  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?theme=dark`, true), null);
+  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, false), null);
+  assert.equal(runTopLevelEmbedEscape("https://peptideos.us.evil.com/en/profile?embed=1", true), "/en/profile");
+
+  await withPeptideEnv(async () => {
+    const response = await proxy(new NextRequest(`${APP}/en/profile?embed=1`));
+    const html = await response.text();
+    assert.equal(response.status, 200);
+    assert.equal(html.includes(script), true);
+    assert.doesNotMatch(html, /location\.replace\([^)]*https?:/);
   });
 });
 

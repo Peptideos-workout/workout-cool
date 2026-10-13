@@ -6,6 +6,49 @@ function read(path: string) {
   return readFileSync(path, "utf8");
 }
 
+const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
+
+function blockForSelector(css: string, selector: string) {
+  let from = 0;
+  while (from < css.length) {
+    const at = css.indexOf(selector, from);
+    if (at < 0) return "";
+    const before = at === 0 ? "\n" : css[at - 1];
+    const rest = css.slice(at + selector.length);
+    if ((before === "\n" || before === "}") && /^\s*\{/.test(rest)) {
+      const open = at + selector.length + rest.indexOf("{");
+      let depth = 0;
+      for (let index = open; index < css.length; index += 1) {
+        if (css[index] === "{") depth += 1;
+        else if (css[index] === "}") {
+          depth -= 1;
+          if (depth === 0) return css.slice(open + 1, index);
+        }
+      }
+    }
+    from = at + selector.length;
+  }
+  return "";
+}
+
+function colorDeclarations(block: string, prefix: string) {
+  const found: Record<string, string> = {};
+  const pattern = new RegExp(`${prefix}([a-z]+)\\s*:\\s*(#[0-9a-fA-F]{3,8})\\s*;`, "g");
+  for (const match of block.matchAll(pattern)) {
+    assert.equal(found[match[1]], undefined, match[1]);
+    found[match[1]] = match[2].toLowerCase();
+  }
+  return found;
+}
+
+function navSkeleton(source: string) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/"(?:\\.|[^"\\])*"/g, "S")
+    .replace(/'(?:\\.|[^'\\])*'/g, "S")
+    .replace(/\s+/g, "");
+}
+
 test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   const nav = read("src/features/layout/BottomNavigation.tsx");
   const header = read("src/features/layout/Header.tsx");
@@ -136,6 +179,34 @@ test("header, nav, and version use wc-dash variables and contain no raw hex", ()
   assert.match(globals, /\.dark \{[\s\S]*--wc-dash-accent:\s*#2dd4bf/);
   assert.match(globals, /--wc-dash-ink:\s*#ffffff/);
   assert.match(globals, /--wc-dash-ink:\s*#04201c/);
+});
+
+test("wc-dash blocks mirror the embed light and dark dash maps", () => {
+  const globals = read("src/shared/styles/globals.css");
+  const embed = read("src/features/embed/embed-theme.css");
+  const light = colorDeclarations(blockForSelector(globals, ":root"), "--wc-dash-");
+  const dark = colorDeclarations(blockForSelector(globals, ".dark"), "--wc-dash-");
+  const embedLight = colorDeclarations(blockForSelector(embed, "html[data-wc-embed=\"1\"]"), "--dash-");
+  const embedDark = colorDeclarations(blockForSelector(embed, "html[data-wc-embed=\"1\"].dark"), "--dash-");
+
+  assert.deepEqual(Object.keys(light).sort(), [...DASH_NAMES].sort());
+  assert.deepEqual(Object.keys(dark).sort(), [...DASH_NAMES].sort());
+  assert.deepEqual(Object.keys(embedLight).sort(), [...DASH_NAMES].sort());
+  assert.deepEqual(Object.keys(embedDark).sort(), [...DASH_NAMES].sort());
+  for (const name of DASH_NAMES) {
+    assert.equal(light[name], embedLight[name], name);
+    assert.equal(dark[name], embedDark[name], name);
+  }
+});
+
+test("nav isActive and isPremium ternary structure is unchanged", () => {
+  const skeleton = navSkeleton(read("src/features/layout/BottomNavigation.tsx"));
+  const fourWay = "isActive&&isPremium?S:isActive?S:isPremium?S:S";
+  assert.equal(skeleton.split(fourWay).length - 1, 2);
+  assert.equal(skeleton.split("isActive||isPremium?S:S").length - 1, 1);
+  assert.equal(skeleton.split("isPremium&&!isActive").length - 1, 1);
+  assert.equal(skeleton.split("isPremium?S:S").length - 1, 5);
+  assert.equal(skeleton.split("{isActive&&(").length - 1, 2);
 });
 
 test("embed nav labels stay visible", () => {

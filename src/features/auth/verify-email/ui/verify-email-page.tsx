@@ -45,7 +45,12 @@ export const VerifyEmailPage = () => {
               {isDisabled ? t("resend_email_countdown", { seconds: countdown }) : t("resend_email")}
             </Button>
 
-            <Button className="text-muted-foreground hover:text-foreground" onClick={() => logout.mutate()} variant={null}>
+            <Button
+              className="text-muted-foreground hover:text-foreground"
+              data-wc-signout=""
+              onClick={() => logout.mutate()}
+              variant={null}
+            >
               {t("logout")}
             </Button>
           </div>

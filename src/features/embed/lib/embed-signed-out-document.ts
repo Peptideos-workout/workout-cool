@@ -11,7 +11,17 @@ import { embedBootScript } from "./embed-boot-script";
 import { applyFrameAncestorsHeader } from "@/shared/lib/frame-ancestors";
 import { peptideOsOrigin, resolvePeptideOsLoginUrl, resolvePeptideOsSignupUrl } from "@/features/auth/lib/peptideos-signup-url";
 
-export function isEmbedDocumentRequest(search: string, cookie: string | null | undefined): boolean {
+/** A top-level tab navigation. An iframe request uses `iframe`, not `document`. */
+export function isTopLevelDocumentNavigation(secFetchDest: string | null | undefined): boolean {
+  return secFetchDest === "document";
+}
+
+export function isEmbedDocumentRequest(
+  search: string,
+  cookie: string | null | undefined,
+  secFetchDest?: string | null
+): boolean {
+  if (isTopLevelDocumentNavigation(secFetchDest)) return false;
   return isEmbedQuery(search) || cookie === "1";
 }
 

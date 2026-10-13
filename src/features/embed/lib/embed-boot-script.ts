@@ -4,7 +4,10 @@ import { EMBED_FRAMEABLE_LOGOUT_PATH, EMBED_PARENT_ORIGINS, EMBED_SESSION_KEY, i
  * Blocking head script. It turns on the tab-scoped embed flag before first paint
  * and retargets navigations that would otherwise leave the frame.
  * Embed mode applies only while this document is actually framed. A duplicated
- * tab clears the flag. Theme persistence is added by the postMessage bridge.
+ * tab clears the flag. A new tab opened with target=_blank, a modifier click,
+ * a middle click, or window.open has the flag removed before that tab is
+ * created, then restored on this frame. Theme persistence is added by the
+ * postMessage bridge.
  * Sign-out never targets the top window. A server-action redirect onto
  * /auth/signout* is rewritten to a frameable page, because that route sends
  * frame-ancestors 'none'.
@@ -79,20 +82,54 @@ if(event.preventDefault){event.preventDefault();}
 if(blocked==="frame"&&location.assign){location.assign(FRAMEABLE);}
 return true;
 }
-document.addEventListener("click",function(event){
-if(!embedOn()||!event.target||!event.target.closest){return;}
+function clearEmbedState(){
+try{sessionStorage.removeItem(KEY);}catch(e){}
+try{document.cookie=KEY+"=; Path=/; Max-Age=0";}catch(e){}
+}
+function restoreEmbedState(){
+if(!framed){return;}
+try{if(window.parent===window){return;}}catch(e){return;}
+try{sessionStorage.setItem(KEY,"1");}catch(e){}
+try{document.cookie=KEY+"=1; Path=/; SameSite=Lax";}catch(e){}
+if(root.setAttribute){root.setAttribute("data-wc-embed","1");}
+}
+function opensNewTab(event,anchor){
+if(!event){return false;}
+if(event.button===1){return true;}
+if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey){return true;}
+var declared=anchor&&anchor.getAttribute?anchor.getAttribute("target")||"":"";
+return declared==="_blank";
+}
+function handleAnchor(event){
+if(!embedOn()||!event||!event.target||!event.target.closest){return;}
 var anchor=event.target.closest("a[href]");
 if(!anchor){return;}
 var href=anchor.getAttribute("href")||"";
 if(holdSignout(event,href)){return;}
 var target=frameTarget(href);
-if(!target){return;}
+if(target){
 anchor.setAttribute("target",target);
 if(target==="_blank"){
 var rel=anchor.getAttribute("rel")||"";
 if(rel.indexOf("noopener")===-1){anchor.setAttribute("rel",(rel+" noopener noreferrer").trim());}
 }
-},true);
+}
+if(opensNewTab(event,anchor)){
+clearEmbedState();
+setTimeout(restoreEmbedState,0);
+}
+}
+document.addEventListener("click",handleAnchor,true);
+document.addEventListener("auxclick",handleAnchor,true);
+if(typeof window.open==="function"){
+var nativeOpen=window.open.bind(window);
+window.open=function(){
+if(!embedOn()){return nativeOpen.apply(window,arguments);}
+clearEmbedState();
+try{return nativeOpen.apply(window,arguments);}
+finally{restoreEmbedState();}
+};
+}
 document.addEventListener("submit",function(event){
 if(!embedOn()||!event.target||!event.target.getAttribute){return;}
 var action=event.target.getAttribute("action")||"";

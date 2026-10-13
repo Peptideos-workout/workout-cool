@@ -94,6 +94,8 @@ test("embed tokens match PeptideOS light and dark values and keep the page trans
   assert.ok(parsed.some((rule) => /box-shadow:\s*none/.test(rule.body)));
   assert.ok(parsed.some((rule) => /border:\s*0/.test(rule.body)));
   assert.ok(parsed.some((rule) => /var\(--font-inter\)/.test(rule.body)));
+  assert.ok(parsed.some((rule) => /\[data-wc-signout\]/.test(rule.selector) && /display:\s*none/.test(rule.body)));
+  assert.ok(parsed.some((rule) => /a\[href\*="\/auth\/signout"\]/.test(rule.selector) && /display:\s*none/.test(rule.body)));
   assert.ok(parsed.some((rule) => /\[data-wc-chrome="header"\]/.test(rule.selector) && /display:\s*none/.test(rule.body)));
   assert.ok(parsed.some((rule) => /\[data-wc-chrome="footer"\]/.test(rule.selector) && /display:\s*none/.test(rule.body)));
   assert.ok(parsed.some((rule) => /\[data-wc-chrome="banner"\]/.test(rule.selector) && /display:\s*none/.test(rule.body)));

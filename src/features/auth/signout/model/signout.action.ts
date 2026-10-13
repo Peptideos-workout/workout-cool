@@ -25,15 +25,16 @@ async function issueSignoutContinueCookie() {
 }
 
 export async function signOutAction() {
+  const store = await cookies();
+  // Embed logout is a no-op. Do not clear the session and do not start hop B.
+  if (store.get(EMBED_COOKIE_NAME)?.value === "1") {
+    return;
+  }
+
   try {
     await auth.api.signOut({ headers: await headers() });
   } catch (error) {
     logSsoEvent("wc_signout", error);
-  }
-
-  const store = await cookies();
-  if (store.get(EMBED_COOKIE_NAME)?.value === "1") {
-    redirect("/?embed=1");
   }
 
   await issueSignoutContinueCookie();

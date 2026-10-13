@@ -121,7 +121,17 @@ export interface EmbedLogoutRuntime {
   ancestorOrigins?: ArrayLike<string> | null;
 }
 
-/** wc:signed-out before the server action. No-ops outside a real frame. Never uses '*'. */
+/** True only while this document is the embedded frame. A copied tab is not. */
+export function isEmbedFrame(): boolean {
+  if (typeof document === "undefined" || typeof window === "undefined") return false;
+  try {
+    return document.documentElement.getAttribute(EMBED_HTML_ATTR) === "1" && window.parent !== window;
+  } catch {
+    return false;
+  }
+}
+
+/** wc:signed-out for an embedded frame. No-ops outside a real frame. Never uses '*'. */
 export function postEmbedLogoutToParent(runtime: EmbedLogoutRuntime = readEmbedLogoutRuntime()): boolean {
   if (!runtime.embed || runtime.topLevel || !runtime.parent) return false;
   const origin = resolveEmbedParentOrigin(runtime);

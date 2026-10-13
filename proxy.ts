@@ -58,7 +58,11 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const detectedLocale = detectUserLocale(request);
   const hasSession = Boolean(getSessionCookie(request));
-  const embedded = isEmbedDocumentRequest(request.nextUrl.search, request.cookies.get(EMBED_COOKIE_NAME)?.value);
+  const embedded = isEmbedDocumentRequest(
+    request.nextUrl.search,
+    request.cookies.get(EMBED_COOKIE_NAME)?.value,
+    request.headers.get("sec-fetch-dest")
+  );
   const embedNeedsFallback =
     embedded && (shouldRedirectSignedOutRequest(pathname, hasSession) || isEmbedUnframeableSignoutPath(pathname));
 

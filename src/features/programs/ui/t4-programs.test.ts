@@ -15,6 +15,9 @@ const WELCOME = "src/features/programs/ui/welcome-modal.tsx";
 const FILES = [CARD, DETAIL, PROGRESS, LIST, SHARE, WELCOME];
 
 const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
+const CONFETTI_COLORS = 'colors: ["#4F8EF7", "#25CB78", "#FFD700"]';
+const ACTIVE_TAB = '"!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]"';
+const INACTIVE_TAB = '"!text-[var(--wc-dash-text)]"';
 
 function blockForSelector(css: string, selector: string) {
   let from = 0;
@@ -84,6 +87,14 @@ function count(source: string, needle: string) {
   return source.split(needle).length - 1;
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function classCount(source: string, name: string) {
+  return [...source.matchAll(new RegExp(`(?<![\\w-])${name}(?![\\w-])`, "g"))].length;
+}
+
 test("program screens use dash tokens and no raw hex", () => {
   const { light, dark } = tokens();
   for (const name of DASH_NAMES) {
@@ -92,8 +103,9 @@ test("program screens use dash tokens and no raw hex", () => {
   }
   for (const path of FILES) {
     const source = read(path);
+    const styled = path === WELCOME ? source.split(CONFETTI_COLORS).join("") : source;
     assert.match(source, /--wc-dash-/);
-    assert.doesNotMatch(source, /#[0-9a-fA-F]{3,8}/);
+    assert.doesNotMatch(styled, /#[0-9a-fA-F]{3,8}/);
     assert.doesNotMatch(source, /text-slate-|bg-slate-|text-red-|bg-red-|text-green-|bg-green-|text-blue-|bg-blue-/);
     assert.doesNotMatch(source, /text-yellow-|bg-yellow-|text-purple-|bg-purple-|text-gray-|bg-gray-|text-white|bg-white/);
   }
@@ -118,6 +130,8 @@ test("program text is 18px and tap targets are 48px", () => {
   assert.match(card, /inline-flex min-h-12 items-center rounded-full border border-\[var\(--wc-dash-border\)\]/);
   assert.match(card, /px-3 text-lg font-semibold text-\[var\(--wc-dash-text\)\]/);
   assert.match(card, /px-3 text-lg font-semibold text-\[var\(--wc-dash-link\)\]/);
+  assert.match(card, /bg-\[var\(--wc-dash-accent\)\] px-3 text-lg font-semibold text-\[var\(--wc-dash-ink\)\]/);
+  assert.match(card, /className=\{levelConfig\.kicker\}/);
 });
 
 test("program contrast pairs meet AA", () => {
@@ -178,12 +192,14 @@ test("program handlers, hrefs, disabled expressions, and conditionals stay byte-
   assert.match(detail, /window\.location\.href = `\/\$\{currentLocale\}\/programs\/\$\{program\.slug\}\/session\/\$\{sessionSlug\}`;/);
   assert.equal(count(detail, "router.push(`/programs/${program.slug}/?tab=sessions`)"), 2);
   assert.equal(count(detail, "window.location.assign(getConfiguredPeptideOsSignupUrl("), 2);
-  assert.match(detail, /tab === "about" \? "tab-active bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]" : ""/);
-  assert.match(detail, /tab === "sessions" \? "tab-active bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]" : ""/);
+  assert.match(detail, new RegExp(`tab === "about" \\? ${escapeRegExp(ACTIVE_TAB)} : ${escapeRegExp(INACTIVE_TAB)}`));
+  assert.match(detail, new RegExp(`tab === "sessions" \\? ${escapeRegExp(ACTIVE_TAB)} : ${escapeRegExp(INACTIVE_TAB)}`));
   assert.match(
     detail,
-    /selectedWeek === week\.weekNumber \? "tab-active bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]" : ""/,
+    new RegExp(`selectedWeek === week\\.weekNumber\\s*\\?\\s*${escapeRegExp(ACTIVE_TAB)}\\s*:\\s*${escapeRegExp(INACTIVE_TAB)}`),
   );
+  assert.equal(count(detail, ACTIVE_TAB), 3);
+  assert.equal(count(detail, INACTIVE_TAB), 3);
   assert.match(detail, /\{tab === "about" && \(/);
   assert.match(detail, /\{tab === "sessions" && \(/);
   assert.match(detail, /\{isAuthenticated && <ProgramProgress programId=\{program\.id\} \/>\}/);
@@ -302,4 +318,46 @@ test("program copy stays on the existing translation keys", () => {
     assert.deepEqual(actual, keys, path);
   }
   assert.equal(count(read(SHARE), "t("), 0);
+});
+
+test("program tabs, washes, confetti, progress, and visibility stay locked", () => {
+  const card = read(CARD);
+  const detail = read(DETAIL);
+  const progress = read(PROGRESS);
+  const welcome = read(WELCOME);
+  const openConfetti = `confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          ${CONFETTI_COLORS},
+        })`;
+  const joinConfetti = `confetti({
+      particleCount: 200,
+      spread: 120,
+      origin: { y: 0.5 },
+      ${CONFETTI_COLORS},
+    })`;
+
+  assert.equal(count(welcome, openConfetti), 1);
+  assert.equal(count(welcome, joinConfetti), 1);
+  assert.equal(count(welcome, CONFETTI_COLORS), 2);
+  assert.equal(count(welcome, "particleCount: 100"), 1);
+  assert.equal(count(welcome, "particleCount: 200"), 1);
+  assert.match(card, /bg-\[color-mix\(in_srgb,var\(--wc-dash-page\)_40%,transparent\)\]/);
+  assert.match(welcome, /bg-\[color-mix\(in_srgb,var\(--wc-dash-page\)_80%,transparent\)\]/);
+  assert.doesNotMatch(card, /bg-\[var\(--wc-dash-page\)\]\/40/);
+  assert.doesNotMatch(welcome, /bg-\[var\(--wc-dash-page\)\]\/80/);
+  assert.match(progress, /\{stats\.completionPercentage\}%/);
+  assert.match(detail, /isPremium\s*\?\s*"bg-\[var\(--wc-dash-accent\)\]"\s*:\s*"bg-\[var\(--wc-dash-link\)\]"/);
+  assert.match(card, /kicker: levelKicker\.accent/);
+  assert.match(card, /kicker: levelKicker\.link/);
+  assert.equal(count(card, "kicker: levelKicker.text"), 2);
+
+  for (const path of FILES) {
+    const source = read(path);
+    assert.equal(classCount(source, "hidden"), 0, path);
+    assert.equal(classCount(source, "invisible"), 0, path);
+    assert.equal(classCount(source, "sr-only"), path === LIST ? 1 : 0, path);
+  }
+  assert.match(read(LIST), /<h2 className="sr-only">\{t\("programs\.available_programs"\)\}<\/h2>/);
 });

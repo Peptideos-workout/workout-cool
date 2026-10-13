@@ -243,11 +243,11 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
         </div>
 
         <div className="px-0 sm:px-4 py-4">
-          <div className="tabs tabs-lift" role="tablist">
+          <div className="flex flex-wrap gap-2" role="tablist">
             <button
               aria-label="À propos"
-              className={`tab min-h-12 text-lg text-[var(--wc-dash-text)] ${
-                tab === "about" ? "tab-active bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]" : ""
+              className={`min-h-12 rounded-xl px-4 text-lg ${
+                tab === "about" ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]" : "!text-[var(--wc-dash-text)]"
               }`}
               onClick={() => setTab("about")}
               type="button"
@@ -256,8 +256,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
             </button>
             <button
               aria-label={t("programs.sessions")}
-              className={`tab min-h-12 text-lg text-[var(--wc-dash-text)] ${
-                tab === "sessions" ? "tab-active bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]" : ""
+              className={`min-h-12 rounded-xl px-4 text-lg ${
+                tab === "sessions" ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]" : "!text-[var(--wc-dash-text)]"
               }`}
               onClick={() => setTab("sessions")}
               type="button"
@@ -453,11 +453,13 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
               <div className="space-y-6">
                 {/* Week Selector with DaisyUI Tabs */}
                 <div className="overflow-x-auto">
-                  <div className="tabs tabs-box w-fit flex-nowrap">
+                  <div className="flex w-fit flex-nowrap gap-2">
                     {program.weeks.map((week) => (
                       <button
-                        className={`tab min-h-12 flex-shrink-0 text-lg text-[var(--wc-dash-text)] ${
-                          selectedWeek === week.weekNumber ? "tab-active bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]" : ""
+                        className={`min-h-12 flex-shrink-0 rounded-xl px-4 text-lg ${
+                          selectedWeek === week.weekNumber
+                            ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]"
+                            : "!text-[var(--wc-dash-text)]"
                         }`}
                         key={week.id}
                         onClick={() => setSelectedWeek(week.weekNumber)}

@@ -39,6 +39,7 @@ export function WelcomeModal({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
+          colors: ["#4F8EF7", "#25CB78", "#FFD700"],
         });
       }, 300);
     }
@@ -51,6 +52,7 @@ export function WelcomeModal({
       particleCount: 200,
       spread: 120,
       origin: { y: 0.5 },
+      colors: ["#4F8EF7", "#25CB78", "#FFD700"],
     });
     setTimeout(() => {
       onJoin();
@@ -58,7 +60,7 @@ export function WelcomeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--wc-dash-page)]/80 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--wc-dash-page)_80%,transparent)] p-4">
       <div
         className={`
           relative w-full max-w-md rounded-2xl border

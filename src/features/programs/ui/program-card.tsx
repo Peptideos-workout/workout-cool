@@ -20,9 +20,17 @@ interface ProgramCardProps {
 const cardShell =
   "block overflow-hidden rounded-2xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] " +
   "text-[var(--wc-dash-text)] transition-colors duration-300 ease-out";
-const kicker =
-  "inline-flex min-h-12 items-center rounded-full border border-[var(--wc-dash-border)] " +
-  "bg-[var(--wc-dash-inner)] px-3 text-lg font-semibold text-[var(--wc-dash-text)]";
+const levelKicker = {
+  accent:
+    "inline-flex min-h-12 items-center rounded-full border border-[var(--wc-dash-accent)] " +
+    "bg-[var(--wc-dash-accent)] px-3 text-lg font-semibold text-[var(--wc-dash-ink)]",
+  link:
+    "inline-flex min-h-12 items-center rounded-full border border-[var(--wc-dash-link)] " +
+    "bg-[var(--wc-dash-card)] px-3 text-lg font-semibold text-[var(--wc-dash-link)]",
+  text:
+    "inline-flex min-h-12 items-center rounded-full border border-[var(--wc-dash-text)] " +
+    "bg-[var(--wc-dash-inner)] px-3 text-lg font-semibold text-[var(--wc-dash-text)]",
+};
 const premiumKicker =
   "inline-flex min-h-12 items-center rounded-full border border-[var(--wc-dash-border)] " +
   "bg-[var(--wc-dash-card)] px-3 text-lg font-semibold text-[var(--wc-dash-link)]";
@@ -57,18 +65,22 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
       case "BEGINNER":
         return {
           emoji: "/images/emojis/WorkoutCoolHappy.png",
+          kicker: levelKicker.accent,
         };
       case "INTERMEDIATE":
         return {
           emoji: "/images/emojis/WorkoutCoolBiceps.png",
+          kicker: levelKicker.link,
         };
       case "ADVANCED":
         return {
           emoji: "/images/emojis/WorkoutCoolSwag.png",
+          kicker: levelKicker.text,
         };
       default:
         return {
           emoji: "/images/emojis/WorkoutCoolHappy.png",
+          kicker: levelKicker.text,
         };
     }
   };
@@ -88,11 +100,11 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
 
         <div className="relative h-32 sm:h-36 overflow-hidden">
           <Image alt={title} className="w-full h-full object-cover" fill loading="lazy" src={program.image} />
-          <div className="absolute inset-0 bg-[var(--wc-dash-page)]/40" />
+          <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-page)_40%,transparent)]" />
 
           <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
             <div className="flex flex-wrap gap-2">
-              <span className={kicker}>{t(`levels.${program.level}` as keyof typeof t)}</span>
+              <span className={levelConfig.kicker}>{t(`levels.${program.level}` as keyof typeof t)}</span>
               {isLocked && <span className={premiumKicker}>Premium</span>}
             </div>
 

@@ -8,7 +8,7 @@ import {
 } from "./embed-mode";
 import { embedBootScript } from "./embed-boot-script";
 
-import { FRAME_ANCESTORS_CSP } from "@/shared/lib/frame-ancestors";
+import { applyFrameAncestorsHeader } from "@/shared/lib/frame-ancestors";
 import { peptideOsOrigin, resolvePeptideOsLoginUrl, resolvePeptideOsSignupUrl } from "@/features/auth/lib/peptideos-signup-url";
 
 export function isEmbedDocumentRequest(search: string, cookie: string | null | undefined): boolean {
@@ -63,6 +63,6 @@ export function embedSignedOutDocumentResponse(explicitUrl?: string, appUrl?: st
   const headers = new Headers();
   headers.set("Content-Type", "text/html; charset=utf-8");
   headers.set("Cache-Control", "private, no-store");
-  headers.set("Content-Security-Policy", FRAME_ANCESTORS_CSP);
+  applyFrameAncestorsHeader(headers);
   return new NextResponse(html, { status: 200, headers });
 }

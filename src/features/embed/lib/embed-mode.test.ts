@@ -457,16 +457,17 @@ test("a top-level tab clears a leaked embed flag and does not post logout", () =
 });
 
 test("framed logout posts wc:signed-out to an allowlisted parent before signOutAction", () => {
-  const calls: Array<{ message: unknown; origin: string }> = [];
+  const calls: Array<{ message: { type: string; reason: string }; origin: string }> = [];
+  const record = (message: unknown, origin: string) => {
+    if (!message || typeof message !== "object") return;
+    const posted = message as { type: string; reason: string };
+    calls.push({ message: posted, origin });
+  };
   assert.equal(
     postEmbedLogoutToParent({
       embed: true,
       topLevel: false,
-      parent: {
-        postMessage(message, origin) {
-          calls.push({ message, origin });
-        }
-      },
+      parent: { postMessage: record },
       ancestorOrigins: ["https://www.peptideos.us"]
     }),
     true
@@ -476,11 +477,7 @@ test("framed logout posts wc:signed-out to an allowlisted parent before signOutA
     postEmbedLogoutToParent({
       embed: true,
       topLevel: false,
-      parent: {
-        postMessage(message, origin) {
-          calls.push({ message, origin });
-        }
-      },
+      parent: { postMessage: record },
       referrer: "https://evil.example/dashboard",
       ancestorOrigins: ["https://peptideos.us.evil.example"]
     }),

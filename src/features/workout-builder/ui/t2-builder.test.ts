@@ -111,6 +111,12 @@ test("builder contrast pairs meet AA", () => {
   assert.equal(header.split(inactiveTitle).length - 1, 2);
   assert.equal(header.split(caption).length - 1, 2);
   assert.match(header, /text-lg/);
+  const muscles = read("src/features/workout-builder/ui/muscle-selection.tsx");
+  assert.match(
+    muscles,
+    /className="text-lg text-\[var\(--wc-dash-secondary\)\]">\{t\("workout_builder\.selection\.muscle_selection_description"\)\}/
+  );
+  assert.match(read("locales/en.ts"), /muscle_selection_description: "Select the muscle\(s\) you want to train by clicking on them\."/);
   assert.ok(contrast(light.secondary, light.panel) >= 4.5);
   assert.ok(contrast(light.text, light.panel) >= 4.5);
   assert.ok(contrast(light.accent, light.panel) >= 4.5);
@@ -152,6 +158,10 @@ test("builder handlers and conditionals stay byte-identical", () => {
   assert.match(stepper, /workout_builder\.steps\.exercises\.title/);
   assert.match(card, /onClick=\{\(\) => onDelete\(exercise\.id, muscle\)\}/);
   assert.match(listItem, /onDelete\(exercise\.id, muscle\)/);
+  assert.match(listItem, /onClick=\{handleShuffle\}/);
+  assert.match(listItem, /setModalTab\("statistics"\)/);
+  assert.match(listItem, /disabled=\{isShuffling\}/);
+  assert.match(footer, /disabled=\{!canContinue\}\n\s+onClick=\{onNext\}/);
   assert.equal(card.split("h-12 w-12 min-h-12 min-w-12").length - 1, 2);
   assert.match(listItem, /className="p-2 min-h-12 min-w-12 touch-manipulation"/);
   assert.match(listItem, /className="inline-flex min-h-12 min-w-12 items-center justify-center/);

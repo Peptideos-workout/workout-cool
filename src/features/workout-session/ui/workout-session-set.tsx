@@ -7,8 +7,7 @@ import { getWorkoutSetTypeLabels } from "@/features/workout-session/lib/workout-
 import { Button } from "@/components/ui/button";
 
 const sessionField =
-  "min-h-14 rounded border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] " +
-  "px-3 text-lg font-bold text-[var(--wc-dash-text)]";
+  "min-h-14 rounded border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] " + "px-3 text-lg font-bold text-[var(--wc-dash-text)]";
 const plainErrorButton = "border-0 bg-transparent !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent";
 const accentButton =
   "!min-h-12 !bg-[var(--wc-dash-accent)] !text-lg font-bold !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]";
@@ -151,15 +150,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
           />
         );
       case "BODYWEIGHT":
-        return (
-          <input
-            className={`${sessionField} w-full text-center`}
-            disabled={set.completed}
-            placeholder=""
-            readOnly
-            value="✔"
-          />
-        );
+        return <input className={`${sessionField} w-full text-center`} disabled={set.completed} placeholder="" readOnly value="✔" />;
       default:
         return null;
     }
@@ -185,14 +176,13 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
         </div>
         <Button
           aria-label="Supprimer la série"
-          className={`${plainErrorButton} px-3 !min-h-12 !text-lg`}
+          className={`${plainErrorButton} !min-h-12 !min-w-12 px-3`}
           disabled={set.completed}
           onClick={onRemove}
           type="button"
           variant="ghost"
         >
-          <Trash2 className="h-4 w-4" />
-          {t("workout_builder.exercise.remove")}
+          <Trash2 className="h-5 w-5" />
         </Button>
       </div>
 
@@ -224,7 +214,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
                     size="small"
                     variant="ghost"
                   >
-                    <Minus className="h-3 w-3" />
+                    <Minus className="h-5 w-5" />
                   </Button>
                 )}
               </div>
@@ -252,21 +242,12 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
 
       {/* Finish & Edit buttons, full width on mobile */}
       <div className="flex gap-2 w-full md:w-auto mt-2">
-        <Button
-          className={`${accentButton} flex-1 px-4`}
-          disabled={set.completed}
-          onClick={onFinish}
-          variant="default"
-        >
+        <Button className={`${accentButton} flex-1 px-4`} disabled={set.completed} onClick={onFinish} variant="default">
           <span aria-hidden="true">✓</span>
           {t("workout_builder.session.finish_set")}
         </Button>
         {set.completed && (
-          <Button
-            className={`${secondaryButton} flex-1 px-4`}
-            onClick={handleEdit}
-            variant="outline"
-          >
+          <Button className={`${secondaryButton} flex-1 px-4`} onClick={handleEdit} variant="outline">
             {t("commons.edit")}
           </Button>
         )}

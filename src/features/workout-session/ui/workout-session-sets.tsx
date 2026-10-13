@@ -108,7 +108,7 @@ export function WorkoutSessionSets({
   const renderStepIcon = (idx: number, allSetsCompleted: boolean) => {
     if (allSetsCompleted) {
       return (
-        <span aria-label="Exercice terminé" className="text-lg font-semibold text-[var(--wc-dash-ink)]">
+        <span aria-label="Exercice terminé" className="text-lg font-semibold text-[var(--wc-dash-ink)]" role="img">
           ✓
         </span>
       );
@@ -164,7 +164,7 @@ export function WorkoutSessionSets({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto pb-8 px-3 sm:px-6">
+    <div className="mx-auto w-full max-w-3xl px-3 pb-80 sm:px-6 sm:pb-56">
       <div className="mb-6">
         <PremiumUpsellAlert />
       </div>
@@ -214,11 +214,7 @@ export function WorkoutSessionSets({
                         width={48}
                       />
                     </div>
-                    <Button
-                      className={`${secondaryButton} w-full`}
-                      type="button"
-                      variant="ghost"
-                    >
+                    <Button className={`${secondaryButton} w-full`} type="button" variant="ghost">
                       <Play className="h-5 w-5" />
                       {t("workout_builder.exercise.watch_video")}
                     </Button>
@@ -276,19 +272,11 @@ export function WorkoutSessionSets({
                   </div>
                   {/* Actions bas de page */}
                   <div className="flex flex-col md:flex-row gap-3 w-full mt-2 px-2">
-                    <Button
-                      aria-label="Ajouter une série"
-                      className={`${secondaryButton} flex-1 font-bold`}
-                      onClick={handleAddSet}
-                    >
+                    <Button aria-label="Ajouter une série" className={`${secondaryButton} flex-1 font-bold`} onClick={handleAddSet}>
                       <Plus className="h-5 w-5" />
                       {t("workout_builder.session.add_set")}
                     </Button>
-                    <Button
-                      aria-label="Exercice suivant"
-                      className={`${secondaryButton} flex-1 font-bold`}
-                      onClick={handleNextExercise}
-                    >
+                    <Button aria-label="Exercice suivant" className={`${secondaryButton} flex-1 font-bold`} onClick={handleNextExercise}>
                       <ArrowRight className="h-5 w-5" />
                       {t("workout_builder.session.next_exercise")}
                     </Button>

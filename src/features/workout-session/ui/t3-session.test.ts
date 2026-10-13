@@ -96,7 +96,10 @@ test("session screens use dash tokens and no raw hex", () => {
 test("finished steps and finish actions are teal with a check", () => {
   const sets = read(SETS);
   const row = read(SET);
-  assert.match(sets, /aria-label="Exercice terminé" className="text-lg font-semibold text-\[var\(--wc-dash-ink\)\]">\s*✓\s*<\/span>/);
+  assert.match(
+    sets,
+    /aria-label="Exercice terminé" className="text-lg font-semibold text-\[var\(--wc-dash-ink\)\]" role="img">\s*✓\s*<\/span>/,
+  );
   assert.match(sets, /border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]/);
   assert.equal(sets.split("border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]").length - 1, 2);
   assert.match(sets, /<span aria-hidden="true">✓<\/span>\n\s+\{t\("workout_builder\.session\.finish_session"\)\}/);
@@ -120,8 +123,11 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   const dialogQuit =
     'className="w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"';
   assert.match(quit, new RegExp(dialogQuit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(row, /aria-label="Supprimer la série"[\s\S]*className=\{`\$\{plainErrorButton\} !min-h-12 !min-w-12 px-3`\}/);
+  assert.match(row, /<Trash2 className="h-5 w-5" \/>/);
   assert.match(row, /!text-\[var\(--wc-dash-error\)\] shadow-none hover:bg-transparent/);
-  assert.match(row, /\{t\("workout_builder\.exercise\.remove"\)\}/);
+  assert.doesNotMatch(row, /\{t\("workout_builder\.exercise\.remove"\)\}/);
+  assert.match(row, /<Minus className="h-5 w-5" \/>/);
   assert.match(header, /min-h-12 min-w-12 rounded px-3 text-lg/);
   assert.match(row, /min-h-14 rounded border border-\[var\(--wc-dash-border\)\] bg-\[var\(--wc-dash-inner\)\]/);
   assert.match(row, /text-lg font-bold text-\[var\(--wc-dash-text\)\]/);
@@ -138,6 +144,7 @@ test("session contrast pairs meet AA", () => {
     ["text", "inner"],
     ["secondary", "panel"],
     ["secondary", "card"],
+    ["secondary", "inner"],
     ["accent", "card"],
     ["link", "card"],
   ] as const;
@@ -177,6 +184,9 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
   assert.match(quit, /t\("workout_builder\.session\.quit_without_save"\)/);
   assert.match(quit, /t\("workout_builder\.session\.continue_workout"\)/);
 
+  assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
+  assert.match(header, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
+  assert.match(quit, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
   assert.match(timer, /isTimerRunning \? <Pause className="h-5 w-5" \/> : <Play className="h-5 w-5" \/>/);

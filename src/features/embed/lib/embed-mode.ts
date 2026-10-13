@@ -3,7 +3,7 @@ import { stripLocalePrefix } from "@/features/auth/lib/locale-path";
 /** sessionStorage key. Tab-scoped, so a normal tab never inherits embed mode. */
 export const EMBED_SESSION_KEY = "wc-embed";
 
-/** Same name as the session flag, so the proxy can see an embed navigation. */
+/** Client-side copy of the embed flag. The proxy never treats this cookie as framed. */
 export const EMBED_COOKIE_NAME = EMBED_SESSION_KEY;
 
 export const EMBED_HTML_ATTR = "data-wc-embed";

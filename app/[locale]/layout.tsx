@@ -14,6 +14,8 @@ import { getLocalizedMetadata } from "@/shared/config/localized-metadata";
 import { WorkoutSessionsSynchronizer } from "@/features/workout-session/ui/workout-sessions-synchronizer";
 import { FavoriteExercisesSynchronizer } from "@/features/workout-builder/model/favorite-exercises-synchronizer";
 import { ThemeSynchronizer } from "@/features/theme/ui/ThemeSynchronizer";
+import { embedBootScript } from "@/features/embed/lib/embed-boot-script";
+import { getConfiguredPeptideOsOrigin } from "@/features/auth/lib/configured-peptideos-signup";
 import { env } from "@/env";
 import { Version } from "@/components/version";
 import { TailwindIndicator } from "@/components/utils/TailwindIndicator";
@@ -244,6 +246,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
     <>
       <html className="h-full" dir="ltr" lang={locale} suppressHydrationWarning>
         <head>
+          <script dangerouslySetInnerHTML={{ __html: embedBootScript(getConfiguredPeptideOsOrigin()) }} />
           <meta charSet="UTF-8" />
           <meta content="width=device-width, initial-scale=1, maximum-scale=1 viewport-fit=cover" name="viewport" />
           {/* {env.NEXT_PUBLIC_AD_PROVIDER !== "custom" && ( */}
@@ -363,11 +366,15 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             <AdBlockerForPremium />
             <NextTopLoader color="#FF5722" delay={100} showSpinner={false} />
 
-            <div className="flex items-center justify-center min-h-screen w-full max-sm:min-h-full">
-              <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center">
-                <VerticalLeftBanner />
+            <div className="flex items-center justify-center min-h-screen w-full max-sm:min-h-full" data-wc-frame="">
+              <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center" data-wc-frame="">
+                <div className="contents" data-wc-chrome="banner">
+                  <VerticalLeftBanner />
+                </div>
                 <div className="min-w-0 sm:min-w-auto w-full sm:w-auto">{children}</div>
-                <VerticalRightBanner />
+                <div className="contents" data-wc-chrome="banner">
+                  <VerticalRightBanner />
+                </div>
               </div>
             </div>
             <Version />

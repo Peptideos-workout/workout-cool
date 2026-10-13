@@ -102,6 +102,7 @@ export function SessionAccessGuard({
           <div className="space-y-3">
             <Button
               className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+              data-wc-entry="premium"
               onClick={() => {
                 // Redirect to premium page with the current session as return URL
                 const returnUrl = sessionSlug

@@ -228,6 +228,7 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
       <div className="flex items-center gap-4">
         <motion.button
           className="group relative overflow-hidden bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300"
+          data-wc-entry="premium"
           onClick={onUpgrade}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

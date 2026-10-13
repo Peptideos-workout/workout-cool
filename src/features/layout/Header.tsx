@@ -43,7 +43,7 @@ export const Header = () => {
 
   return (
     <>
-      <div className="navbar bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg">
+      <div className="navbar bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg" data-wc-chrome="header">
         {/* Logo and Title */}
         <div className="navbar-start flex items-center gap-2">
           <Link
@@ -114,6 +114,7 @@ export const Header = () => {
                 <li>
                   <Link
                     className="!no-underline"
+                    data-wc-entry="premium"
                     href={isPremium ? "/api/premium/billing-portal" : "/premium"}
                     size="base"
                     variant="nav"

@@ -341,9 +341,49 @@ test("a wrong or missing Origin is 403, redacted, and does not consume the token
     assert.doesNotMatch(page, /plaintext-handoff-from-form-body/);
     assert.doesNotMatch(page, /forbidden_origin/);
     assert.doesNotMatch(`${page}\n${lines.join("\n")}`, /plaintext-handoff-from-form-body/);
+    assert.doesNotMatch(page, /← Back to dashboard/);
+    assert.doesNotMatch(page, /target="_top"/);
   } finally {
     console.error = original;
   }
+});
+
+test("embed forbidden_origin and SSO errors show top-level Log in and Sign up", async () => {
+  const { deps } = fakeWorld();
+  const forbidden = await runPeptideOsSsoPost(
+    postRequest({
+      token: rawToken,
+      origin: "https://evil.example",
+      accept: "text/html",
+      rawBody: `token=${encodeURIComponent(rawToken)}&embed=1`
+    }),
+    deps,
+    POS
+  );
+  const forbiddenPage = await forbidden.text();
+  assert.equal(forbidden.status, 403);
+  assert.match(forbiddenPage, />Log in</);
+  assert.match(forbiddenPage, />Sign up</);
+  assert.match(forbiddenPage, /← Back to dashboard/);
+  assert.match(forbiddenPage, /target="_top"/);
+  assert.doesNotMatch(forbiddenPage, /plaintext-handoff-from-form-body/);
+  assert.doesNotMatch(forbiddenPage, /forbidden_origin/);
+
+  const { deps: missingDeps } = fakeWorld();
+  const missing = await runPeptideOsSsoPost(
+    postRequest({
+      token: "",
+      accept: "text/html",
+      referer: `${POS}/api/workouts/sso?embed=1`
+    }),
+    missingDeps,
+    POS
+  );
+  const missingPage = await missing.text();
+  assert.equal(missing.status, 400);
+  assert.match(missingPage, />Log in</);
+  assert.match(missingPage, /target="_top"/);
+  assert.match(missingPage, /← Back to dashboard/);
 });
 
 test("POST replay of a consumed handoff fails and stays consumed", async () => {

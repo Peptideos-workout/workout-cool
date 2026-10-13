@@ -94,6 +94,7 @@ export function RewardedAdGate({ onRewardGranted, children }: RewardedAdGateProp
             {/* Premium upsell */}
             <Link
               className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold transition-all shadow-lg shadow-amber-500/20"
+              data-wc-entry="premium"
               href="/premium"
               onClick={() => setOpen(false)}
             >

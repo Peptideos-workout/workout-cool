@@ -87,7 +87,10 @@ export function BottomNavigation() {
     : tabsRaw;
 
   return (
-    <nav className="relative bg-white/90 dark:bg-[#232324]/90 backdrop-blur-xl border-t border-[#4F8EF7]/15 dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40">
+    <nav
+      className="relative bg-white/90 dark:bg-[#232324]/90 backdrop-blur-xl border-t border-[#4F8EF7]/15 dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40"
+      data-wc-chrome="nav"
+    >
       {/* Subtle background gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#4F8EF7]/3 via-transparent to-[#25CB78]/3 pointer-events-none" />
 
@@ -111,6 +114,7 @@ export function BottomNavigation() {
                         ? "hover:bg-[#FFD93D]/5 dark:hover:bg-[#FFD93D]/10"
                         : "hover:bg-gray-50/80 dark:hover:bg-slate-800/50",
                 )}
+                data-wc-entry={tab.id === "leaderboard" || tab.id === "premium" ? tab.id : undefined}
                 href={tab.href}
                 key={tab.id}
               >

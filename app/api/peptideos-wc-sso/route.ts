@@ -14,7 +14,7 @@ import { UserRole } from "@prisma/client";
 import { configuredWorkoutOrigin } from "./workout-origin";
 import { newUnusedSsoPassword } from "./unused-sso-password";
 import { createTrustedBetterAuthSession } from "./trusted-session";
-import { runPeptideOsSso, runPeptideOsSsoPost } from "./run-sso";
+import { ssoMethodNotAllowed, ssoHeadNotAllowed, runPeptideOsSsoPost } from "./run-sso";
 import { PEPTIDEOS_PROVIDER } from "./resolve-sso-account";
 import { createPeptideosAccountLink } from "./create-peptideos-account";
 import { lookupUnconsumedHandoffByHash } from "./consume-handoff";
@@ -115,10 +115,29 @@ function ssoDeps(): PeptideOsSsoDeps {
   };
 }
 
-// TODO: remove GET ?token= once PeptideOS POSTs the handoff
-// (application/x-www-form-urlencoded token and optional redirect).
-export async function GET(request: NextRequest) {
-  return runPeptideOsSso(request, ssoDeps());
+/** Legacy `GET ?token=` does not sign anyone in and does not read the query string. */
+export function GET() {
+  return ssoMethodNotAllowed();
+}
+
+export function HEAD() {
+  return ssoHeadNotAllowed();
+}
+
+export function PUT() {
+  return ssoMethodNotAllowed();
+}
+
+export function PATCH() {
+  return ssoMethodNotAllowed();
+}
+
+export function DELETE() {
+  return ssoMethodNotAllowed();
+}
+
+export function OPTIONS() {
+  return ssoMethodNotAllowed();
 }
 
 /**

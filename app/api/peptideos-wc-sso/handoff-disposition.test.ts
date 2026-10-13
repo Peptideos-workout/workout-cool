@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { NextRequest } from "next/server";
 
-import { runPeptideOsSso } from "./run-sso";
+import { runPeptideOsSsoPost } from "./run-sso";
 import { hashHandoffToken } from "./hash-handoff-token";
 import { handoffDisposition } from "./handoff-disposition";
 
@@ -16,9 +16,17 @@ const email = "athlete@example.test";
 const claimedAt = new Date("2026-10-11T18:00:00.000Z");
 
 function ssoRequest(token = rawToken) {
-  const url = new URL("https://workouts.example.test/api/peptideos-wc-sso");
-  url.searchParams.set("token", token);
-  return new NextRequest(url);
+  const params = new URLSearchParams();
+  params.set("token", token);
+  return new NextRequest("https://workouts.example.test/api/peptideos-wc-sso", {
+    method: "POST",
+    headers: {
+      origin: "https://example.test",
+      "content-type": "application/x-www-form-urlencoded",
+      accept: "application/json"
+    },
+    body: params.toString()
+  });
 }
 
 test("409 collisions burn the handoff token", async () => {
@@ -45,7 +53,7 @@ test("409 collisions burn the handoff token", async () => {
       workoutOrigin: "https://workouts.example.test"
     };
 
-    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const response = await runPeptideOsSsoPost(ssoRequest(), deps, "https://example.test");
     const body = await response.json();
 
     assert.equal(response.status, 409);
@@ -53,7 +61,7 @@ test("409 collisions burn the handoff token", async () => {
     assert.equal(handoffDisposition(), "keep");
     assert.ok(handoff.consumed_at);
 
-    const retry = await runPeptideOsSso(ssoRequest(), deps);
+    const retry = await runPeptideOsSsoPost(ssoRequest(), deps, "https://example.test");
     assert.equal(retry.status, 400);
     assert.deepEqual(await retry.json(), { error: "invalid_or_expired_handoff" });
     assert.ok(handoff.consumed_at);

@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { betterAuth } from "better-auth";
 
-import { SSO_POST_MAX_BYTES, isExactPeptideOsSsoOrigin, runPeptideOsSso, runPeptideOsSsoPost } from "./run-sso";
+import { SSO_POST_MAX_BYTES, isExactPeptideOsSsoOrigin, runPeptideOsSsoPost, ssoHeadNotAllowed, ssoMethodNotAllowed } from "./run-sso";
 import { hashHandoffToken } from "./hash-handoff-token";
 import { attachTrustedSession } from "./attach-trusted-session";
 
@@ -507,16 +507,133 @@ test("POST email collision is 409 and the handoff stays consumed", async () => {
   }
 });
 
-test("GET ?token= still signs in and is not stored or referred", async () => {
-  const { deps, handoff } = fakeWorld();
+function guardedRejection(
+  invoke: (...args: unknown[]) => Response,
+  request: NextRequest,
+  deps: PeptideOsSsoDeps
+) {
+  let urlReads = 0;
+  let depCalls = 0;
+  const guardedRequest = new Proxy(request, {
+    get(target, prop, receiver) {
+      if (prop === "nextUrl" || prop === "url") urlReads += 1;
+      return Reflect.get(target, prop, receiver);
+    }
+  });
+  const guardedDeps = new Proxy(deps, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === "function") {
+        return (...args: unknown[]) => {
+          depCalls += 1;
+          return (value as (...fnArgs: unknown[]) => unknown).apply(target, args);
+        };
+      }
+      return value;
+    }
+  });
+  const lines: string[] = [];
+  const write = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  const original = {
+    error: console.error,
+    info: console.info,
+    log: console.log,
+    warn: console.warn,
+    debug: console.debug
+  };
+  console.error = write;
+  console.info = write;
+  console.log = write;
+  console.warn = write;
+  console.debug = write;
+  try {
+    const response = invoke(guardedRequest, guardedDeps);
+    return { response, urlReads, depCalls, logs: lines.join("\n") };
+  } finally {
+    console.error = original.error;
+    console.info = original.info;
+    console.log = original.log;
+    console.warn = original.warn;
+    console.debug = original.debug;
+  }
+}
+
+test("GET ?token= returns 405 and does not read, log, or consume the token", async () => {
+  const legacyToken = "legacy-get-handoff-token";
+  const world = fakeWorld();
   const url = new URL(`${WC}/api/peptideos-wc-sso`);
-  url.searchParams.set("token", rawToken);
-  const response = await runPeptideOsSso(new NextRequest(url), deps);
-  assert.equal(response.status, 307);
-  assert.equal(response.headers.get("location"), `${WC}/`);
-  assert.match(response.headers.get("set-cookie") ?? "", /better-auth\.session_token=/);
+  url.searchParams.set("token", legacyToken);
+  const { response, urlReads, depCalls, logs } = guardedRejection(ssoMethodNotAllowed, new NextRequest(url), world.deps);
+
+  assert.equal(response.status, 405);
+  assert.equal(response.headers.get("allow"), "POST");
+  assert.deepEqual(await response.json(), { error: "method_not_allowed" });
   assertSsoResponseHeaders(response);
-  assert.ok(handoff.consumed_at);
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.equal(response.headers.get("location"), null);
+  assert.equal(urlReads, 0);
+  assert.equal(depCalls, 0);
+  assert.equal(world.claimCount(), 0);
+  assert.equal(world.handoff.consumed_at, null);
+  assert.doesNotMatch(logs, /legacy-get-handoff-token/);
+});
+
+test("GET without a token is the same 405 and does not consume", async () => {
+  const world = fakeWorld();
+  const request = new NextRequest(`${WC}/api/peptideos-wc-sso`);
+  const { response, urlReads, depCalls } = guardedRejection(ssoMethodNotAllowed, request, world.deps);
+
+  assert.equal(response.status, 405);
+  assert.equal(response.headers.get("allow"), "POST");
+  assert.deepEqual(await response.json(), { error: "method_not_allowed" });
+  assertSsoResponseHeaders(response);
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.equal(urlReads, 0);
+  assert.equal(depCalls, 0);
+  assert.equal(world.claimCount(), 0);
+  assert.equal(world.handoff.consumed_at, null);
+});
+
+test("HEAD and other methods are 405 with Allow POST and do not consume", async () => {
+  const legacyToken = "legacy-get-handoff-token";
+  const world = fakeWorld();
+  const url = new URL(`${WC}/api/peptideos-wc-sso`);
+  url.searchParams.set("token", legacyToken);
+
+  const head = guardedRejection(
+    ssoHeadNotAllowed,
+    new NextRequest(url, { method: "HEAD" }),
+    world.deps
+  );
+  assert.equal(head.response.status, 405);
+  assert.equal(head.response.headers.get("allow"), "POST");
+  assert.equal(await head.response.text(), "");
+  assertSsoResponseHeaders(head.response);
+  assert.equal(head.response.headers.get("set-cookie"), null);
+  assert.equal(head.urlReads, 0);
+  assert.equal(head.depCalls, 0);
+  assert.doesNotMatch(head.logs, /legacy-get-handoff-token/);
+
+  for (const method of ["PUT", "PATCH", "DELETE", "OPTIONS"] as const) {
+    const rejected = guardedRejection(
+      ssoMethodNotAllowed,
+      new NextRequest(url, { method }),
+      world.deps
+    );
+    assert.equal(rejected.response.status, 405, method);
+    assert.equal(rejected.response.headers.get("allow"), "POST", method);
+    assert.deepEqual(await rejected.response.json(), { error: "method_not_allowed" }, method);
+    assertSsoResponseHeaders(rejected.response);
+    assert.equal(rejected.response.headers.get("set-cookie"), null, method);
+    assert.equal(rejected.urlReads, 0, method);
+    assert.equal(rejected.depCalls, 0, method);
+    assert.doesNotMatch(rejected.logs, /legacy-get-handoff-token/);
+  }
+
+  assert.equal(world.claimCount(), 0);
+  assert.equal(world.handoff.consumed_at, null);
 });
 
 test("handoff consume still requires a single unused row inside the 120-second expiry", () => {
@@ -526,13 +643,21 @@ test("handoff consume still requires a single unused row inside the 120-second e
   assert.match(src, /120-second/);
 });
 
-test("GET stays for the rollout window and POST is Origin-checked outside Better Auth", () => {
+test("GET is 405 and POST is Origin-checked outside Better Auth", () => {
   const route = readFileSync("app/api/peptideos-wc-sso/route.ts", "utf8");
+  const runner = readFileSync("app/api/peptideos-wc-sso/run-sso.ts", "utf8");
   const proxy = readFileSync("proxy.ts", "utf8");
   const auth = readFileSync("src/features/auth/lib/better-auth.ts", "utf8");
 
-  assert.match(route, /TODO: remove GET \?token=/);
-  assert.match(route, /export async function GET/);
+  for (const method of ["GET", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
+    assert.match(route, new RegExp(`export function ${method}\\(\\) \\{\\s*return ssoMethodNotAllowed\\(\\);\\s*\\}`));
+  }
+  assert.match(route, /export function HEAD\(\) \{\s*return ssoHeadNotAllowed\(\);\s*\}/);
+  assert.doesNotMatch(route, /export function GET\(\) \{[^}]*ssoDeps/);
+  assert.doesNotMatch(route, /export function GET\(\) \{[^}]*searchParams/);
+  assert.doesNotMatch(route, /runPeptideOsSso[^P\w]/);
+  assert.doesNotMatch(runner, /searchParams\.get\(\s*["']token["']\)/);
+  assert.doesNotMatch(runner, /function runPeptideOsSso\b/);
   assert.match(route, /export async function POST/);
   assert.match(route, /runPeptideOsSsoPost/);
   assert.match(route, /peptideOsOrigin\(env\.NEXT_PUBLIC_PEPTIDEOS_URL, env\.NEXT_PUBLIC_APP_URL\)/);

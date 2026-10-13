@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { NextRequest } from "next/server";
 
-import { runPeptideOsSso } from "./run-sso";
+import { runPeptideOsSsoPost } from "./run-sso";
 import { hashHandoffToken } from "./hash-handoff-token";
 import { attachTrustedSession } from "./attach-trusted-session";
 
@@ -15,6 +15,7 @@ const rawToken = "plaintext-handoff-from-query-string";
 const peptideosUserId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const email = "athlete@example.test";
 const claimedAt = new Date("2026-10-11T18:00:00.000Z");
+const POS = "https://example.test";
 
 interface FakeHandoff {
   user_id: string;
@@ -22,16 +23,23 @@ interface FakeHandoff {
 }
 
 function ssoRequest(token = rawToken, extras?: { redirect?: string; accept?: string }) {
-  const url = new URL("https://workouts.example.test/api/peptideos-wc-sso");
-  url.searchParams.set("token", token);
-  if (extras?.redirect) {
-    url.searchParams.set("redirect", extras.redirect);
-  }
-  const headers: Record<string, string> = {};
-  if (extras?.accept) {
-    headers.Accept = extras.accept;
-  }
-  return new NextRequest(url, { headers });
+  const params = new URLSearchParams();
+  params.set("token", token);
+  if (extras?.redirect !== undefined) params.set("redirect", extras.redirect);
+  const headers = new Headers({
+    origin: POS,
+    "content-type": "application/x-www-form-urlencoded"
+  });
+  if (extras?.accept) headers.set("accept", extras.accept);
+  return new NextRequest("https://workouts.example.test/api/peptideos-wc-sso", {
+    method: "POST",
+    headers,
+    body: params.toString()
+  });
+}
+
+function runSso(request: NextRequest, deps: PeptideOsSsoDeps) {
+  return runPeptideOsSsoPost(request, deps, POS);
 }
 
 function fakeWorld(overrides: {
@@ -112,9 +120,9 @@ function fakeWorld(overrides: {
 test("new PeptideOS user: consume, create user, session, and signed cookie; token stays consumed", async () => {
   const { deps, handoff, accounts } = fakeWorld();
 
-  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const response = await runSso(ssoRequest(), deps);
 
-  assert.equal(response.status, 307);
+  assert.equal(response.status, 303);
   assert.equal(response.headers.get("location"), "https://workouts.example.test/");
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   assert.equal(response.headers.get("referrer-policy"), "no-referrer");
@@ -132,7 +140,7 @@ test("peptideos account unique violation after create-user is a 409, not a 500",
       throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "P2002" });
     };
 
-    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const response = await runSso(ssoRequest(), deps);
     const body = await response.json();
 
     assert.equal(response.status, 409);
@@ -146,23 +154,23 @@ test("peptideos account unique violation after create-user is a 409, not a 500",
 test("finalizeSession honours a same-origin WC redirect from PeptideOS", async () => {
   const { deps } = fakeWorld();
   const dest = "https://workouts.example.test/en/profile?tab=history";
-  const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect: dest }), deps);
-  assert.equal(response.status, 307);
+  const response = await runSso(ssoRequest(rawToken, { redirect: dest }), deps);
+  assert.equal(response.status, 303);
   assert.equal(response.headers.get("location"), dest);
 });
 
 test("finalizeSession rejects an untrusted redirect and fails closed to the WC origin home", async () => {
   const { deps } = fakeWorld();
-  const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect: "https://evil.example/phish" }), deps);
-  assert.equal(response.status, 307);
+  const response = await runSso(ssoRequest(rawToken, { redirect: "https://evil.example/phish" }), deps);
+  assert.equal(response.status, 303);
   assert.equal(response.headers.get("location"), "https://workouts.example.test/");
 });
 
 test("finalizeSession denies leftover WC auth pages and falls back to home", async () => {
   for (const redirect of ["/auth/signout", "/en/auth/signin", "https://workouts.example.test/zh-CN/auth/signup"]) {
     const { deps } = fakeWorld();
-    const response = await runPeptideOsSso(ssoRequest(rawToken, { redirect }), deps);
-    assert.equal(response.status, 307, redirect);
+    const response = await runSso(ssoRequest(rawToken, { redirect }), deps);
+    assert.equal(response.status, 303, redirect);
     assert.equal(response.headers.get("location"), "https://workouts.example.test/", redirect);
   }
 });
@@ -172,9 +180,9 @@ test("linked PeptideOS user: consume, skip signup, session, and signed cookie", 
     snapshot: { existingUser: { id: "wc-user" }, peptideosAccountId: peptideosUserId }
   });
 
-  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const response = await runSso(ssoRequest(), deps);
 
-  assert.equal(response.status, 307);
+  assert.equal(response.status, 303);
   assert.match(response.headers.get("set-cookie") ?? "", /better-auth\.session_token=/);
   assert.deepEqual(accounts, []);
 });
@@ -195,7 +203,7 @@ test("email collision returns a generic 409 and burns the handoff", async () => 
     });
     deps.findUserByEmail = async () => null;
 
-    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const response = await runSso(ssoRequest(), deps);
     const body = await response.json();
 
     assert.equal(response.status, 409);
@@ -222,7 +230,7 @@ test("browser SSO collisions render an HTML error page with a PeptideOS try-agai
     });
     deps.findUserByEmail = async () => null;
 
-    const response = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html,application/xhtml+xml" }), deps);
+    const response = await runSso(ssoRequest(rawToken, { accept: "text/html,application/xhtml+xml" }), deps);
     const html = await response.text();
 
     assert.equal(response.status, 409);
@@ -251,7 +259,7 @@ test("browser SSO error Try again preserves a sanitized redirect", async () => {
     deps.findUserByEmail = async () => null;
 
     const dest = "https://workouts.example.test/en/programs/strength";
-    const response = await runPeptideOsSso(
+    const response = await runSso(
       ssoRequest(rawToken, { accept: "text/html,application/xhtml+xml", redirect: dest }),
       deps
     );
@@ -280,7 +288,7 @@ test("browser SSO error Try again drops leftover WC auth redirects", async () =>
     });
     deps.findUserByEmail = async () => null;
 
-    const response = await runPeptideOsSso(
+    const response = await runSso(
       ssoRequest(rawToken, { accept: "text/html", redirect: "/auth/signout" }),
       deps
     );
@@ -317,7 +325,7 @@ test("cookie failure after createSession cleans up the session and does not rele
       })
   });
 
-  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const response = await runSso(ssoRequest(), deps);
   const body = await response.json();
 
   assert.equal(response.status, 500);
@@ -349,7 +357,7 @@ test("deleteSession throw after a session write keeps the handoff consumed", asy
       })
   });
 
-  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const response = await runSso(ssoRequest(), deps);
   const body = await response.json();
 
   assert.equal(response.status, 500);
@@ -372,7 +380,7 @@ test("auth.users lookup logs stay allowlisted and never dump the raw stack", asy
       }
     });
 
-    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const response = await runSso(ssoRequest(), deps);
     assert.equal(response.status, 500);
     assert.deepEqual(await response.json(), { error: "auth_users_lookup_failed" });
     const joined = lines.join("\n");
@@ -399,7 +407,7 @@ test("createSession throw after persist does not release the handoff", async () 
       })
   });
 
-  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const response = await runSso(ssoRequest(), deps);
   const body = await response.json();
 
   assert.equal(response.status, 500);
@@ -414,7 +422,7 @@ test("a failed sign-in keeps the handoff consumed; Try again starts a new Peptid
     }
   });
 
-  const failed = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
+  const failed = await runSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
   const html = await failed.text();
 
   assert.equal(failed.status, 500);
@@ -424,7 +432,7 @@ test("a failed sign-in keeps the handoff consumed; Try again starts a new Peptid
   assert.doesNotMatch(html, /plaintext-handoff-from-query-string/);
   assert.doesNotMatch(html, /token=/);
 
-  const retry = await runPeptideOsSso(ssoRequest(), deps);
+  const retry = await runSso(ssoRequest(), deps);
   const retryBody = await retry.json();
   assert.equal(retry.status, 400);
   assert.deepEqual(retryBody, { error: "invalid_or_expired_handoff" });
@@ -440,8 +448,8 @@ test("a failed sign-in keeps the handoff consumed; Try again starts a new Peptid
   };
   deps.lookupAuthUser = async (hid) => (hid === peptideosUserId ? { email, meta: { full_name: "Ada Athlete" } } : null);
 
-  const again = await runPeptideOsSso(ssoRequest(freshToken), deps);
-  assert.equal(again.status, 307);
+  const again = await runSso(ssoRequest(freshToken), deps);
+  assert.equal(again.status, 303);
   assert.equal(again.headers.get("location"), "https://workouts.example.test/");
   assert.ok(freshHandoff.consumed_at);
   assert.ok(handoff.consumed_at);
@@ -453,14 +461,14 @@ test("signup failure before a user write keeps the handoff consumed", async () =
   });
   deps.findUserByEmail = async () => null;
 
-  const response = await runPeptideOsSso(ssoRequest(), deps);
+  const response = await runSso(ssoRequest(), deps);
   const body = await response.json();
 
   assert.equal(response.status, 500);
   assert.deepEqual(body, { error: "sso_signup_failed" });
   assert.ok(handoff.consumed_at);
 
-  const retry = await runPeptideOsSso(ssoRequest(), deps);
+  const retry = await runSso(ssoRequest(), deps);
   assert.equal(retry.status, 400);
   assert.deepEqual(await retry.json(), { error: "invalid_or_expired_handoff" });
 });
@@ -490,7 +498,7 @@ test("handoff consume Prisma errors log and return neither the handoff token nor
       });
     };
 
-    const response = await runPeptideOsSso(ssoRequest(), deps);
+    const response = await runSso(ssoRequest(), deps);
     const body = await response.json();
     const logged = lines.join("\n");
     const serialized = `${logged}\n${JSON.stringify(body)}`;
@@ -508,7 +516,7 @@ test("handoff consume Prisma errors log and return neither the handoff token nor
     assert.doesNotMatch(serialized, /workout_cool_handoffs/);
     assert.doesNotMatch(serialized, /dev_detail/);
 
-    const htmlResponse = await runPeptideOsSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
+    const htmlResponse = await runSso(ssoRequest(rawToken, { accept: "text/html" }), deps);
     const html = await htmlResponse.text();
     assert.equal(htmlResponse.status, 500);
     assert.doesNotMatch(html, /plaintext-handoff-from-query-string/);

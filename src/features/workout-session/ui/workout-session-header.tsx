@@ -75,9 +75,9 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
             </span>
 
             <Button
-              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500 px-2 py-1 text-xs dark:border-red-700/40 dark:text-red-300 dark:hover:bg-red-700/10"
+              className="border-0 bg-transparent px-3 !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
               onClick={handleQuitClick}
-              variant="outline"
+              variant="ghost"
             >
               <X className="h-3 w-3 mr-1" />
               {t("workout_builder.session.quit_workout")}

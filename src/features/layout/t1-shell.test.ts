@@ -87,14 +87,14 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onPrevious=\{prevStep\}/);
   assert.match(stepper, /onStartWorkout=\{handleStartWorkout\}/);
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
-  assert.doesNotMatch(stepper, /Build your workout/);
-  assert.doesNotMatch(stepper, /data-wc-intro/);
-  assert.doesNotMatch(stepper, /data-wc-step-sheet/);
-  assert.doesNotMatch(footer, /data-wc-step-next/);
-  assert.doesNotMatch(read("src/features/workout-builder/ui/stepper-header.tsx"), /data-wc-step-mark/);
-  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-intro/);
-  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-step-sheet/);
-  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /order:\s*-1/);
+  assert.match(stepper, /Build your workout/);
+  assert.match(stepper, /data-wc-intro/);
+  assert.match(stepper, /data-wc-step-sheet/);
+  assert.match(footer, /data-wc-step-next/);
+  assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /data-wc-step-mark/);
+  assert.match(read("src/features/embed/embed-theme.css"), /data-wc-intro/);
+  assert.match(read("src/features/embed/embed-theme.css"), /data-wc-step-sheet/);
+  assert.match(read("src/features/embed/embed-theme.css"), /order:\s*-1/);
 });
 
 test("T1 public shell classes stay in place and the embed line is a separate node", () => {

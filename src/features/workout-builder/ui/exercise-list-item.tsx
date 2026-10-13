@@ -189,7 +189,10 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
             <BarChart3 className="h-4 w-4" />
           </button>
 
-          <button className="p-1 sm:p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" onClick={handleDelete}>
+          <button
+            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1 text-lg text-[var(--wc-dash-error)]"
+            onClick={handleDelete}
+          >
             <Trash2 className="h-4 w-4" />
           </button>
 

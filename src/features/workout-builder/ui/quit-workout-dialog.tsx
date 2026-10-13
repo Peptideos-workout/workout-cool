@@ -56,10 +56,10 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
         <div className="space-y-3">
           {/* Quit without saving */}
           <Button
-            className="w-full bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 hover:border-red-300 dark:hover:border-red-500"
+            className="w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
             onClick={onQuitWithoutSave}
             size="large"
-            variant="default"
+            variant="ghost"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             {t("workout_builder.session.quit_without_save")}

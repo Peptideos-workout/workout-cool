@@ -89,7 +89,10 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
                     <Shuffle className="h-4 w-4 mr-2" />
                     {t("workout_builder.exercise.shuffle")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(exercise.id, muscle)}>
+                  <DropdownMenuItem
+                    className="min-h-12 text-lg text-[var(--wc-dash-error)]"
+                    onClick={() => onDelete(exercise.id, muscle)}
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     {t("workout_builder.exercise.remove")}
                   </DropdownMenuItem>

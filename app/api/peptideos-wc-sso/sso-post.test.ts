@@ -238,7 +238,7 @@ test("an expired handoff fails and is not consumed", async () => {
   assert.equal(claimCount(), 1);
 });
 
-test("POST ignores a query-string token and a non-form body", async () => {
+test("POST ignores a query-string token", async () => {
   const queryOnly = fakeWorld();
   const fromQuery = await runPeptideOsSsoPost(
     postRequest({ queryToken: rawToken, redirect: "/en/profile" }),
@@ -250,17 +250,40 @@ test("POST ignores a query-string token and a non-form body", async () => {
   assert.equal(queryOnly.handoff.consumed_at, null);
   assert.equal(queryOnly.claimCount(), 0);
   assertSsoResponseHeaders(fromQuery);
+});
 
-  const json = fakeWorld();
-  const fromJson = await runPeptideOsSsoPost(
+test("application/json Content-Type returns 415 and does not consume the handoff", async () => {
+  const world = fakeWorld();
+  const response = await runPeptideOsSsoPost(
     postRequest({ token: rawToken, contentType: "application/json" }),
-    json.deps,
+    world.deps,
     POS
   );
-  assert.equal(fromJson.status, 400);
-  assert.deepEqual(await fromJson.json(), { error: "missing_token" });
-  assert.equal(json.handoff.consumed_at, null);
-  assert.equal(json.claimCount(), 0);
+  assert.equal(response.status, 415);
+  assert.deepEqual(await response.json(), { error: "unsupported_media_type" });
+  assert.equal(world.handoff.consumed_at, null);
+  assert.equal(world.claimCount(), 0);
+});
+
+test("a missing Content-Type returns 415 and does not consume the handoff", async () => {
+  const world = fakeWorld();
+  const response = await runPeptideOsSsoPost(postRequest({ token: rawToken, contentType: null }), world.deps, POS);
+  assert.equal(response.status, 415);
+  assert.deepEqual(await response.json(), { error: "unsupported_media_type" });
+  assert.equal(world.handoff.consumed_at, null);
+  assert.equal(world.claimCount(), 0);
+});
+
+test("urlencoded Content-Type with charset and a valid body is accepted", async () => {
+  const world = fakeWorld();
+  const response = await runPeptideOsSsoPost(
+    postRequest({ token: rawToken, contentType: "application/x-www-form-urlencoded; charset=UTF-8" }),
+    world.deps,
+    POS
+  );
+  assert.equal(response.status, 303);
+  assert.equal(await response.text(), "");
+  assert.ok(world.handoff.consumed_at);
 });
 
 function assertRejectedWithoutConsume(

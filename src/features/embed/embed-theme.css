@@ -86,9 +86,7 @@ html[data-wc-embed="1"] [data-wc-shell] {
 html[data-wc-embed="1"] [data-wc-chrome="header"],
 html[data-wc-embed="1"] [data-wc-chrome="footer"],
 html[data-wc-embed="1"] [data-wc-chrome="banner"],
-html[data-wc-embed="1"] [data-wc-chrome="version"],
-html[data-wc-embed="1"] [data-wc-entry="premium"],
-html[data-wc-embed="1"] [data-wc-entry="leaderboard"] {
+html[data-wc-embed="1"] [data-wc-chrome="version"] {
   display: none !important;
 }
 

@@ -82,6 +82,9 @@ const URLENCODED_FORM = "application/x-www-form-urlencoded";
 /** Form POST bodies larger than this are rejected before they are parsed. */
 export const SSO_POST_MAX_BYTES = 4 * 1024;
 
+/** Forbidden-origin embed peek. Larger or non-form bodies stay non-embed and are not read. */
+export const EMBED_REJECT_PEEK_MAX_BYTES = 8 * 1024;
+
 type DeclaredSsoBody = "absent" | "empty" | "oversized" | "within-cap";
 
 /**
@@ -175,15 +178,82 @@ function embedFromRequest(request: NextRequest, embedField?: string | null): boo
   });
 }
 
-async function embedFromRejectedRequest(request: NextRequest): Promise<boolean> {
-  if (embedFromRequest(request)) return true;
-  if (!isUrlEncodedForm(request)) return false;
+async function releaseUnreadBody(request: NextRequest): Promise<void> {
   try {
-    const text = await request.clone().text();
+    await request.body?.cancel();
+  } catch {
+    /* already closed */
+  }
+}
+
+async function embedFromRejectedRequest(request: NextRequest): Promise<boolean> {
+  if (embedFromRequest(request)) {
+    await releaseUnreadBody(request);
+    return true;
+  }
+  if (!isUrlEncodedForm(request)) {
+    await releaseUnreadBody(request);
+    return false;
+  }
+
+  const declared = request.headers.get("content-length");
+  if (declared !== null) {
+    const trimmed = declared.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      await releaseUnreadBody(request);
+      return false;
+    }
+    const length = Number(trimmed);
+    if (!Number.isSafeInteger(length) || length === 0 || length > EMBED_REJECT_PEEK_MAX_BYTES) {
+      await releaseUnreadBody(request);
+      return false;
+    }
+  }
+
+  try {
+    const text = await readPeekText(request, EMBED_REJECT_PEEK_MAX_BYTES);
+    if (text === null) return false;
     return new URLSearchParams(text).get("embed") === "1";
   } catch {
     return false;
   }
+}
+
+/** Reads at most `maxBytes`. A body that would pass the cap is dropped and not parsed. */
+async function readPeekText(request: NextRequest, maxBytes: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let oversized = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value || value.byteLength === 0) continue;
+      if (total + value.byteLength > maxBytes) {
+        oversized = true;
+        break;
+      }
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    try {
+      reader.releaseLock();
+    } catch {
+      /* already released */
+    }
+  }
+  if (oversized) return null;
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
 }
 
 type SsoPostRead =

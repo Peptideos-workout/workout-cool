@@ -9,12 +9,12 @@ import { EmbedAuthFallbackView } from "../ui/embed-auth-fallback-view";
 import {
   EMBED_BACK_TO_DASHBOARD,
   EMBED_SESSION_KEY,
+  assignCheckoutUrl,
+  checkoutBreakoutTarget,
   embedFrameTarget,
   isEmbedSsoSignal,
-  isHiddenEmbedEntryPath,
   isSsoFailureCode,
   resolveEmbedEnabled,
-  shouldHideEmbedEntry,
   shouldShowEmbedAuthFallback
 } from "./embed-mode";
 import { embedBootScript } from "./embed-boot-script";
@@ -53,6 +53,13 @@ test("embed on sends sign-out to _top and other external links to _blank", () =>
   assert.equal(embedFrameTarget(true, "/en/auth/signout", APP), "_top");
   assert.equal(embedFrameTarget(true, "/auth/signout/continue", APP), "_top");
   assert.equal(embedFrameTarget(true, "https://example.com/watch", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://checkout.stripe.com/c/pay/cs_test", APP), "_top");
+  assert.equal(embedFrameTarget(true, "https://billing.stripe.com/p/session", APP), "_top");
+  assert.equal(embedFrameTarget(true, "https://www.paypal.com/checkoutnow", APP), "_top");
+  assert.equal(embedFrameTarget(true, "https://workout.lemonsqueezy.com/checkout", APP), "_top");
+  assert.equal(embedFrameTarget(true, "https://notstripe.com/checkout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "/en/premium", APP), null);
+  assert.equal(embedFrameTarget(true, "/fr/leaderboard", APP), null);
   assert.equal(embedFrameTarget(true, "//evil.example/phish", APP), "_blank");
   assert.equal(embedFrameTarget(true, "mailto:coach@example.com", APP), "_blank");
   assert.equal(embedFrameTarget(true, `${POS}/api/workouts/sso`, APP), "_top");
@@ -66,16 +73,37 @@ test("embed on sends sign-out to _top and other external links to _blank", () =>
   assert.equal(embedFrameTarget(true, "#sets", APP), null);
 });
 
-test("leaderboard and premium entry paths are hidden only while embed is on", () => {
-  assert.equal(shouldHideEmbedEntry(false, "/premium"), false);
-  assert.equal(shouldHideEmbedEntry(false, "/en/leaderboard"), false);
-  assert.equal(shouldHideEmbedEntry(true, "/premium"), true);
-  assert.equal(shouldHideEmbedEntry(true, "/en/premium?return=%2Fen"), true);
-  assert.equal(shouldHideEmbedEntry(true, "/fr/leaderboard"), true);
-  assert.equal(shouldHideEmbedEntry(true, "/zh-CN/programs"), false);
-  assert.equal(shouldHideEmbedEntry(true, "/statistics"), false);
-  assert.equal(isHiddenEmbedEntryPath("/en/premium", APP), true);
-  assert.equal(isHiddenEmbedEntryPath("/en/tools", APP), false);
+test("premium and leaderboard stay in the pane and checkout leaves at the top", () => {
+  assert.equal(checkoutBreakoutTarget(false, "https://checkout.stripe.com/c/pay/cs_test", APP), "self");
+  assert.equal(checkoutBreakoutTarget(true, "/en/premium", APP), "self");
+  assert.equal(checkoutBreakoutTarget(true, "/fr/leaderboard", APP), "self");
+  assert.equal(checkoutBreakoutTarget(true, "https://checkout.stripe.com/c/pay/cs_test", APP), "_top");
+  assert.equal(checkoutBreakoutTarget(true, "https://pay.example.test/session", APP), "_top");
+
+  const calls: string[] = [];
+  assignCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test", {
+    embed: true,
+    pageOrigin: APP,
+    assignSelf: (href) => calls.push(`self:${href}`),
+    assignTop: (href) => calls.push(`top:${href}`)
+  });
+  assignCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test", {
+    embed: false,
+    pageOrigin: APP,
+    assignSelf: (href) => calls.push(`self:${href}`),
+    assignTop: (href) => calls.push(`top:${href}`)
+  });
+  assert.deepEqual(calls, [
+    "top:https://checkout.stripe.com/c/pay/cs_test",
+    "self:https://checkout.stripe.com/c/pay/cs_test"
+  ]);
+
+  const card = readFileSync("src/features/premium/ui/premium-upgrade-card.tsx", "utf8");
+  const header = readFileSync("src/features/layout/Header.tsx", "utf8");
+  assert.match(card, /assignCheckoutUrl\(result\.checkoutUrl\)/);
+  assert.doesNotMatch(card, /location\.href\s*=\s*result\.checkoutUrl/);
+  assert.match(header, /assignCheckoutUrl\(data\.url\)/);
+  assert.doesNotMatch(header, /location\.href\s*=\s*data\.url/);
 });
 
 test("SSO failure shows Log in and Sign up only inside embed mode", () => {
@@ -123,6 +151,8 @@ test("embed auth fallback opens PeptideOS at the top and uses the exact back lab
 
 test("boot script stores embed in sessionStorage and never posts to a wildcard origin", () => {
   const script = embedBootScript();
+  assert.doesNotMatch(script, /data-wc-entry/);
+  assert.doesNotMatch(script, /\/premium","\/leaderboard/);
   assert.match(script, /sessionStorage/);
   assert.match(script, new RegExp(EMBED_SESSION_KEY));
   assert.match(script, /localStorage\.setItem\("theme"/);
@@ -279,11 +309,21 @@ test("boot script retargets sign-out and external links only while embed is on",
 
   const premium = element("a", { href: "/en/premium" }, on.documentNode);
   const premiumEvent = dispatch(on.documentNode, "click", premium);
-  assert.equal(premiumEvent.defaultPrevented, true);
+  assert.equal(premiumEvent.defaultPrevented, false);
+  assert.equal(premium.getAttribute("target"), null);
 
-  const entry = element("button", { "data-wc-entry": "leaderboard" }, on.documentNode);
+  const leaderboard = element("a", { href: "/fr/leaderboard" }, on.documentNode);
+  const leaderboardEvent = dispatch(on.documentNode, "click", leaderboard);
+  assert.equal(leaderboardEvent.defaultPrevented, false);
+  assert.equal(leaderboard.getAttribute("target"), null);
+
+  const stripe = element("a", { href: "https://checkout.stripe.com/c/pay/cs_test" }, on.documentNode);
+  dispatch(on.documentNode, "click", stripe);
+  assert.equal(stripe.getAttribute("target"), "_top");
+
+  const entry = element("button", { "data-wc-entry": "premium" }, on.documentNode);
   const entryEvent = dispatch(on.documentNode, "click", entry);
-  assert.equal(entryEvent.defaultPrevented, true);
+  assert.equal(entryEvent.defaultPrevented, false);
 
   const form = element("form", { action: `${POS}/api/workouts/signout` }, on.documentNode);
   dispatch(on.documentNode, "submit", form);
@@ -314,7 +354,8 @@ test("app shell still renders header, footer, card chrome, and bottom nav outsid
   assert.match(header, /data-wc-chrome="header"/);
   assert.match(footer, /data-wc-chrome="footer"/);
   assert.match(nav, /data-wc-chrome="nav"/);
-  assert.match(nav, /data-wc-entry=\{tab\.id === "leaderboard" \|\| tab\.id === "premium" \? tab\.id : undefined\}/);
+  assert.match(nav, /leaderboard/);
+  assert.match(nav, /premium/);
 
   const root = readFileSync("app/[locale]/layout.tsx", "utf8");
   assert.match(root, /embedBootScript/);

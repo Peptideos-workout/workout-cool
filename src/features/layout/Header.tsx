@@ -11,6 +11,7 @@ import { SiteConfig } from "@/shared/config/site-config";
 import { ChangePasswordMenuItem } from "@/features/update-password/ui/change-password-menu-item";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
+import { assignCheckoutUrl } from "@/features/embed/lib/embed-mode";
 import { useLogout } from "@/features/auth/model/useLogout";
 import { getConfiguredPeptideOsLoginUrl, getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { useSession } from "@/features/auth/lib/auth-client";
@@ -129,7 +130,7 @@ export const Header = () => {
                           });
                           const data = await response.json();
                           if (data.success && data.url) {
-                            window.location.href = data.url;
+                            assignCheckoutUrl(data.url);
                           }
                         } catch (error) {
                           console.error("Error opening billing portal:", error);

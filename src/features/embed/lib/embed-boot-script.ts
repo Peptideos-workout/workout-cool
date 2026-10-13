@@ -40,11 +40,6 @@ root.classList.add(theme);
 if(root.style){root.style.colorScheme=theme;}
 }
 applyTheme();
-function pathOf(href){
-var raw=String(href||"").trim();
-if(!raw||raw.charAt(0)==="#"||/^javascript:/i.test(raw)||/^data:/i.test(raw)){return "";}
-try{return new URL(raw,location.origin).pathname;}catch(e){return "";}
-}
 function stripLocale(pathname){
 var path=String(pathname||"").split("?")[0].split("#")[0];
 if(path.length>1&&path.charAt(path.length-1)==="/"){path=path.slice(0,-1);}
@@ -66,25 +61,19 @@ var url;
 try{url=new URL(raw,location.origin);}catch(e){return "_blank";}
 if(hasPrefix(url.pathname,["/auth/signout","/api/workouts/signout"])){return "_top";}
 if(url.origin===${parentOrigin}&&hasPrefix(url.pathname,["/login","/signup","/api/workouts/sso","/dashboard"])){return "_top";}
+var host=url.hostname.toLowerCase();
+var payment=host==="stripe.com"||host.endsWith(".stripe.com");
+payment=payment||host==="paypal.com"||host.endsWith(".paypal.com");
+payment=payment||host==="lemonsqueezy.com"||host.endsWith(".lemonsqueezy.com");
+if(payment){return "_top";}
 if(url.origin===location.origin){return null;}
 return "_blank";
 }
 document.addEventListener("click",function(event){
 if(!embedOn()||!event.target||!event.target.closest){return;}
-var node=event.target;
-if(node.closest("[data-wc-entry='premium'],[data-wc-entry='leaderboard']")){
-event.preventDefault();
-event.stopPropagation();
-return;
-}
-var anchor=node.closest("a[href]");
+var anchor=event.target.closest("a[href]");
 if(!anchor){return;}
 var href=anchor.getAttribute("href")||"";
-if(hasPrefix(pathOf(href),["/premium","/leaderboard"])){
-event.preventDefault();
-event.stopPropagation();
-return;
-}
 var target=frameTarget(href);
 if(!target){return;}
 anchor.setAttribute("target",target);

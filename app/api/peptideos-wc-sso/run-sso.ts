@@ -56,8 +56,14 @@ function splitName(displayName: string | undefined, email: string): { firstName:
   return { firstName: local || "Athlete", lastName: "User", name: `${local} User` };
 }
 
-function finalizeSession(origin: string, signInRes: Response, redirectParam: string | undefined, status: 303): NextResponse {
-  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam), status);
+function finalizeSession(
+  origin: string,
+  signInRes: Response,
+  redirectParam: string | undefined,
+  returnTo: string | undefined,
+  status: 303
+): NextResponse {
+  const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam, returnTo), status);
   mergeSetCookies(signInRes, redirect);
   return applySsoResponseHeaders(redirect);
 }
@@ -146,17 +152,22 @@ function isUrlEncodedForm(request: NextRequest): boolean {
   return mediaType === URLENCODED_FORM;
 }
 
-function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string } {
+function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string; returnTo?: string } {
   const params = new URLSearchParams(new TextDecoder().decode(bytes));
   const token = params.get("token")?.trim() ?? "";
   const redirect = params.get("redirect");
+  const returnTo = params.get("return");
   return {
     token: token || undefined,
-    redirect: redirect === null ? undefined : redirect
+    redirect: redirect === null ? undefined : redirect,
+    returnTo: returnTo === null ? undefined : returnTo
   };
 }
 
-type SsoPostRead = { outcome: "empty" } | { outcome: "oversized" } | { outcome: "fields"; token?: string; redirect?: string };
+type SsoPostRead =
+  | { outcome: "empty" }
+  | { outcome: "oversized" }
+  | { outcome: "fields"; token?: string; redirect?: string; returnTo?: string };
 
 /** Size-check the POST, then decode once from the collected bytes as urlencoded. Never calls `formData()`. */
 async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
@@ -174,11 +185,13 @@ async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
 interface SsoSubmission {
   token?: string;
   redirect?: string;
+  returnTo?: string;
   status: 303;
 }
 
 async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps, submission: SsoSubmission): Promise<NextResponse> {
   const redirectParam = submission.redirect;
+  const returnTo = submission.returnTo;
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin, redirectParam);
   const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref);
   const tokenParam = submission.token?.trim();
@@ -239,7 +252,7 @@ async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps,
           };
         }
         return {
-          value: finalizeSession(deps.workoutOrigin, sessionResponse, redirectParam, submission.status),
+          value: finalizeSession(deps.workoutOrigin, sessionResponse, redirectParam, returnTo, submission.status),
           disposition: "keep" as const
         };
       },
@@ -290,7 +303,8 @@ export function ssoHeadNotAllowed(..._ignored: unknown[]): NextResponse {
 
 /**
  * Form POST from PeptideOS. Origin is checked before the handoff is read or consumed.
- * Success is 303 so the browser GETs the sanitized workout URL instead of re-POSTing it.
+ * Optional hidden field `return` is taken from this body only, never from the query string.
+ * Success is 303 so Back GETs the landing URL instead of resubmitting the handoff.
  */
 export async function runPeptideOsSsoPost(
   request: NextRequest,
@@ -322,6 +336,7 @@ export async function runPeptideOsSsoPost(
   return executePeptideOsSso(request, deps, {
     token: read.token,
     redirect: read.redirect,
+    returnTo: read.returnTo,
     status: 303
   });
 }

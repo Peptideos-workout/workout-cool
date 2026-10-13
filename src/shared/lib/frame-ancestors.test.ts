@@ -41,6 +41,16 @@ test("mergeFrameAncestors appends when CSP has no frame-ancestors and keeps a st
   assert.equal(mergeFrameAncestors(EXACT), EXACT);
 });
 
+test("mergeFrameAncestors keeps exact frame-ancestors 'none' and replaces none plus other sources", () => {
+  assert.equal(mergeFrameAncestors("frame-ancestors 'none'"), "frame-ancestors 'none'");
+  assert.equal(mergeFrameAncestors("frame-ancestors 'none' https://evil.example"), EXACT);
+  assert.doesNotMatch(mergeFrameAncestors("frame-ancestors 'none' https://evil.example"), /evil/);
+  assert.equal(
+    mergeFrameAncestors("default-src 'self'; frame-ancestors 'none' https://evil.example"),
+    `default-src 'self'; ${EXACT}`
+  );
+});
+
 test("CSP is assigned only in the global header, SSO and sign-out responses, and the sign-out lockout", () => {
   const hits = walk(".")
     .filter((file) => /Content-Security-Policy|applyFrameAncestorsHeader/.test(readFileSync(file, "utf8")))

@@ -10,24 +10,37 @@
  */
 export const FRAME_ANCESTORS_CSP = "frame-ancestors 'self' https://peptideos.us https://www.peptideos.us";
 
+/** True only when this directive's single source is exactly `'none'`. */
+function isExactFrameAncestorsNone(directive: string): boolean {
+  return /^frame-ancestors\s+'none'$/.test(directive);
+}
+
 /**
  * Put `frame-ancestors` on one CSP header.
- * A stricter `frame-ancestors 'none'` (sign-out confirm and continue) is kept.
- * Any other existing `frame-ancestors` source list is replaced so a second CSP
- * header is never added.
+ * An exact `frame-ancestors 'none'` (no other sources) is kept.
+ * Any other source list, including `'none'` followed by another source, is
+ * replaced so a second CSP header is never added.
  */
 export function mergeFrameAncestors(existingCsp?: string | null): string {
   const current = existingCsp?.trim();
   if (!current) {
     return FRAME_ANCESTORS_CSP;
   }
-  if (/frame-ancestors\s+'none'/i.test(current)) {
-    return current;
+  if (!/frame-ancestors\b/i.test(current)) {
+    return `${current.replace(/;+\s*$/, "")}; ${FRAME_ANCESTORS_CSP}`;
   }
-  if (/frame-ancestors\b/i.test(current)) {
-    return current.replace(/frame-ancestors\s+[^;]+/gi, FRAME_ANCESTORS_CSP);
-  }
-  return `${current.replace(/;+\s*$/, "")}; ${FRAME_ANCESTORS_CSP}`;
+
+  const directives = current
+    .split(";")
+    .map((directive) => directive.trim())
+    .filter(Boolean)
+    .map((directive) => {
+      if (!/^frame-ancestors\b/i.test(directive) || isExactFrameAncestorsNone(directive)) {
+        return directive;
+      }
+      return FRAME_ANCESTORS_CSP;
+    });
+  return directives.join("; ");
 }
 
 export function applyFrameAncestorsHeader(headers: Headers): void {

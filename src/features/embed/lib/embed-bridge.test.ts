@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
+import { resolveEmbedOutboundOrigins } from "./embed-mode";
 import {
   acceptParentThemeMessage,
   clampReportedHeight,
@@ -253,6 +254,48 @@ test("an unresolved parent posts to both origins until wc:theme locks the target
     sessionCalls.map((call) => call.origin),
     [POS, www]
   );
+});
+
+test("a www parent with no referrer or ancestorOrigins locks targetOrigin after wc:theme", () => {
+  const www = "https://www.peptideos.us";
+  const outbound = resolveEmbedOutboundOrigins({});
+  assert.deepEqual([...outbound], [POS, www]);
+  assert.deepEqual([...resolveEmbedOutboundOrigins({ referrer: "", ancestorOrigins: [] })], [POS, www]);
+
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const themes: string[] = [];
+  const host = bridgeHost(calls, frames, { height: 640, path: "/programs" });
+  host.parentOrigin = outbound[0] ?? POS;
+  host.outboundOrigins = outbound;
+  host.setTheme = (theme) => themes.push(theme);
+  startEmbedBridge(host);
+  frames.shift()?.();
+
+  const messageType = (call: { message: unknown }) => (call.message as { type?: string }).type;
+  assert.deepEqual(
+    calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin),
+    [POS, www]
+  );
+
+  calls.length = 0;
+  host.emit?.({ origin: www, source: {}, data: { type: "wc:theme", theme: "dark" } });
+  host.emit?.({ origin: "https://www.peptideos.us.evil.com", source: host.parent, data: { type: "wc:theme", theme: "light" } });
+  host.resize?.();
+  frames.shift()?.();
+  assert.deepEqual(themes, []);
+  assert.deepEqual(
+    calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin),
+    [POS, www]
+  );
+
+  calls.length = 0;
+  host.emit?.({ origin: www, source: host.parent, data: { type: "wc:theme", theme: "dark" } });
+  assert.deepEqual(themes, ["dark"]);
+  host.resize?.();
+  frames.shift()?.();
+  assert.deepEqual(calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin), [www]);
+  assert.equal(JSON.stringify(calls).includes("*"), false);
 });
 
 test("sign-out is reported from the sign-out path, not from a missing session", () => {

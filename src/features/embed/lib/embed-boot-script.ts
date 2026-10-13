@@ -39,7 +39,8 @@ var raw=String(href||"").trim();
 if(!raw||raw.charAt(0)==="#"||/^javascript:/i.test(raw)||/^data:/i.test(raw)){return null;}
 var url;
 try{url=new URL(raw,location.origin);}catch(e){return "_blank";}
-if(hasPrefix(url.pathname,["/auth/signout","/api/workouts/signout"])){return "_top";}
+var signOut=url.origin===location.origin||url.origin===${parentOrigin};
+if(signOut&&hasPrefix(url.pathname,["/auth/signout","/api/workouts/signout"])){return "_top";}
 if(url.origin===${parentOrigin}&&hasPrefix(url.pathname,["/login","/signup","/api/workouts/sso","/dashboard"])){return "_top";}
 var host=url.hostname.toLowerCase();
 var payment=host==="stripe.com"||host.endsWith(".stripe.com");

@@ -52,6 +52,15 @@ test("embed on sends sign-out to _top and other external links to _blank", () =>
   assert.equal(embedFrameTarget(true, `${POS}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`, APP), "_top");
   assert.equal(embedFrameTarget(true, "/en/auth/signout", APP), "_top");
   assert.equal(embedFrameTarget(true, "/auth/signout/continue", APP), "_top");
+  assert.equal(embedFrameTarget(true, `${APP}/auth/signout`, APP), "_top");
+  assert.equal(embedFrameTarget(true, `${POS}/auth/signout`, APP), "_top");
+  assert.equal(embedFrameTarget(true, "https://evil.com/auth/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://evil.com/api/workouts/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://peptideos.us.evil.example/auth/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://evil.peptideos.us/api/workouts/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://www.peptideos.us/auth/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "http://peptideos.us/auth/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://workouts.peptideos.us.evil.example/auth/signout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://example.com/watch", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://checkout.stripe.com/c/pay/cs_test", APP), "_top");
   assert.equal(embedFrameTarget(true, "https://billing.stripe.com/p/session", APP), "_top");
@@ -323,6 +332,18 @@ test("boot script retargets sign-out and external links only while embed is on",
   const signOut = element("a", { href: "/en/auth/signout" }, on.documentNode);
   dispatch(on.documentNode, "click", signOut);
   assert.equal(signOut.getAttribute("target"), "_top");
+
+  const evilSignOut = element("a", { href: "https://evil.com/auth/signout" }, on.documentNode);
+  dispatch(on.documentNode, "click", evilSignOut);
+  assert.equal(evilSignOut.getAttribute("target"), "_blank");
+
+  const lookalike = element("a", { href: "https://peptideos.us.evil.example/api/workouts/signout" }, on.documentNode);
+  dispatch(on.documentNode, "click", lookalike);
+  assert.equal(lookalike.getAttribute("target"), "_blank");
+
+  const peptideSignOut = element("a", { href: `${POS}/auth/signout` }, on.documentNode);
+  dispatch(on.documentNode, "click", peptideSignOut);
+  assert.equal(peptideSignOut.getAttribute("target"), "_top");
 
   const external = element("a", { href: "https://example.com/video" }, on.documentNode);
   dispatch(on.documentNode, "click", external);

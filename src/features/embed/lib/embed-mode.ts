@@ -120,8 +120,8 @@ export function assignCheckoutUrl(href: string, runtime: CheckoutAssignRuntime =
 }
 
 /**
- * While embedded, sign-out breaks out of the frame and every other
- * cross-origin navigation opens a new tab. Same-origin links stay put.
+ * While embedded, sign-out breaks out only for this page or PeptideOS.
+ * Every other cross-origin navigation opens a new tab. Same-origin links stay put.
  * Outside embed mode the caller must not set a target.
  */
 export function embedFrameTarget(
@@ -143,15 +143,16 @@ export function embedFrameTarget(
     return "_blank";
   }
 
-  if (matchesPrefix(url.pathname, SIGNOUT_PREFIXES)) {
-    return "_top";
-  }
-
   let parentOrigin = peptideOrigin;
   try {
     parentOrigin = new URL(peptideOrigin).origin;
   } catch {
     parentOrigin = peptideOrigin;
+  }
+
+  const trustedSignOut = url.origin === pageOrigin || url.origin === parentOrigin;
+  if (trustedSignOut && matchesPrefix(url.pathname, SIGNOUT_PREFIXES)) {
+    return "_top";
   }
 
   if (url.origin === parentOrigin && matchesPrefix(url.pathname, AUTH_BREAKOUT_PREFIXES)) {

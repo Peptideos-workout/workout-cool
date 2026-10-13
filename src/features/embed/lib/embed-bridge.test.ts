@@ -7,8 +7,13 @@ import {
   clampReportedHeight,
   createHeightReporter,
   exactOrigin,
+  embedLogoutMessage,
+  embedReportedSession,
+  embedSessionMessage,
   notifyEmbedSignedOut,
+  postEmbedSession,
   postToParent,
+  sessionReportToSend,
   reportableEmbedPath,
   startEmbedBridge,
   type EmbedBridgeHost,
@@ -185,6 +190,7 @@ test("a theme message updates theme and cannot sign in or sign out", () => {
   assert.deepEqual(signedIn, []);
   assert.equal(calls.length, before);
   assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:signed-out"), false);
+  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
 });
 
 test("sign-out is reported from the sign-out path and from an explicit notify, not from a missing session", () => {
@@ -193,7 +199,7 @@ test("sign-out is reported from the sign-out path and from an explicit notify, n
   const host = bridgeHost(calls, frames, { height: 400, path: "/fr/auth/signout" });
   startEmbedBridge(host);
   assert.deepEqual(calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out"), [
-    { message: { type: "wc:signed-out" }, origin: POS }
+    { message: { type: "wc:signed-out", reason: "logout" }, origin: POS }
   ]);
 
   const parent = port(calls);
@@ -203,7 +209,86 @@ test("sign-out is reported from the sign-out path and from an explicit notify, n
   assert.equal(notifyEmbedSignedOut(POS, { embed: true, topLevel: true, parent }), false);
   const signedOut = calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out");
   assert.equal(signedOut.length, 2);
+  assert.deepEqual(signedOut[1], { message: { type: "wc:signed-out", reason: "logout" }, origin: POS });
   assert.equal(signedOut.every((call) => call.origin === POS), true);
+  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
+});
+
+test("outbound messages keep their exact keys and never use a wildcard origin", () => {
+  const height = { type: "wc:height" as const, height: 240 };
+  const navigate = { type: "wc:navigate" as const, path: "/programs" };
+  const signedIn = embedSessionMessage("signed-in");
+  const signedOutSession = embedSessionMessage("signed-out");
+  const logout = embedLogoutMessage();
+
+  assert.deepEqual(height, { type: "wc:height", height: 240 });
+  assert.deepEqual(Object.keys(height), ["type", "height"]);
+  assert.deepEqual(navigate, { type: "wc:navigate", path: "/programs" });
+  assert.deepEqual(Object.keys(navigate), ["type", "path"]);
+  assert.deepEqual(signedIn, { type: "wc:session", state: "signed-in" });
+  assert.deepEqual(Object.keys(signedIn), ["type", "state"]);
+  assert.deepEqual(signedOutSession, { type: "wc:session", state: "signed-out" });
+  assert.deepEqual(Object.keys(signedOutSession), ["type", "state"]);
+  assert.deepEqual(logout, { type: "wc:signed-out", reason: "logout" });
+  assert.deepEqual(Object.keys(logout), ["type", "reason"]);
+
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const parent = port(calls);
+  const runtime = { embed: true, topLevel: false, parent };
+  assert.equal(postToParent(parent, POS, height), true);
+  assert.equal(postToParent(parent, POS, navigate), true);
+  assert.equal(postEmbedSession(POS, "signed-in", runtime), true);
+  assert.equal(postEmbedSession(POS, "signed-out", runtime), true);
+  assert.equal(notifyEmbedSignedOut(POS, runtime), true);
+  assert.equal(postToParent(parent, "*", height), false);
+  assert.equal(postToParent(parent, "*", navigate), false);
+  assert.equal(postEmbedSession("*", "signed-out", runtime), false);
+  assert.equal(notifyEmbedSignedOut("*", runtime), false);
+  assert.equal(postEmbedSession(POS, null, runtime), false);
+
+  assert.deepEqual(
+    calls.map((call) => call.message),
+    [height, navigate, signedIn, signedOutSession, logout]
+  );
+  assert.equal(calls.every((call) => call.origin === POS), true);
+  assert.equal(JSON.stringify(calls).includes("*"), false);
+});
+
+test("session is posted when it becomes known, and signed-out follows the auth fallback", () => {
+  const pending = { embed: true, sessionResolved: false, hasSession: false };
+  assert.equal(embedReportedSession(pending), null);
+  assert.equal(embedReportedSession({ embed: false, sessionResolved: true, hasSession: true }), null);
+  assert.equal(embedReportedSession({ embed: true, sessionResolved: true, hasSession: true }), "signed-in");
+  assert.equal(embedReportedSession({ embed: true, sessionResolved: true, hasSession: false }), "signed-out");
+  assert.equal(embedReportedSession({ ...pending, ssoError: true }), "signed-out");
+  assert.equal(
+    embedReportedSession({ embed: true, sessionResolved: true, hasSession: true, ssoError: true }),
+    "signed-out"
+  );
+
+  assert.equal(sessionReportToSend(null, null), null);
+  assert.equal(sessionReportToSend(null, "signed-in"), "signed-in");
+  assert.equal(sessionReportToSend("signed-in", "signed-in"), null);
+  assert.equal(sessionReportToSend("signed-in", "signed-out"), "signed-out");
+  assert.equal(sessionReportToSend("signed-out", "signed-out"), null);
+  assert.equal(sessionReportToSend("signed-out", "signed-in"), "signed-in");
+
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const runtime = { embed: true, topLevel: false, parent: port(calls) };
+  let previous: "signed-in" | "signed-out" | null = null;
+  const known = embedReportedSession({ ...pending, sessionResolved: true, hasSession: true });
+  for (const next of [embedReportedSession(pending), known]) {
+    const state = sessionReportToSend(previous, next);
+    if (state && postEmbedSession(POS, state, runtime)) previous = state;
+  }
+  assert.deepEqual(calls.map((call) => call.message), [{ type: "wc:session", state: "signed-in" }]);
+  const changed = sessionReportToSend(previous, "signed-out");
+  if (changed) postEmbedSession(POS, changed, runtime);
+  assert.deepEqual(calls.map((call) => call.message), [
+    { type: "wc:session", state: "signed-in" },
+    { type: "wc:session", state: "signed-out" }
+  ]);
+  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:signed-out"), false);
 });
 
 test("premium and leaderboard paths in the pane are reported", () => {
@@ -334,13 +419,17 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   const bridge = readFileSync("src/features/embed/lib/embed-bridge.ts", "utf8");
   const boot = readFileSync("src/features/embed/lib/embed-boot-script.ts", "utf8");
   const ui = readFileSync("src/features/embed/ui/embed-bridge.tsx", "utf8");
+  const fallback = readFileSync("src/features/embed/ui/embed-auth-fallback.tsx", "utf8");
   const providers = readFileSync("app/[locale]/providers.tsx", "utf8");
   const logout = readFileSync("src/features/auth/model/useLogout.ts", "utf8");
 
-  for (const src of [bridge, boot, ui]) {
+  for (const src of [bridge, boot, ui, fallback]) {
     assert.doesNotMatch(src, /postMessage\(\s*[^,]+,\s*["']\*["']/);
     assert.doesNotMatch(src, /targetOrigin\s*[:=]\s*["']\*["']/);
   }
+  assert.match(fallback, /embedReportedSession\(/);
+  assert.match(fallback, /sessionReportToSend\(/);
+  assert.match(fallback, /postEmbedSession\(getConfiguredPeptideOsOrigin\(\), state\)/);
   assert.doesNotMatch(bridge, /signOut|signIn|location\.assign|location\.href/);
   assert.doesNotMatch(ui, /useSession/);
   assert.match(providers, /storageKey="theme"/);

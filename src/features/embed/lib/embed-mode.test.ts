@@ -4,8 +4,10 @@ import assert from "node:assert/strict";
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
+import { NextRequest } from "next/server";
 
 import { EmbedAuthFallbackView } from "../ui/embed-auth-fallback-view";
+import { proxy } from "../../../../proxy";
 import { embedSignedOutDocumentResponse, isEmbedDocumentRequest } from "./embed-signed-out-document";
 import {
   EMBED_BACK_TO_DASHBOARD,
@@ -712,6 +714,11 @@ test("outbound origin uses ancestorOrigins[0], then the referrer, otherwise both
 
   const both = runSessionBootstrap({ referrer: "" });
   assert.deepEqual(both.map((call) => call.origin), [...EMBED_PARENT_ORIGINS]);
+
+  // One-shot inline script: no message listener, so a later wc:theme cannot retarget it.
+  const bootstrap = embedSignedOutSessionBootstrap();
+  assert.doesNotMatch(bootstrap, /addEventListener/);
+  assert.doesNotMatch(bootstrap, /onmessage/);
 });
 
 test("boot script rewrites an embedded sign-out server-action redirect to a frameable page", async () => {
@@ -767,6 +774,77 @@ test("a framed sign-out fallback posts no messages", async () => {
   assert.doesNotMatch(html, /wc:session/);
   assert.doesNotMatch(html, /wc:signed-out/);
   assert.match(readFileSync("proxy.ts", "utf8"), /postSession:\s*!isEmbedUnframeableSignoutPath\(pathname\)/);
+});
+
+test("a top-level tab clearing the embed cookie does not unframe the next iframe", async () => {
+  const iframe = boot("?embed=1", null);
+  assert.match(iframe.cookie(), /wc-embed=1/);
+  assert.equal(iframe.root.getAttribute("data-wc-embed"), "1");
+
+  const openedTab = boot("?embed=1", "1", { topLevel: true });
+  assert.match(openedTab.cookie(), /Max-Age=0/);
+  assert.equal(openedTab.root.getAttribute("data-wc-embed"), null);
+
+  const previousPeptide = process.env.NEXT_PUBLIC_PEPTIDEOS_URL;
+  const previousApp = process.env.NEXT_PUBLIC_APP_URL;
+  process.env.NEXT_PUBLIC_PEPTIDEOS_URL = POS;
+  process.env.NEXT_PUBLIC_APP_URL = APP;
+  try {
+    const afterClear = await proxy(
+      new NextRequest(`${APP}/en/profile`, {
+        headers: { "sec-fetch-dest": "iframe" }
+      })
+    );
+    assert.equal(afterClear.status, 200);
+    assert.equal(afterClear.headers.get("location"), null);
+    assert.match(await afterClear.text(), /data-wc-embed-fallback/);
+
+    const cookieStillSet = await proxy(
+      new NextRequest(`${APP}/en/profile`, {
+        headers: { cookie: "wc-embed=1", "sec-fetch-dest": "iframe" }
+      })
+    );
+    assert.equal(cookieStillSet.status, 200);
+    assert.equal(cookieStillSet.headers.get("location"), null);
+
+    const otherDest = await proxy(
+      new NextRequest(`${APP}/en/profile?embed=1`, {
+        headers: { cookie: "wc-embed=1", "sec-fetch-dest": "document" }
+      })
+    );
+    assert.equal(otherDest.status, 307);
+    assert.ok(otherDest.headers.get("location"));
+  } finally {
+    if (previousPeptide === undefined) delete process.env.NEXT_PUBLIC_PEPTIDEOS_URL;
+    else process.env.NEXT_PUBLIC_PEPTIDEOS_URL = previousPeptide;
+    if (previousApp === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previousApp;
+  }
+});
+
+test("a missing Sec-Fetch-Dest plus only the wc-embed cookie is not framed", async () => {
+  assert.equal(isEmbedDocumentRequest("", "1", null), false);
+  assert.equal(isEmbedDocumentRequest("", "1", undefined), false);
+
+  const previousPeptide = process.env.NEXT_PUBLIC_PEPTIDEOS_URL;
+  const previousApp = process.env.NEXT_PUBLIC_APP_URL;
+  process.env.NEXT_PUBLIC_PEPTIDEOS_URL = POS;
+  process.env.NEXT_PUBLIC_APP_URL = APP;
+  try {
+    const response = await proxy(
+      new NextRequest(`${APP}/en/profile`, {
+        headers: { cookie: "wc-embed=1" }
+      })
+    );
+    assert.equal(response.status, 307);
+    assert.ok(response.headers.get("location"));
+    assert.equal(response.headers.get("content-type"), null);
+  } finally {
+    if (previousPeptide === undefined) delete process.env.NEXT_PUBLIC_PEPTIDEOS_URL;
+    else process.env.NEXT_PUBLIC_PEPTIDEOS_URL = previousPeptide;
+    if (previousApp === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previousApp;
+  }
 });
 
 test("Sec-Fetch-Dest decides framing and the embed cookie never does", () => {

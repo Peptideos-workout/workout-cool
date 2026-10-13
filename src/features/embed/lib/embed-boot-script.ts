@@ -1,10 +1,10 @@
 import { EMBED_SESSION_KEY } from "./embed-mode";
 
 /**
- * Blocking head script. It turns on the tab-scoped embed flag before first paint
- * and retargets navigations that would otherwise leave the frame.
- * Theme persistence is added by the postMessage bridge; this script does not
- * touch localStorage.
+ * Blocking head script. It turns on the tab-scoped embed flag before first paint,
+ * applies a light or dark theme before next-themes hydrates, and retargets
+ * navigations that would otherwise leave the frame.
+ * The embed flag stays in sessionStorage. Only the next-themes `theme` key uses localStorage.
  */
 export function embedBootScript(peptideOrigin = "https://peptideos.us"): string {
   const parentOrigin = JSON.stringify(new URL(peptideOrigin).origin);
@@ -20,6 +20,26 @@ enable=sessionStorage.getItem(KEY)==="1";
 }catch(e){enable=params.get("embed")==="1";}
 if(enable){root.setAttribute("data-wc-embed","1");}
 function embedOn(){return root.getAttribute("data-wc-embed")==="1";}
+function applyTheme(){
+if(!embedOn()){return;}
+var requested=params.get("theme");
+var theme=requested==="light"||requested==="dark"?requested:"";
+try{
+if(theme){localStorage.setItem("theme",theme);}
+else{
+var stored=localStorage.getItem("theme");
+if(stored==="light"||stored==="dark"){theme=stored;}
+}
+}catch(e){}
+if(theme!=="light"&&theme!=="dark"){return;}
+if(root.classList){
+root.classList.remove("light");
+root.classList.remove("dark");
+root.classList.add(theme);
+}
+if(root.style){root.style.colorScheme=theme;}
+}
+applyTheme();
 function pathOf(href){
 var raw=String(href||"").trim();
 if(!raw||raw.charAt(0)==="#"||/^javascript:/i.test(raw)||/^data:/i.test(raw)){return "";}

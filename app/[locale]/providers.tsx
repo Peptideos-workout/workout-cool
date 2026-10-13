@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { PropsWithChildren } from "react";
 
 import { AnalyticsProvider } from "@/shared/lib/analytics/client";
+import { EmbedBridge } from "@/features/embed/ui/embed-bridge";
 import { DialogRenderer } from "@/features/dialogs-provider/DialogProvider";
 import { useAutoLocale } from "@/entities/user/model/use-auto-locale";
 import { ToastSonner } from "@/components/ui/ToastSonner";
@@ -28,7 +29,8 @@ export const Providers = ({ children, locale }: PropsWithChildren<{ locale: stri
       <NuqsAdapter>
         <QueryClientProvider client={queryClient}>
           <I18nProviderClient locale={locale}>
-            <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem>
+            <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem storageKey="theme">
+              <EmbedBridge />
               <LocaleDetector />
               <Toaster />
               <ToastSonner />

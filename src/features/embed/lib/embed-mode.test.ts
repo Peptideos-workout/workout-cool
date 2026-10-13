@@ -121,11 +121,12 @@ test("embed auth fallback opens PeptideOS at the top and uses the exact back lab
   assert.match(html, /data-wc-embed-fallback/);
 });
 
-test("boot script uses sessionStorage, never localStorage, and never a wildcard origin", () => {
+test("boot script stores embed in sessionStorage and never posts to a wildcard origin", () => {
   const script = embedBootScript();
   assert.match(script, /sessionStorage/);
   assert.match(script, new RegExp(EMBED_SESSION_KEY));
-  assert.doesNotMatch(script, /localStorage/);
+  assert.match(script, /localStorage\.setItem\("theme"/);
+  assert.doesNotMatch(script, /localStorage\.setItem\([^)]*wc-embed/);
   assert.doesNotMatch(script, /postMessage/);
   assert.doesNotMatch(script, /["']\*["']/);
 });

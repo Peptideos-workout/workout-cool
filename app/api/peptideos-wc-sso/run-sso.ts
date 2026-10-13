@@ -117,6 +117,11 @@ async function readCappedSsoPostBody(request: NextRequest): Promise<Uint8Array |
     }
   } finally {
     await reader.cancel().catch(() => undefined);
+    try {
+      reader.releaseLock();
+    } catch {
+      /* already released */
+    }
   }
   if (oversized) return "oversized";
   if (total === 0) return "empty";
@@ -153,7 +158,7 @@ function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: s
 
 type SsoPostRead = { outcome: "empty" } | { outcome: "oversized" } | { outcome: "fields"; token?: string; redirect?: string };
 
-/** Size-check the POST, then parse the kept bytes as urlencoded. Never calls `formData()`. */
+/** Size-check the POST, then decode once from the collected bytes as urlencoded. Never calls `formData()`. */
 async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
   const declared = declaredSsoPostBody(request.headers.get("content-length"));
   if (declared === "empty") return { outcome: "empty" };
@@ -289,6 +294,11 @@ export async function runPeptideOsSsoPost(
     logSsoEvent("sso_origin", undefined, "forbidden_origin");
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
     return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref);
+  }
+
+  if (!isUrlEncodedForm(request)) {
+    const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
+    return ssoClientError(request, { error: "unsupported_media_type" }, 415, tryAgainHref);
   }
 
   let read: SsoPostRead;

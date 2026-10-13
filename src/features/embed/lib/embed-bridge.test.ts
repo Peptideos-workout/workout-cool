@@ -7,12 +7,16 @@ import {
   clampReportedHeight,
   createHeightReporter,
   exactOrigin,
+  clearExplicitEmbedLogout,
   embedLogoutMessage,
   embedReportedSession,
   embedSessionMessage,
+  explicitEmbedLogoutOnPath,
+  markExplicitEmbedLogout,
   notifyEmbedSignedOut,
   postEmbedSession,
   postToParent,
+  releaseExplicitEmbedLogout,
   sessionReportToSend,
   reportableEmbedPath,
   startEmbedBridge,
@@ -291,6 +295,39 @@ test("session is posted when it becomes known, and signed-out follows the auth f
   assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:signed-out"), false);
 });
 
+test("sign-out paths and an explicit logout do not send wc:session signed-out", () => {
+  const signedOut = { embed: true, sessionResolved: true, hasSession: false };
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/auth/signout" }), null);
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/fr/auth/signout/continue" }), null);
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/en/profile", explicitLogout: true }), null);
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/en/profile" }), "signed-out");
+  assert.equal(
+    embedReportedSession({ embed: true, sessionResolved: true, hasSession: true, pathname: "/auth/signout" }),
+    "signed-in"
+  );
+  assert.equal(
+    embedReportedSession({ embed: true, sessionResolved: false, hasSession: false, ssoError: true, pathname: "/en/auth/signout" }),
+    null
+  );
+
+  clearExplicitEmbedLogout();
+  markExplicitEmbedLogout("/en/profile");
+  assert.equal(explicitEmbedLogoutOnPath("/en/profile"), true);
+  releaseExplicitEmbedLogout("/auth/signout/continue");
+  assert.equal(explicitEmbedLogoutOnPath("/en/profile"), true);
+  releaseExplicitEmbedLogout("/en/programs");
+  assert.equal(explicitEmbedLogoutOnPath("/en/profile"), false);
+
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  startEmbedBridge(bridgeHost(calls, [], { height: 400, path: "/auth/signout/continue" }));
+  assert.deepEqual(
+    calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out").map((call) => call.message),
+    [{ type: "wc:signed-out", reason: "logout" }]
+  );
+  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
+  clearExplicitEmbedLogout();
+});
+
 test("premium and leaderboard paths in the pane are reported", () => {
   const premium: Array<{ message: unknown; origin: string }> = [];
   startEmbedBridge(bridgeHost(premium, [], { height: 500, path: "/en/premium?return=%2Fen" }));
@@ -430,6 +467,8 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   assert.match(fallback, /embedReportedSession\(/);
   assert.match(fallback, /sessionReportToSend\(/);
   assert.match(fallback, /postEmbedSession\(getConfiguredPeptideOsOrigin\(\), state\)/);
+  assert.match(fallback, /explicitEmbedLogoutOnPath\(pathname\)/);
+  assert.match(fallback, /releaseExplicitEmbedLogout\(pathname\)/);
   assert.doesNotMatch(bridge, /signOut|signIn|location\.assign|location\.href/);
   assert.doesNotMatch(ui, /useSession/);
   assert.match(providers, /storageKey="theme"/);
@@ -438,10 +477,14 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   assert.doesNotMatch(boot, /localStorage\.setItem\("theme"/);
   assert.doesNotMatch(bridge, /EMBED_THEME_STORAGE_KEY/);
   assert.match(providers, /<EmbedBridge/);
-  assert.match(logout, /notifyEmbedSignedOut\(getConfiguredPeptideOsOrigin\(\)\)/);
-  const notifyAt = logout.indexOf("notifyEmbedSignedOut");
-  const logoutAt = logout.indexOf("logoutThenClearSession");
-  assert.ok(logoutAt !== -1 && notifyAt > logoutAt);
+  assert.doesNotMatch(logout, /notifyEmbedSignedOut/);
+  assert.match(logout, /markExplicitEmbedLogout\(pathname\)/);
+  assert.match(logout, /\/auth\/signout\/continue/);
+  assert.match(logout, /wc:signed-out/);
+  const body = logout.slice(logout.indexOf("mutationFn"));
+  const markAt = body.indexOf("markExplicitEmbedLogout");
+  const logoutAt = body.indexOf("logoutThenClearSession");
+  assert.ok(markAt !== -1 && logoutAt !== -1 && markAt < logoutAt);
 });
 
 function port(calls: Array<{ message: unknown; origin: string }>): EmbedMessagePort {

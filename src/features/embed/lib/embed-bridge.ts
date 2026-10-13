@@ -40,6 +40,8 @@ export interface EmbedSessionInput {
   sessionResolved: boolean;
   hasSession: boolean;
   ssoError?: boolean;
+  pathname?: string;
+  explicitLogout?: boolean;
 }
 
 export type EmbedSessionState = (typeof EMBED_SESSION_STATE)[keyof typeof EMBED_SESSION_STATE];
@@ -137,6 +139,27 @@ export function isEmbedSignedOutPath(input: string): boolean {
   const pathname = input.trim().split("?")[0]?.split("#")[0] ?? "";
   const stripped = stripLocalePrefix(pathname);
   return stripped === "/auth/signout" || stripped.startsWith("/auth/signout/");
+}
+
+let explicitLogoutPath: string | null = null;
+
+/** Page that started logout. Cleared once the user leaves it for a non-sign-out path. */
+export function markExplicitEmbedLogout(pathname: string): void {
+  explicitLogoutPath = pathname;
+}
+
+export function explicitEmbedLogoutOnPath(pathname: string): boolean {
+  return explicitLogoutPath !== null && explicitLogoutPath === pathname;
+}
+
+export function releaseExplicitEmbedLogout(pathname: string): void {
+  if (explicitLogoutPath === null || explicitLogoutPath === pathname) return;
+  if (isEmbedSignedOutPath(pathname)) return;
+  explicitLogoutPath = null;
+}
+
+export function clearExplicitEmbedLogout(): void {
+  explicitLogoutPath = null;
 }
 
 export function postToParent(parent: EmbedMessagePort | null, origin: string, message: EmbedChildMessage): boolean {
@@ -251,12 +274,17 @@ export function embedLogoutMessage(): EmbedChildMessageMap["signedOut"] {
 }
 
 /**
- * Null until the session is known. Signed-out matches the Log in / Sign up fallback,
- * including an SSO error before the session request settles.
+ * Null until the session is known. Signed-out matches the Log in / Sign up fallback.
+ * A sign-out path, or the page that started logout, does not also send signed-out.
+ * That page's only auth signal is wc:signed-out.
  */
 export function embedReportedSession(input: EmbedSessionInput): EmbedSessionState | null {
   if (!input.embed) return null;
-  if (shouldShowEmbedAuthFallback(input)) return EMBED_SESSION_STATE.signedOut;
+  const onSignOutPath = input.pathname ? isEmbedSignedOutPath(input.pathname) : false;
+  if (shouldShowEmbedAuthFallback(input)) {
+    if (onSignOutPath || input.explicitLogout) return null;
+    return EMBED_SESSION_STATE.signedOut;
+  }
   if (!input.sessionResolved) return null;
   if (input.hasSession) return EMBED_SESSION_STATE.signedIn;
   return null;

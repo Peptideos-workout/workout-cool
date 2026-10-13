@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useI18n } from "locales/client";
 
 import { EmbedAuthFallbackView } from "./embed-auth-fallback-view";
 
 import { isSsoFailureCode, shouldShowEmbedAuthFallback } from "@/features/embed/lib/embed-mode";
-import { embedReportedSession, postEmbedSession, sessionReportToSend, type EmbedSessionState } from "@/features/embed/lib/embed-bridge";
+import {
+  embedReportedSession,
+  explicitEmbedLogoutOnPath,
+  postEmbedSession,
+  releaseExplicitEmbedLogout,
+  sessionReportToSend,
+  type EmbedSessionState
+} from "@/features/embed/lib/embed-bridge";
 import {
   getConfiguredPeptideOsLoginUrl,
   getConfiguredPeptideOsOrigin,
@@ -18,6 +25,7 @@ import { useSession } from "@/features/auth/lib/auth-client";
 export function EmbedAuthFallback() {
   const session = useSession();
   const params = useSearchParams();
+  const pathname = usePathname() ?? "";
   const t = useI18n();
   const [embed, setEmbed] = useState(false);
   const reportedSession = useRef<EmbedSessionState | null>(null);
@@ -31,12 +39,20 @@ export function EmbedAuthFallback() {
 
   useEffect(() => {
     const embedOn = document.documentElement.getAttribute("data-wc-embed") === "1";
-    const next = embedReportedSession({ embed: embedOn, sessionResolved, hasSession, ssoError });
+    releaseExplicitEmbedLogout(pathname);
+    const next = embedReportedSession({
+      embed: embedOn,
+      sessionResolved,
+      hasSession,
+      ssoError,
+      pathname,
+      explicitLogout: explicitEmbedLogoutOnPath(pathname)
+    });
     const state = sessionReportToSend(reportedSession.current, next);
     if (!state) return;
     const sent = postEmbedSession(getConfiguredPeptideOsOrigin(), state);
     if (sent) reportedSession.current = state;
-  }, [hasSession, sessionResolved, ssoError]);
+  }, [hasSession, pathname, sessionResolved, ssoError]);
 
   const show = shouldShowEmbedAuthFallback({
     embed,

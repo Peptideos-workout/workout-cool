@@ -57,6 +57,9 @@ test("embed on sends sign-out to _top and other external links to _blank", () =>
   assert.equal(embedFrameTarget(true, "https://billing.stripe.com/p/session", APP), "_top");
   assert.equal(embedFrameTarget(true, "https://www.paypal.com/checkoutnow", APP), "_top");
   assert.equal(embedFrameTarget(true, "https://workout.lemonsqueezy.com/checkout", APP), "_top");
+  assert.equal(embedFrameTarget(true, "http://checkout.stripe.com/c/pay/cs_test", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "http://www.paypal.com/checkoutnow", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "http://workout.lemonsqueezy.com/checkout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://notstripe.com/checkout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "/en/premium", APP), null);
   assert.equal(embedFrameTarget(true, "/fr/leaderboard", APP), null);
@@ -353,6 +356,10 @@ test("boot script retargets sign-out and external links only while embed is on",
   const stripe = element("a", { href: "https://checkout.stripe.com/c/pay/cs_test" }, on.documentNode);
   dispatch(on.documentNode, "click", stripe);
   assert.equal(stripe.getAttribute("target"), "_top");
+
+  const insecureStripe = element("a", { href: "http://checkout.stripe.com/c/pay/cs_test" }, on.documentNode);
+  dispatch(on.documentNode, "click", insecureStripe);
+  assert.equal(insecureStripe.getAttribute("target"), "_blank");
 
   const entry = element("button", { "data-wc-entry": "premium" }, on.documentNode);
   const entryEvent = dispatch(on.documentNode, "click", entry);

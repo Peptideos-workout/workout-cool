@@ -93,7 +93,7 @@ var host=url.hostname.toLowerCase();
 var payment=host==="stripe.com"||host.endsWith(".stripe.com");
 payment=payment||host==="paypal.com"||host.endsWith(".paypal.com");
 payment=payment||host==="lemonsqueezy.com"||host.endsWith(".lemonsqueezy.com");
-if(payment){return "_top";}
+if(payment&&url.protocol==="https:"){return "_top";}
 if(url.origin===location.origin){return null;}
 return "_blank";
 }

@@ -158,7 +158,7 @@ export function embedFrameTarget(
     return "_top";
   }
 
-  if (isPaymentCheckoutHost(url.hostname)) {
+  if (url.protocol === "https:" && isPaymentCheckoutHost(url.hostname)) {
     return "_top";
   }
 

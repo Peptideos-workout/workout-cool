@@ -73,30 +73,62 @@ test("embed on sends sign-out to _top and other external links to _blank", () =>
   assert.equal(embedFrameTarget(true, "#sets", APP), null);
 });
 
-test("premium and leaderboard stay in the pane and checkout leaves at the top", () => {
+test("premium and leaderboard stay in the pane and only https payment hosts leave at the top", () => {
   assert.equal(checkoutBreakoutTarget(false, "https://checkout.stripe.com/c/pay/cs_test", APP), "self");
   assert.equal(checkoutBreakoutTarget(true, "/en/premium", APP), "self");
   assert.equal(checkoutBreakoutTarget(true, "/fr/leaderboard", APP), "self");
+  assert.equal(checkoutBreakoutTarget(true, `${APP}/en/premium`, APP), "self");
   assert.equal(checkoutBreakoutTarget(true, "https://checkout.stripe.com/c/pay/cs_test", APP), "_top");
-  assert.equal(checkoutBreakoutTarget(true, "https://pay.example.test/session", APP), "_top");
+  assert.equal(checkoutBreakoutTarget(true, "https://billing.stripe.com/p/session", APP), "_top");
+  assert.equal(checkoutBreakoutTarget(true, "https://www.paypal.com/checkoutnow", APP), "_top");
+  assert.equal(checkoutBreakoutTarget(true, "https://workout.lemonsqueezy.com/checkout", APP), "_top");
+  assert.equal(checkoutBreakoutTarget(true, "http://checkout.stripe.com/c/pay/cs_test", APP), "refuse");
+  assert.equal(checkoutBreakoutTarget(true, "https://pay.example.test/session", APP), "refuse");
+  assert.equal(checkoutBreakoutTarget(true, "https://notstripe.com/checkout", APP), "refuse");
+  assert.equal(checkoutBreakoutTarget(true, "https://stripe.com.evil.example/pay", APP), "refuse");
+  assert.equal(checkoutBreakoutTarget(true, "//evil.example/phish", APP), "refuse");
 
   const calls: string[] = [];
-  assignCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test", {
-    embed: true,
+  const runtime = (embed: boolean) => ({
+    embed,
     pageOrigin: APP,
-    assignSelf: (href) => calls.push(`self:${href}`),
-    assignTop: (href) => calls.push(`top:${href}`)
+    assignSelf: (href: string) => calls.push(`self:${href}`),
+    assignTop: (href: string) => calls.push(`top:${href}`)
   });
-  assignCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test", {
-    embed: false,
-    pageOrigin: APP,
-    assignSelf: (href) => calls.push(`self:${href}`),
-    assignTop: (href) => calls.push(`top:${href}`)
-  });
+  assignCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test", runtime(true));
+  assignCheckoutUrl("https://www.paypal.com/checkoutnow", runtime(true));
+  assignCheckoutUrl(`${APP}/api/premium/billing-portal`, runtime(true));
+  assignCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test", runtime(false));
+  assignCheckoutUrl("https://pay.example.test/session?token=secret", runtime(false));
+
+  const refused = "https://pay.example.test/session?token=secret";
+  const logs: unknown[][] = [];
+  const originalError = console.error;
+  console.error = (...args: unknown[]) => {
+    logs.push(args);
+  };
+  try {
+    assignCheckoutUrl(refused, runtime(true));
+    assignCheckoutUrl("http://checkout.stripe.com/c/pay/cs_test", runtime(true));
+  } finally {
+    console.error = originalError;
+  }
+
   assert.deepEqual(calls, [
     "top:https://checkout.stripe.com/c/pay/cs_test",
-    "self:https://checkout.stripe.com/c/pay/cs_test"
+    "top:https://www.paypal.com/checkoutnow",
+    `self:${APP}/api/premium/billing-portal`,
+    "self:https://checkout.stripe.com/c/pay/cs_test",
+    "self:https://pay.example.test/session?token=secret"
   ]);
+  assert.deepEqual(logs, [
+    ["Refused embed checkout navigation to a non-payment host"],
+    ["Refused embed checkout navigation to a non-payment host"]
+  ]);
+  assert.equal(JSON.stringify(logs).includes(refused), false);
+  assert.equal(JSON.stringify(logs).includes("pay.example.test"), false);
+  assert.equal(JSON.stringify(logs).includes("token"), false);
+  assert.equal(JSON.stringify(logs).includes("stripe.com"), false);
 
   const card = readFileSync("src/features/premium/ui/premium-upgrade-card.tsx", "utf8");
   const header = readFileSync("src/features/layout/Header.tsx", "utf8");

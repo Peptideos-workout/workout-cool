@@ -6,7 +6,14 @@ import { NextRequest } from "next/server";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { betterAuth } from "better-auth";
 
-import { SSO_POST_MAX_BYTES, isExactPeptideOsSsoOrigin, runPeptideOsSsoPost, ssoHeadNotAllowed, ssoMethodNotAllowed } from "./run-sso";
+import {
+  EMBED_REJECT_PEEK_MAX_BYTES,
+  SSO_POST_MAX_BYTES,
+  isExactPeptideOsSsoOrigin,
+  runPeptideOsSsoPost,
+  ssoHeadNotAllowed,
+  ssoMethodNotAllowed
+} from "./run-sso";
 import { hashHandoffToken } from "./hash-handoff-token";
 import { attachTrustedSession } from "./attach-trusted-session";
 
@@ -386,6 +393,86 @@ test("embed forbidden_origin and SSO errors show top-level Log in and Sign up", 
   assert.match(missingPage, /← Back to dashboard/);
 });
 
+test("forbidden_origin embed peek uses the query first and caps the body", async () => {
+  let queryPulls = 0;
+  const queryChunks = Array.from({ length: 6 }, () => new Uint8Array(1024));
+  const fromQuery = await runPeptideOsSsoPost(
+    peekRequest({
+      search: "?embed=1",
+      contentType: "application/json",
+      chunks: queryChunks,
+      onPull: () => {
+        queryPulls += 1;
+      }
+    }),
+    fakeWorld().deps,
+    POS
+  );
+  const queryPage = await fromQuery.text();
+  assert.equal(fromQuery.status, 403);
+  assert.ok(queryPulls < queryChunks.length);
+  assert.match(queryPage, /← Back to dashboard/);
+  assert.doesNotMatch(queryPage, new RegExp(rawToken));
+
+  const small = await runPeptideOsSsoPost(
+    peekRequest({
+      chunks: [new TextEncoder().encode(`token=${encodeURIComponent(rawToken)}&embed=1`)]
+    }),
+    fakeWorld().deps,
+    POS
+  );
+  const smallPage = await small.text();
+  assert.match(smallPage, />Log in</);
+  assert.match(smallPage, /target="_top"/);
+  assert.doesNotMatch(smallPage, new RegExp(rawToken));
+
+  let oversizePulls = 0;
+  const declared = await runPeptideOsSsoPost(
+    peekRequest({
+      contentLength: String(EMBED_REJECT_PEEK_MAX_BYTES + 1),
+      chunks: [new TextEncoder().encode(`embed=1&token=${encodeURIComponent(rawToken)}`)],
+      onPull: () => {
+        oversizePulls += 1;
+      }
+    }),
+    fakeWorld().deps,
+    POS
+  );
+  const declaredPage = await declared.text();
+  assert.ok(oversizePulls < 2);
+  assert.doesNotMatch(declaredPage, /← Back to dashboard/);
+  assert.doesNotMatch(declaredPage, /target="_top"/);
+  assert.doesNotMatch(declaredPage, new RegExp(rawToken));
+
+  const wrongType = await runPeptideOsSsoPost(
+    peekRequest({
+      contentType: "application/json",
+      chunks: [new TextEncoder().encode("{\"embed\":\"1\"}")]
+    }),
+    fakeWorld().deps,
+    POS
+  );
+  assert.doesNotMatch(await wrongType.text(), /← Back to dashboard/);
+
+  let streamed = 0;
+  const chunks = Array.from({ length: 12 }, () => new Uint8Array(1024));
+  chunks[0].set(new TextEncoder().encode("embed=1&"));
+  const streamedResponse = await runPeptideOsSsoPost(
+    peekRequest({
+      chunks,
+      onPull: (bytes) => {
+        streamed += bytes;
+      }
+    }),
+    fakeWorld().deps,
+    POS
+  );
+  const streamedPage = await streamedResponse.text();
+  assert.ok(streamed <= EMBED_REJECT_PEEK_MAX_BYTES + 1024);
+  assert.ok(streamed < chunks.length * 1024);
+  assert.doesNotMatch(streamedPage, /← Back to dashboard/);
+});
+
 test("POST replay of a consumed handoff fails and stays consumed", async () => {
   const { deps, handoff } = fakeWorld();
   const first = await runPeptideOsSsoPost(postRequest({ token: rawToken }), deps, POS);
@@ -554,6 +641,40 @@ function assertRejectedWithoutConsume(
   assertSsoResponseHeaders(response);
   assert.equal(handoff.consumed_at, null);
   assert.equal(claimCount(), 0);
+}
+
+function peekRequest(options: {
+  chunks: Uint8Array[];
+  search?: string;
+  contentType?: string;
+  contentLength?: string;
+  onPull?: (bytes: number) => void;
+}) {
+  let index = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (index >= options.chunks.length) {
+        controller.close();
+        return;
+      }
+      const next = options.chunks[index];
+      index += 1;
+      options.onPull?.(next.byteLength);
+      controller.enqueue(next);
+    }
+  });
+  const headers = new Headers({
+    origin: "https://evil.example",
+    accept: "text/html",
+    "content-type": options.contentType ?? "application/x-www-form-urlencoded"
+  });
+  if (options.contentLength !== undefined) headers.set("content-length", options.contentLength);
+  return new NextRequest(`${WC}/api/peptideos-wc-sso${options.search ?? ""}`, {
+    method: "POST",
+    headers,
+    body: stream,
+    duplex: "half"
+  });
 }
 
 function chunkedPostRequest(options: {

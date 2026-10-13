@@ -6,8 +6,8 @@ export const EMBED_SESSION_KEY = "wc-embed";
 export const EMBED_HTML_ATTR = "data-wc-embed";
 
 const SIGNOUT_PREFIXES = ["/auth/signout", "/api/workouts/signout"] as const;
-const HIDDEN_ENTRY_PREFIXES = ["/premium", "/leaderboard"] as const;
 const AUTH_BREAKOUT_PREFIXES = ["/login", "/signup", "/api/workouts/sso", "/dashboard"] as const;
+const PAYMENT_HOSTS = ["stripe.com", "paypal.com", "lemonsqueezy.com"] as const;
 
 /** Exact label for every embed control that returns to PeptideOS. */
 export const EMBED_BACK_TO_DASHBOARD = "← Back to dashboard";
@@ -69,32 +69,45 @@ export function isEmbedQuery(search: string): boolean {
   return new URLSearchParams(raw).get("embed") === "1";
 }
 
-function pathnameOf(href: string, pageOrigin: string): string | null {
-  const raw = href.trim();
-  if (!raw || raw.startsWith("#") || /^javascript:/i.test(raw) || /^data:/i.test(raw)) {
-    return null;
-  }
-  try {
-    return new URL(raw, pageOrigin).pathname;
-  } catch {
-    return null;
-  }
-}
-
 function matchesPrefix(pathname: string, prefixes: readonly string[]): boolean {
   const path = stripLocalePrefix(pathname);
   return prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-export function isHiddenEmbedEntryPath(href: string, pageOrigin: string): boolean {
-  const pathname = pathnameOf(href, pageOrigin);
-  if (!pathname) return false;
-  return matchesPrefix(pathname, HIDDEN_ENTRY_PREFIXES);
+export function isPaymentCheckoutHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return PAYMENT_HOSTS.some((paymentHost) => host === paymentHost || host.endsWith(`.${paymentHost}`));
 }
 
-export function shouldHideEmbedEntry(embed: boolean, href: string, pageOrigin = "https://workouts.peptideos.us"): boolean {
-  if (!embed) return false;
-  return isHiddenEmbedEntryPath(href, pageOrigin);
+/**
+ * Checkout destinations leave the frame at the top level. Same-origin premium
+ * and leaderboard pages stay inside the pane.
+ */
+export function checkoutBreakoutTarget(embed: boolean, href: string, pageOrigin: string): "_top" | "self" {
+  if (!embed) return "self";
+  try {
+    const url = new URL(href, pageOrigin);
+    if (url.origin !== pageOrigin || isPaymentCheckoutHost(url.hostname)) return "_top";
+    return "self";
+  } catch {
+    return "_top";
+  }
+}
+
+export interface CheckoutAssignRuntime {
+  embed: boolean;
+  pageOrigin: string;
+  assignSelf: (href: string) => void;
+  assignTop: (href: string) => void;
+}
+
+/** Programmatic Stripe and billing navigations. Links still use embedFrameTarget. */
+export function assignCheckoutUrl(href: string, runtime: CheckoutAssignRuntime = browserCheckoutRuntime()): void {
+  if (checkoutBreakoutTarget(runtime.embed, href, runtime.pageOrigin) === "_top") {
+    runtime.assignTop(href);
+    return;
+  }
+  runtime.assignSelf(href);
 }
 
 /**
@@ -136,9 +149,27 @@ export function embedFrameTarget(
     return "_top";
   }
 
+  if (isPaymentCheckoutHost(url.hostname)) {
+    return "_top";
+  }
+
   if (url.origin === pageOrigin) {
     return null;
   }
 
   return "_blank";
+}
+
+function browserCheckoutRuntime(): CheckoutAssignRuntime {
+  const embed = typeof document !== "undefined" && document.documentElement.getAttribute(EMBED_HTML_ATTR) === "1";
+  const pageOrigin = typeof window !== "undefined" ? window.location.origin : "https://workouts.peptideos.us";
+  return {
+    embed,
+    pageOrigin,
+    assignSelf: (href) => window.location.assign(href),
+    assignTop: (href) => {
+      const top = window.top ?? window;
+      top.location.assign(href);
+    }
+  };
 }

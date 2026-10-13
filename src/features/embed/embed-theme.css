@@ -90,6 +90,11 @@ html[data-wc-embed="1"] [data-wc-chrome="version"] {
   display: none !important;
 }
 
+html[data-wc-embed="1"] [data-wc-signout],
+html[data-wc-embed="1"] a[href*="/auth/signout"] {
+  display: none !important;
+}
+
 html[data-wc-embed="1"] [data-wc-chrome="nav"] {
   position: relative !important;
   bottom: auto !important;

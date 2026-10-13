@@ -26,6 +26,7 @@ export default async function AuthSignOutContinuePage() {
         <div
           className="flex w-full max-w-sm flex-col items-center gap-4 text-center"
           data-signout-handoff={autoSubmit ? "auto-submit" : "confirm"}
+          data-wc-signout=""
         >
           {autoSubmit ? (
             <SignoutPendingNotice label={t("signout_pending_title")} />

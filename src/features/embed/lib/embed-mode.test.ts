@@ -234,6 +234,11 @@ interface FakeEvent {
   target: FakeElement;
   defaultPrevented: boolean;
   stopped: boolean;
+  button: number;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
   preventDefault(): void;
   stopPropagation(): void;
 }
@@ -279,11 +284,21 @@ function matches(node: FakeElement, selector: string): boolean {
   return false;
 }
 
-function dispatch(documentNode: FakeElement, type: string, target: FakeElement) {
+function dispatch(
+  documentNode: FakeElement,
+  type: string,
+  target: FakeElement,
+  extras?: Partial<Pick<FakeEvent, "button" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey">>
+) {
   const event: FakeEvent = {
     target,
     defaultPrevented: false,
     stopped: false,
+    button: extras?.button ?? 0,
+    ctrlKey: extras?.ctrlKey ?? false,
+    metaKey: extras?.metaKey ?? false,
+    shiftKey: extras?.shiftKey ?? false,
+    altKey: extras?.altKey ?? false,
     preventDefault() {
       this.defaultPrevented = true;
     },
@@ -309,9 +324,14 @@ function boot(
   const localWrites: string[] = [];
   const assigned: string[] = [];
   let cookie = "";
+  let storedDuringOpen: string | null | undefined;
   const context = {
     parent: null as unknown,
     fetch: options?.fetch,
+    open() {
+      storedDuringOpen = store.get(EMBED_SESSION_KEY) ?? null;
+      return null;
+    },
     sessionStorage: {
       getItem: (key: string) => store.get(key) ?? null,
       setItem: (key: string, value: string) => {
@@ -348,7 +368,17 @@ function boot(
   context.parent = options?.topLevel ? context : {};
   const run = new Function("window", "document", "sessionStorage", "localStorage", "location", embedBootScript());
   run(context, context.document, context.sessionStorage, context.localStorage, context.location);
-  return { store, root, documentNode, localWrites, assigned, cookie: () => cookie, fetch: context.fetch };
+  return {
+    store,
+    root,
+    documentNode,
+    localWrites,
+    assigned,
+    cookie: () => cookie,
+    fetch: context.fetch,
+    open: () => context.open(),
+    storedDuringOpen: () => storedDuringOpen
+  };
 }
 
 test("boot script enables embed for this tab only when the query or session flag says so", () => {
@@ -458,7 +488,56 @@ test("a top-level tab clears a leaked embed flag and does not post logout", () =
   );
 });
 
-test("framed logout posts wc:signed-out to an allowlisted parent before signOutAction", () => {
+test("new-tab clicks and window.open drop the embed flag, then the frame restores it", async () => {
+  const on = boot("?embed=1", null);
+  const same = element("a", { href: "/en/programs" }, on.documentNode);
+  dispatch(on.documentNode, "click", same);
+  assert.equal(on.store.get(EMBED_SESSION_KEY), "1");
+  assert.match(on.cookie(), /wc-embed=1/);
+
+  const modified = dispatch(on.documentNode, "click", same, { ctrlKey: true });
+  assert.equal(modified.defaultPrevented, false);
+  assert.equal(on.store.has(EMBED_SESSION_KEY), false);
+  assert.match(on.cookie(), /Max-Age=0/);
+  assert.equal(on.root.getAttribute("data-wc-embed"), "1");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(on.store.get(EMBED_SESSION_KEY), "1");
+  assert.match(on.cookie(), /wc-embed=1/);
+
+  const blank = element("a", { href: "/en/profile", target: "_blank" }, on.documentNode);
+  dispatch(on.documentNode, "click", blank);
+  assert.equal(on.store.has(EMBED_SESSION_KEY), false);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(on.store.get(EMBED_SESSION_KEY), "1");
+
+  const middle = element("a", { href: "/en/leaderboard" }, on.documentNode);
+  dispatch(on.documentNode, "auxclick", middle, { button: 1 });
+  assert.equal(on.store.has(EMBED_SESSION_KEY), false);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const meta = element("a", { href: "/en/premium" }, on.documentNode);
+  dispatch(on.documentNode, "click", meta, { metaKey: true });
+  assert.equal(on.store.has(EMBED_SESSION_KEY), false);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  dispatch(on.documentNode, "click", meta, { shiftKey: true });
+  assert.equal(on.store.has(EMBED_SESSION_KEY), false);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  on.open();
+  assert.equal(on.storedDuringOpen(), null);
+  assert.equal(on.store.get(EMBED_SESSION_KEY), "1");
+  assert.match(on.cookie(), /wc-embed=1/);
+  assert.equal(on.root.getAttribute("data-wc-embed"), "1");
+
+  const external = element("a", { href: "http://checkout.stripe.com/c/pay/cs_test" }, on.documentNode);
+  dispatch(on.documentNode, "click", external);
+  assert.equal(external.getAttribute("target"), "_blank");
+  assert.equal(on.store.has(EMBED_SESSION_KEY), false);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(on.store.get(EMBED_SESSION_KEY), "1");
+});
+
+test("framed logout posts wc:signed-out and does not run the server action", () => {
   const calls: Array<{ message: { type: string; reason: string }; origin: string }> = [];
   const record = (message: unknown, origin: string) => {
     if (!message || typeof message !== "object") return;
@@ -490,17 +569,24 @@ test("framed logout posts wc:signed-out to an allowlisted parent before signOutA
 
   const logout = readFileSync("src/features/auth/model/useLogout.ts", "utf8");
   const body = logout.slice(logout.indexOf("mutationFn"));
-  const postAt = body.indexOf("postEmbedLogoutToParent");
+  const embedAt = body.indexOf("isEmbedFrame()");
+  const markAt = body.indexOf("markExplicitEmbedLogout(pathname)");
+  const postAt = body.indexOf("postEmbedLogoutToParent()");
+  const returnAt = body.indexOf("return;");
   const actionAt = body.indexOf("() => signOutAction()");
-  assert.ok(postAt !== -1 && actionAt !== -1 && postAt < actionAt);
+  assert.ok(embedAt !== -1 && markAt !== -1 && postAt !== -1 && returnAt !== -1 && actionAt !== -1);
+  assert.ok(embedAt < markAt && markAt < postAt && postAt < returnAt && returnAt < actionAt);
+  assert.match(logout, /wc:signed-out/);
 
   const action = readFileSync("src/features/auth/signout/model/signout.action.ts", "utf8");
   assert.match(action, /EMBED_COOKIE_NAME/);
-  assert.match(action, /redirect\("\/\?embed=1"\)/);
+  assert.doesNotMatch(action, /redirect\("\/\?embed=1"\)/);
   assert.match(action, /redirect\("\/auth\/signout\/continue"\)/);
-  const embedRedirect = action.indexOf("redirect(\"/?embed=1\")");
+  const cookieAt = action.indexOf("EMBED_COOKIE_NAME");
+  const signOutAt = action.indexOf("auth.api.signOut");
   const continueRedirect = action.indexOf("redirect(\"/auth/signout/continue\")");
-  assert.ok(embedRedirect !== -1 && embedRedirect < continueRedirect);
+  assert.ok(cookieAt !== -1 && signOutAt !== -1 && continueRedirect !== -1);
+  assert.ok(cookieAt < signOutAt && signOutAt < continueRedirect);
 
   const handoff = readFileSync("src/features/auth/signout/ui/peptideos-signout-handoff.tsx", "utf8");
   assert.match(handoff, /autoSubmit && !embedded/);
@@ -542,6 +628,9 @@ test("an embedded gated request gets a frameable signed-out document and no X-Fr
   assert.equal(isEmbedDocumentRequest("", "1"), true);
   assert.equal(isEmbedDocumentRequest("", null), false);
   assert.equal(isEmbedDocumentRequest("?embed=0", "0"), false);
+  assert.equal(isEmbedDocumentRequest("?embed=1", "1", "iframe"), true);
+  assert.equal(isEmbedDocumentRequest("?embed=1", "1", "document"), false);
+  assert.equal(isEmbedDocumentRequest("", "1", "document"), false);
 
   const response = embedSignedOutDocumentResponse("https://peptideos.us", APP);
   const html = await response.text();
@@ -573,6 +662,11 @@ test("app shell still renders header, footer, card chrome, and bottom nav outsid
   const footer = readFileSync("src/features/layout/Footer.tsx", "utf8");
   const nav = readFileSync("src/features/layout/BottomNavigation.tsx", "utf8");
   assert.match(header, /data-wc-chrome="header"/);
+  assert.match(header, /data-wc-signout/);
+  assert.match(readFileSync("src/features/user/ui/UserDropdown.tsx", "utf8"), /data-wc-signout/);
+  assert.match(readFileSync("src/features/admin/layout/admin-header.tsx", "utf8"), /data-wc-signout/);
+  assert.match(readFileSync("src/features/auth/verify-email/ui/verify-email-page.tsx", "utf8"), /data-wc-signout/);
+  assert.match(readFileSync("app/[locale]/(app)/auth/signout/page.tsx", "utf8"), /data-wc-signout/);
   assert.match(footer, /data-wc-chrome="footer"/);
   assert.match(nav, /data-wc-chrome="nav"/);
   assert.match(nav, /leaderboard/);

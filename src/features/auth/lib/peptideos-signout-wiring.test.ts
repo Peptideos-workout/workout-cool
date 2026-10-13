@@ -33,7 +33,7 @@ test("client logout clears the WC session then opens the PeptideOS POST handoff 
 
 test("useLogout runs signOutAction before invalidating or clearing the session query", () => {
   const src = read("src/features/auth/model/useLogout.ts");
-  const mutation = src.match(/mutationFn:\s*async\s*\(\)\s*=>\s*\{[\s\S]*?\n\s*\}/);
+  const mutation = src.match(/mutationFn:\s*async\s*\(\)\s*=>\s*\{[\s\S]*\n {4}\}/);
   assert.ok(mutation, "useLogout must keep a mutationFn");
   const body = mutation[0];
   const signOutAt = body.search(/await signOutAction|logoutThenClearSession/);

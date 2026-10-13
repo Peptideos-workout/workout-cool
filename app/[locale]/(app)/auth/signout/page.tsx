@@ -16,7 +16,7 @@ export default async function AuthSignOutPage() {
     <div className="flex min-h-[50vh] items-center justify-center px-4">
       <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{t("signout_confirm_title")}</h1>
-        <form action={signOutAction} className="flex w-full flex-col items-center gap-3">
+        <form action={signOutAction} className="flex w-full flex-col items-center gap-3" data-wc-signout="">
           <Button className="w-full" type="submit">
             {t("logout")}
           </Button>

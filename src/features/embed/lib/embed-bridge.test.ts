@@ -283,6 +283,53 @@ test("a non-embed visit after an embed visit keeps the default theme key", () =>
   assert.equal(normal.values.get("wc-embed-theme"), "dark");
 });
 
+test("an embed tab ignores theme storage events from a normal tab", () => {
+  const embedded = bootTheme("?embed=1&theme=dark", null, { theme: "light" });
+  assert.equal(embedded.root.classList.contains("dark"), true);
+  assert.equal(embedded.storage.getItem("theme"), "dark");
+
+  let seenTheme = 0;
+  embedded.window.addEventListener("storage", (event) => {
+    if (event.key !== "theme") return;
+    seenTheme += 1;
+    embedded.root.classList.remove("dark");
+    embedded.root.classList.remove("light");
+    if (event.newValue === "light" || event.newValue === "dark") embedded.root.classList.add(event.newValue);
+  });
+
+  embedded.values.set("theme", "light");
+  const blocked = embedded.window.dispatchStorage({ key: "theme", newValue: "light" });
+  assert.equal(blocked.stopped, true);
+  assert.equal(seenTheme, 0);
+  assert.equal(embedded.root.classList.contains("dark"), true);
+  assert.equal(embedded.root.classList.contains("light"), false);
+  assert.equal(embedded.storage.getItem("theme"), "dark");
+  assert.equal(embedded.values.get("wc-embed-theme"), "dark");
+
+  const cleared = embedded.window.dispatchStorage({ key: "theme", newValue: null });
+  assert.equal(cleared.stopped, true);
+  assert.equal(seenTheme, 0);
+  assert.equal(embedded.root.classList.contains("dark"), true);
+
+  let seenEmbedKey = 0;
+  embedded.window.addEventListener("storage", (event) => {
+    if (event.key === "wc-embed-theme") seenEmbedKey += 1;
+  });
+  const otherKey = embedded.window.dispatchStorage({ key: "wc-embed-theme", newValue: "light" });
+  assert.equal(otherKey.stopped, false);
+  assert.equal(seenEmbedKey, 1);
+
+  const normal = bootTheme("", null, { theme: "light" });
+  let normalSeen = 0;
+  normal.window.addEventListener("storage", (event) => {
+    if (event.key === "theme") normalSeen += 1;
+  });
+  const passed = normal.window.dispatchStorage({ key: "theme", newValue: "dark" });
+  assert.equal(passed.stopped, false);
+  assert.equal(normalSeen, 1);
+  assert.equal(normal.root.classList.contains("dark"), false);
+});
+
 test("bridge source never posts to a wildcard and a message cannot sign in or out", () => {
   const bridge = readFileSync("src/features/embed/lib/embed-bridge.ts", "utf8");
   const boot = readFileSync("src/features/embed/lib/embed-boot-script.ts", "utf8");
@@ -298,7 +345,9 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   assert.doesNotMatch(ui, /useSession/);
   assert.match(providers, /storageKey="theme"/);
   assert.match(boot, /wc-embed-theme/);
+  assert.match(boot, /stopImmediatePropagation/);
   assert.doesNotMatch(boot, /localStorage\.setItem\("theme"/);
+  assert.doesNotMatch(bridge, /EMBED_THEME_STORAGE_KEY/);
   assert.match(providers, /<EmbedBridge/);
   assert.match(logout, /notifyEmbedSignedOut\(getConfiguredPeptideOsOrigin\(\)\)/);
   const notifyAt = logout.indexOf("notifyEmbedSignedOut");
@@ -358,11 +407,19 @@ function bridgeHost(
   return host;
 }
 
+interface FakeStorageEvent {
+  key: string | null;
+  newValue: string | null;
+  stopImmediatePropagation: () => void;
+}
+
 function bootTheme(search: string, embedStored: string | null, seeded: Record<string, string>) {
   const session = new Map<string, string>();
   const local = new Map<string, string>(Object.entries(seeded));
   if (embedStored !== null) session.set("wc-embed", embedStored);
   const classes = new Set<string>();
+  const capture: Array<(event: FakeStorageEvent) => void> = [];
+  const bubble: Array<(event: FakeStorageEvent) => void> = [];
   const root = {
     attrs: {} as Record<string, string>,
     classList: {
@@ -393,6 +450,30 @@ function bootTheme(search: string, embedStored: string | null, seeded: Record<st
     documentElement: root,
     addEventListener: () => undefined
   };
+  const windowNode = {
+    addEventListener(type: string, listener: (event: FakeStorageEvent) => void, useCapture?: boolean) {
+      if (type !== "storage") return;
+      (useCapture ? capture : bubble).push(listener);
+    },
+    removeEventListener() {
+      return undefined;
+    },
+    dispatchStorage(input: { key: string | null; newValue: string | null }) {
+      let stopped = false;
+      const event: FakeStorageEvent = {
+        key: input.key,
+        newValue: input.newValue,
+        stopImmediatePropagation() {
+          stopped = true;
+        }
+      };
+      for (const listener of [...capture, ...bubble]) {
+        if (stopped) break;
+        listener(event);
+      }
+      return { stopped };
+    }
+  };
   const context = {
     sessionStorage: {
       getItem: (key: string) => session.get(key) ?? null,
@@ -400,9 +481,12 @@ function bootTheme(search: string, embedStored: string | null, seeded: Record<st
     },
     localStorage: storage,
     location: { search, origin: "https://workouts.peptideos.us" },
-    document: documentNode
+    document: documentNode,
+    addEventListener: windowNode.addEventListener,
+    removeEventListener: windowNode.removeEventListener,
+    dispatchStorage: windowNode.dispatchStorage
   };
   const run = new Function("window", "document", "sessionStorage", "localStorage", "location", embedBootScript());
   run(context, context.document, context.sessionStorage, context.localStorage, context.location);
-  return { root, storage, values: local };
+  return { root, storage, values: local, window: windowNode };
 }

@@ -10,7 +10,6 @@ export const EMBED_PARENT_MESSAGE = {
   theme: "wc:theme"
 } as const;
 
-const THEME_STORAGE_KEY = "theme";
 const MIN_REPORTED_HEIGHT = 200;
 const MAX_REPORTED_HEIGHT = 20000;
 
@@ -227,8 +226,6 @@ export function notifyEmbedSignedOut(origin: string, runtime: EmbedSignedOutRunt
   if (!runtime.embed || runtime.topLevel) return false;
   return postToParent(runtime.parent, origin, { type: EMBED_CHILD_MESSAGE.signedOut });
 }
-
-export const EMBED_THEME_STORAGE_KEY = THEME_STORAGE_KEY;
 
 function isSafePathname(pathname: string): boolean {
   if (pathname === "/") return true;

@@ -112,4 +112,4 @@ SSO launcher path is `/api/workouts/sso` (PeptideOS then sends signed-out users 
 - New SSO users still get a random unused password; sign-in is a Better Auth signed session (`createTrustedBetterAuthSession`).
 - `@@unique([providerId, accountId])` remains the DB backstop. `(userId, providerId)` is `map: "account_userId_providerId_key"` with a no-op `IF NOT EXISTS` Prisma migration.
 
-`app/api/peptideos-wc-sso` honours a same-origin `redirect` on success and returns a localized HTML error page (with a PeptideOS `/api/workouts/sso` try-again link, plus a support note on 409 collisions) for browser navigations. API callers still get JSON.
+`app/api/peptideos-wc-sso` honours a same-origin `redirect` from the POST form body on success and returns a localized HTML error page (with a PeptideOS `/api/workouts/sso` try-again link, plus a support note on 409 collisions) for browser navigations. API callers still get JSON.

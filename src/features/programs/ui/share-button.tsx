@@ -16,13 +16,7 @@ interface ShareButtonProps {
  * Reusable share button component
  * Shows appropriate feedback based on share status
  */
-export function ShareButton({ 
-  programTitle, 
-  programDescription,
-  className = "",
-  size = "md",
-  variant = "default"
-}: ShareButtonProps) {
+export function ShareButton({ programTitle, programDescription, className = "", size = "md", variant = "default" }: ShareButtonProps) {
   const { handleShare, isSharing, shareMessage } = useProgramShare({
     programTitle,
     programDescription,
@@ -30,15 +24,15 @@ export function ShareButton({
 
   // Size classes
   const sizeClasses = {
-    sm: "p-2",
-    md: "p-3", 
-    lg: "p-4",
+    sm: "min-h-12 min-w-12 p-2",
+    md: "min-h-12 min-w-12 p-3",
+    lg: "min-h-12 min-w-12 p-4",
   };
 
   // Variant classes
   const variantClasses = {
-    default: "bg-[#4F8EF7] hover:bg-[#4F8EF7]/80 text-white",
-    ghost: "bg-transparent hover:bg-white/10 text-current",
+    default: "bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]",
+    ghost: "bg-transparent text-[var(--wc-dash-text)]",
   };
 
   // Icon size based on button size
@@ -58,10 +52,8 @@ export function ShareButton({
           transition-all 
           duration-200 
           ease-in-out 
-          hover:scale-105
           disabled:opacity-50
           disabled:cursor-not-allowed
-          disabled:hover:scale-100
           ${className}
         `}
         disabled={isSharing}
@@ -79,9 +71,14 @@ export function ShareButton({
 
       {/* Feedback tooltip */}
       {shareMessage && (
-        <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+        <div
+          className={
+            `absolute -top-12 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded border ` +
+            `border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] px-2 py-1 text-lg ` +
+            `text-[var(--wc-dash-text)]`
+          }
+        >
           {shareMessage}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-black"></div>
         </div>
       )}
     </div>

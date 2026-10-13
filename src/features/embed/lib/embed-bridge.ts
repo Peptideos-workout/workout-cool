@@ -67,6 +67,8 @@ export interface ParentThemeEvent {
 
 export interface EmbedBridgeHost {
   parentOrigin: string;
+  /** When set, these exact origins are used until a valid wc:theme locks one. */
+  outboundOrigins?: readonly string[];
   isEmbed: () => boolean;
   isTopLevel: () => boolean;
   parent: EmbedMessagePort | null;
@@ -223,26 +225,29 @@ export function createHeightReporter(post: (height: number) => void, requestFram
 /** Posts height, path, and accepts theme. Inbound messages cannot sign in or out. */
 export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   if (!host.isEmbed() || host.isTopLevel()) return () => undefined;
-  const origin = exactOrigin(host.parentOrigin);
-  if (!origin || !isEmbedParentOrigin(origin) || !host.parent) return () => undefined;
+  let targets = outboundTargets(host);
+  if (targets.length === 0 || !host.parent) return () => undefined;
 
   const parent = host.parent;
   let stopped = false;
+  const post = (message: EmbedChildMessage) => {
+    for (const origin of targets) postToParent(parent, origin, message);
+  };
   const reporter = createHeightReporter((height) => {
     if (stopped) return;
-    postToParent(parent, origin, { type: EMBED_CHILD_MESSAGE.height, height });
+    post({ type: EMBED_CHILD_MESSAGE.height, height });
   }, host.requestFrame);
 
   const publishPath = () => {
     if (stopped) return;
     const raw = host.readPath();
     if (isEmbedSignedOutPath(raw)) {
-      postToParent(parent, origin, embedLogoutMessage());
+      post(embedLogoutMessage());
       return;
     }
     const path = reportableEmbedPath(raw);
     if (!path) return;
-    postToParent(parent, origin, { type: EMBED_CHILD_MESSAGE.navigate, path });
+    post({ type: EMBED_CHILD_MESSAGE.navigate, path });
   };
 
   const stopResize = host.subscribeResize(() => {
@@ -250,8 +255,10 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   });
   const stopPath = host.subscribePath(publishPath);
   const stopMessages = host.addMessageListener((event) => {
-    const theme = acceptParentThemeMessage(event, parent, origin);
+    const theme = acceptParentThemeMessage(event, parent, targets[0] ?? host.parentOrigin);
     if (!theme || stopped) return;
+    // A valid wc:theme from the parent locks later posts to that exact origin.
+    if (isEmbedParentOrigin(event.origin)) targets = [event.origin];
     host.setTheme(theme);
   });
 
@@ -302,12 +309,27 @@ export function sessionReportToSend(
 }
 
 export function postEmbedSession(
-  origin: string,
+  origin: string | readonly string[],
   state: EmbedSessionState | null,
   runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()
 ): boolean {
-  if (!state || !runtime.embed || runtime.topLevel || !isEmbedParentOrigin(origin)) return false;
-  return postToParent(runtime.parent, origin, embedSessionMessage(state));
+  if (!state || !runtime.embed || runtime.topLevel) return false;
+  const origins = typeof origin === "string" ? [origin] : origin;
+  let posted = false;
+  for (const candidate of origins) {
+    if (postToParent(runtime.parent, candidate, embedSessionMessage(state))) posted = true;
+  }
+  return posted;
+}
+
+function outboundTargets(host: EmbedBridgeHost): string[] {
+  const listed = (host.outboundOrigins ?? [])
+    .map((origin) => exactOrigin(origin))
+    .filter((origin): origin is string => origin !== null && isEmbedParentOrigin(origin));
+  if (listed.length > 0) return [...new Set(listed)];
+  const single = exactOrigin(host.parentOrigin);
+  if (single && isEmbedParentOrigin(single)) return [single];
+  return [];
 }
 
 function isSafePathname(pathname: string): boolean {

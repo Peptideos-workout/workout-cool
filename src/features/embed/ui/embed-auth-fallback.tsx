@@ -6,7 +6,7 @@ import { useI18n } from "locales/client";
 
 import { EmbedAuthFallbackView } from "./embed-auth-fallback-view";
 
-import { isSsoFailureCode, resolveEmbedParentOrigin, shouldShowEmbedAuthFallback } from "@/features/embed/lib/embed-mode";
+import { isSsoFailureCode, resolveEmbedOutboundOrigins, shouldShowEmbedAuthFallback } from "@/features/embed/lib/embed-mode";
 import {
   embedReportedSession,
   explicitEmbedLogoutOnPath,
@@ -51,7 +51,7 @@ export function EmbedAuthFallback() {
     const state = sessionReportToSend(reportedSession.current, next);
     if (!state) return;
     const sent = postEmbedSession(
-      resolveEmbedParentOrigin({
+      resolveEmbedOutboundOrigins({
         referrer: document.referrer,
         ancestorOrigins: (window.location as Location & { ancestorOrigins?: ArrayLike<string> }).ancestorOrigins ?? null
       }),

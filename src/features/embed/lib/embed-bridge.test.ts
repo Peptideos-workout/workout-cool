@@ -89,7 +89,14 @@ test("postToParent refuses wildcard, path, and non-URL origins", () => {
   assert.equal(calls.length, 0);
   assert.equal(exactOrigin("*"), null);
   assert.equal(postToParent(parent, POS, message), true);
-  assert.deepEqual(calls, [{ message, origin: POS }]);
+  assert.equal(postToParent(parent, "https://www.peptideos.us", message), true);
+  assert.equal(postToParent(parent, "https://evil.example", message), false);
+  assert.equal(postToParent(parent, "https://peptideos.us.evil.example", message), false);
+  assert.deepEqual(calls, [
+    { message, origin: POS },
+    { message, origin: "https://www.peptideos.us" }
+  ]);
+  assert.equal(JSON.stringify(calls).includes("*"), false);
 });
 
 test("reportable paths keep locale and search, and drop auth, admin, and protocol tricks", () => {
@@ -137,6 +144,11 @@ test("parent theme messages require the exact origin, the parent source, and no 
   assert.equal(acceptParentThemeMessage({ ...good, data: { type: "wc:theme" } }, parent, POS), null);
   assert.equal(acceptParentThemeMessage({ ...good, data: null }, parent, POS), null);
   assert.equal(acceptParentThemeMessage(good, parent, "*"), null);
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "https://www.peptideos.us" }, parent, "https://www.peptideos.us"), "dark");
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "https://www.peptideos.us" }, parent, POS), "dark");
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "*" }, parent, POS), null);
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "https://www.peptideos.us.evil.example" }, parent, POS), null);
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "http://peptideos.us" }, parent, POS), null);
 });
 
 test("the bridge posts clamped height and path only to the PeptideOS origin", () => {
@@ -455,7 +467,9 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   }
   assert.match(fallback, /embedReportedSession\(/);
   assert.match(fallback, /sessionReportToSend\(/);
-  assert.match(fallback, /postEmbedSession\(getConfiguredPeptideOsOrigin\(\), state\)/);
+  assert.match(fallback, /postEmbedSession\(/);
+  assert.match(fallback, /resolveEmbedParentOrigin\(/);
+  assert.match(ui, /resolveEmbedParentOrigin\(/);
   assert.match(fallback, /explicitEmbedLogoutOnPath\(pathname\)/);
   assert.match(fallback, /releaseExplicitEmbedLogout\(pathname\)/);
   assert.doesNotMatch(bridge, /signOut|signIn|location\.assign|location\.href/);

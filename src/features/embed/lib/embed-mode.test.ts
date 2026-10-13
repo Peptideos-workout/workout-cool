@@ -491,7 +491,7 @@ test("framed logout posts wc:signed-out to an allowlisted parent before signOutA
   const logout = readFileSync("src/features/auth/model/useLogout.ts", "utf8");
   const body = logout.slice(logout.indexOf("mutationFn"));
   const postAt = body.indexOf("postEmbedLogoutToParent");
-  const actionAt = body.indexOf("signOutAction");
+  const actionAt = body.indexOf("() => signOutAction()");
   assert.ok(postAt !== -1 && actionAt !== -1 && postAt < actionAt);
 
   const action = readFileSync("src/features/auth/signout/model/signout.action.ts", "utf8");

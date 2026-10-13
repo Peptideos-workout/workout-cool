@@ -1,4 +1,4 @@
-import { shouldShowEmbedAuthFallback } from "./embed-mode";
+import { isEmbedParentOrigin, shouldShowEmbedAuthFallback } from "./embed-mode";
 
 import { stripLocalePrefix } from "@/features/auth/lib/locale-path";
 
@@ -164,14 +164,16 @@ export function clearExplicitEmbedLogout(): void {
 
 export function postToParent(parent: EmbedMessagePort | null, origin: string, message: EmbedChildMessage): boolean {
   const targetOrigin = exactOrigin(origin);
-  if (!parent || !targetOrigin) return false;
+  if (!parent || !targetOrigin || !isEmbedParentOrigin(targetOrigin)) return false;
   parent.postMessage(message, targetOrigin);
   return true;
 }
 
 export function acceptParentThemeMessage(event: ParentThemeEvent, parent: unknown, peptideOrigin: string): "light" | "dark" | null {
-  const expected = exactOrigin(peptideOrigin);
-  if (!expected || event.origin !== expected || event.source !== parent) return null;
+  if (peptideOrigin.includes("*")) return null;
+  const configured = exactOrigin(peptideOrigin);
+  if (!configured || !isEmbedParentOrigin(configured)) return null;
+  if (!isEmbedParentOrigin(event.origin) || event.source !== parent) return null;
   if (!event.data || typeof event.data !== "object" || Array.isArray(event.data)) return null;
 
   const record = event.data as Record<string, unknown>;
@@ -222,7 +224,7 @@ export function createHeightReporter(post: (height: number) => void, requestFram
 export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   if (!host.isEmbed() || host.isTopLevel()) return () => undefined;
   const origin = exactOrigin(host.parentOrigin);
-  if (!origin || !host.parent) return () => undefined;
+  if (!origin || !isEmbedParentOrigin(origin) || !host.parent) return () => undefined;
 
   const parent = host.parent;
   let stopped = false;
@@ -304,7 +306,7 @@ export function postEmbedSession(
   state: EmbedSessionState | null,
   runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()
 ): boolean {
-  if (!state || !runtime.embed || runtime.topLevel) return false;
+  if (!state || !runtime.embed || runtime.topLevel || !isEmbedParentOrigin(origin)) return false;
   return postToParent(runtime.parent, origin, embedSessionMessage(state));
 }
 

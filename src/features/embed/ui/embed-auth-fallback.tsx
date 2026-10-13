@@ -6,7 +6,7 @@ import { useI18n } from "locales/client";
 
 import { EmbedAuthFallbackView } from "./embed-auth-fallback-view";
 
-import { isSsoFailureCode, shouldShowEmbedAuthFallback } from "@/features/embed/lib/embed-mode";
+import { isSsoFailureCode, resolveEmbedParentOrigin, shouldShowEmbedAuthFallback } from "@/features/embed/lib/embed-mode";
 import {
   embedReportedSession,
   explicitEmbedLogoutOnPath,
@@ -50,7 +50,13 @@ export function EmbedAuthFallback() {
     });
     const state = sessionReportToSend(reportedSession.current, next);
     if (!state) return;
-    const sent = postEmbedSession(getConfiguredPeptideOsOrigin(), state);
+    const sent = postEmbedSession(
+      resolveEmbedParentOrigin({
+        referrer: document.referrer,
+        ancestorOrigins: (window.location as Location & { ancestorOrigins?: ArrayLike<string> }).ancestorOrigins ?? null
+      }),
+      state
+    );
     if (sent) reportedSession.current = state;
   }, [hasSession, pathname, sessionResolved, ssoError]);
 

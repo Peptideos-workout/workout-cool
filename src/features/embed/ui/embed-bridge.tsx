@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 
+import { resolveEmbedParentOrigin } from "@/features/embed/lib/embed-mode";
 import { startEmbedBridge } from "@/features/embed/lib/embed-bridge";
-import { getConfiguredPeptideOsOrigin } from "@/features/auth/lib/configured-peptideos-signup";
 
 /** Child side of the PeptideOS frame bridge. No-ops outside embed mode. */
 export function EmbedBridge() {
@@ -14,7 +14,10 @@ export function EmbedBridge() {
 
   useEffect(() => {
     return startEmbedBridge({
-      parentOrigin: getConfiguredPeptideOsOrigin(),
+      parentOrigin: resolveEmbedParentOrigin({
+        referrer: document.referrer,
+        ancestorOrigins: (window.location as Location & { ancestorOrigins?: ArrayLike<string> }).ancestorOrigins ?? null
+      }),
       isEmbed: () => document.documentElement.getAttribute("data-wc-embed") === "1",
       isTopLevel: () => window.parent === window,
       parent: window.parent,

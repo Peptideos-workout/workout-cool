@@ -15,8 +15,8 @@ export const useLogout = (_redirectUrl: string = "/") => {
 
   return useMutation({
     mutationFn: async () => {
-      // signOutAction redirects, so wc:signed-out has to be posted first.
-      // The parent navigates the top window. This frame must not sign PeptideOS out.
+      // signOutAction redirects to /auth/signout/continue and throws, so wc:signed-out
+      // is posted first. The parent navigates the top window. This frame must not sign PeptideOS out.
       // The mark only blocks wc:session signed-out if this page drops its session first.
       markExplicitEmbedLogout(pathname);
       postEmbedLogoutToParent();

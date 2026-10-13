@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Check, Play, ArrowRight, Trophy as TrophyIcon, Plus, Hourglass } from "lucide-react";
+import { Play, ArrowRight, Trophy as TrophyIcon, Plus, Hourglass } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 import confetti from "canvas-confetti";
 import TrophyImg from "@public/images/trophy.png";
@@ -21,6 +21,11 @@ import { env } from "@/env";
 import { PremiumUpsellAlert } from "@/components/ui/premium-upsell-alert";
 import { Button } from "@/components/ui/button";
 import { HorizontalBottomBanner } from "@/components/ads";
+
+const secondaryButton =
+  "!min-h-12 !border !border-[var(--wc-dash-border)] !bg-[var(--wc-dash-panel)] " +
+  "!text-lg !text-[var(--wc-dash-text)] shadow-none hover:!bg-[var(--wc-dash-inner)]";
+const accentButton = "!min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]";
 
 export function WorkoutSessionSets({
   showCongrats,
@@ -74,17 +79,24 @@ export function WorkoutSessionSets({
 
   if (showCongrats) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 h-full">
-        <Image alt={t("workout_builder.session.complete") + " trophy"} className="w-56 h-56" src={TrophyImg} />
-        <h2 className="text-2xl font-bold mb-2">{t("workout_builder.session.complete") + " ! 🎉"}</h2>
-        <p className="text-lg text-slate-600 mb-6">{t("workout_builder.session.workout_in_progress")}</p>
-        <Button onClick={() => router.push("/profile")}>{t("commons.go_to_profile")}</Button>
+      <div className="flex h-full flex-col items-center justify-center py-16">
+        <Image alt={t("workout_builder.session.complete") + " trophy"} className="h-56 w-56" src={TrophyImg} />
+        <h2 className="mb-2 text-2xl font-bold text-[var(--wc-dash-text)]">{t("workout_builder.session.complete") + " ! 🎉"}</h2>
+        <p className="mb-6 text-lg text-[var(--wc-dash-secondary)]">{t("workout_builder.session.workout_in_progress")}</p>
+        <Button
+          className="!min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]"
+          onClick={() => router.push("/profile")}
+        >
+          {t("commons.go_to_profile")}
+        </Button>
       </div>
     );
   }
 
   if (!session) {
-    return <div className="text-center text-slate-500 py-12">{t("workout_builder.session.no_exercise_selected")}</div>;
+    return (
+      <div className="py-12 text-center text-lg text-[var(--wc-dash-secondary)]">{t("workout_builder.session.no_exercise_selected")}</div>
+    );
   }
 
   const handleExerciseClick = (targetIndex: number) => {
@@ -95,27 +107,36 @@ export function WorkoutSessionSets({
 
   const renderStepIcon = (idx: number, allSetsCompleted: boolean) => {
     if (allSetsCompleted) {
-      return <Check aria-label="Exercice terminé" className="w-4 h-4 text-white" />;
+      return (
+        <span aria-label="Exercice terminé" className="text-lg font-semibold text-[var(--wc-dash-ink)]">
+          ✓
+        </span>
+      );
     }
     if (idx === currentExerciseIndex) {
       return (
-        <svg aria-label="Exercice en cours" className="w-8 h-8 animate-ping text-emerald-500" fill="currentColor" viewBox="0 0 24 24">
+        <svg
+          aria-label="Exercice en cours"
+          className="h-6 w-6 animate-ping text-[var(--wc-dash-ink)]"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
           <circle cx="12" cy="12" r="12" />
         </svg>
       );
     }
 
-    return <Hourglass aria-label="Exercice en cours" className="w-4 h-4 text-gray-600 dark:text-slate-900" />;
+    return <Hourglass aria-label="Exercice en cours" className="h-6 w-6 text-[var(--wc-dash-secondary)]" />;
   };
 
   const renderStepBackground = (idx: number, allSetsCompleted: boolean) => {
     if (allSetsCompleted) {
-      return "bg-green-500 border-green-500 shadow-lg shadow-green-500/30 transition-all duration-500";
+      return "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]";
     }
     if (idx === currentExerciseIndex) {
-      return "bg-gray-300 border-gray-400 dark:bg-slate-500 dark:border-slate-500 transition-all duration-300";
+      return "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]";
     }
-    return "bg-slate-200 border-slate-200 transition-all duration-300";
+    return "border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] text-[var(--wc-dash-secondary)]";
   };
 
   const handleAddSet = () => {
@@ -147,7 +168,7 @@ export function WorkoutSessionSets({
       <div className="mb-6">
         <PremiumUpsellAlert />
       </div>
-      <ol className="relative border-l-2 ml-2 border-slate-200 dark:border-slate-700">
+      <ol className="relative ml-6 border-l-2 border-[var(--wc-dash-border)] pl-4">
         {session.exercises.map((ex, idx) => {
           const allSetsCompleted = ex.sets.length > 0 && ex.sets.every((set) => set.completed);
           const exerciseName = locale === "fr" ? ex.name : ex.nameEn;
@@ -163,48 +184,56 @@ export function WorkoutSessionSets({
               {/* Cercle étape */}
               <span
                 className={cn(
-                  "absolute -left-4 flex items-center justify-center w-8 h-8 rounded-full border-4 z-10",
+                  "absolute -left-6 z-10 flex h-12 w-12 min-h-12 min-w-12 items-center justify-center rounded-full border-2",
                   renderStepBackground(idx, allSetsCompleted),
                 )}
               >
                 {renderStepIcon(idx, allSetsCompleted)}
               </span>
               {/* Image + nom de l'exercice */}
-              <div className="flex items-center gap-3 ml-2 hover:opacity-80">
+              <div className="ml-2 flex flex-col gap-3 hover:opacity-80 sm:flex-row sm:items-start">
                 {details?.fullVideoImageUrl && (
                   <div
-                    className="relative aspect-video max-w-24 rounded-lg overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 cursor-pointer"
+                    className="flex w-full max-w-full shrink-0 flex-col gap-2 sm:max-w-60"
                     onClick={(e) => {
                       e.stopPropagation();
                       setVideoModal({ open: true, exerciseId: ex.id });
                     }}
                   >
-                    <Image
-                      alt={exerciseName || "Exercise image"}
-                      className="w-full h-full object-cover scale-[1.35]"
-                      height={48}
-                      src={details.fullVideoImageUrl}
-                      width={48}
-                    />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
-                      <Button className="bg-white/80" size="icon" variant="ghost">
-                        <Play className="h-4 w-4 text-blue-600" />
-                      </Button>
+                    <div
+                      className={
+                        "relative aspect-video overflow-hidden rounded-lg " +
+                        "border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)]"
+                      }
+                    >
+                      <Image
+                        alt={exerciseName || "Exercise image"}
+                        className="h-full w-full object-cover"
+                        height={48}
+                        src={details.fullVideoImageUrl}
+                        width={48}
+                      />
                     </div>
+                    <Button
+                      className={`${secondaryButton} w-full`}
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Play className="h-5 w-5" />
+                      {t("workout_builder.exercise.watch_video")}
+                    </Button>
                   </div>
                 )}
                 <div
                   className={cn(
-                    "text-xl leading-[1.3] flex-1",
-                    idx === currentExerciseIndex
-                      ? "font-bold text-blue-600"
-                      : "text-slate-700 dark:text-slate-300 transition-colors hover:text-blue-500",
+                    "flex-1 text-lg leading-[1.3]",
+                    idx === currentExerciseIndex ? "font-bold text-[var(--wc-dash-accent)]" : "text-[var(--wc-dash-text)]",
                   )}
                 >
-                  <span className="text-xl leading-[1.3] flex-1">{exerciseName}</span>
+                  <span className="flex-1 text-lg leading-[1.3]">{exerciseName}</span>
                   {details?.introduction && (
                     <span
-                      className="flex text-xs mt-1 text-slate-500 dark:text-slate-400 underline cursor-pointer hover:text-blue-600"
+                      className="mt-1 flex min-h-12 cursor-pointer items-center text-lg text-[var(--wc-dash-link)] underline"
                       onClick={(e) => {
                         e.stopPropagation();
                         setVideoModal({ open: true, exerciseId: ex.id });
@@ -225,7 +254,7 @@ export function WorkoutSessionSets({
               )}
               {/* Si exercice courant, afficher le détail */}
               {idx === currentExerciseIndex && (
-                <div className="bg-white dark:bg-transparent rounded-xl mt-6 mb-10">
+                <div className="mb-10 mt-6 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]">
                   {/* Liste des sets */}
                   <div className="flex justify-start items-center gap-2">
                     <FavoriteExerciseButton exerciseId={ex.id} />
@@ -249,7 +278,7 @@ export function WorkoutSessionSets({
                   <div className="flex flex-col md:flex-row gap-3 w-full mt-2 px-2">
                     <Button
                       aria-label="Ajouter une série"
-                      className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl border border-green-600 transition-all duration-200 active:scale-95 focus:ring-2 focus:ring-green-400"
+                      className={`${secondaryButton} flex-1 font-bold`}
                       onClick={handleAddSet}
                     >
                       <Plus className="h-5 w-5" />
@@ -257,7 +286,7 @@ export function WorkoutSessionSets({
                     </Button>
                     <Button
                       aria-label="Exercice suivant"
-                      className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl border border-blue-600 transition-all duration-200 active:scale-95 focus:ring-2 focus:ring-blue-400"
+                      className={`${secondaryButton} flex-1 font-bold`}
                       onClick={handleNextExercise}
                     >
                       <ArrowRight className="h-5 w-5" />
@@ -274,10 +303,11 @@ export function WorkoutSessionSets({
         <div className="flex justify-center mt-8 mb-24">
           <Button
             aria-label={t("workout_builder.session.finish_session")}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 text-lg rounded-2xl border border-green-700 transition-all duration-200 active:scale-95 focus:ring-2 focus:ring-green-400"
+            className={`${accentButton} px-8 font-bold`}
             onClick={handleFinishSession}
           >
             <TrophyIcon className="h-6 w-6" />
+            <span aria-hidden="true">✓</span>
             {t("workout_builder.session.finish_session")}
           </Button>
         </div>

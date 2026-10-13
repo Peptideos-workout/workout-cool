@@ -10,14 +10,14 @@
  */
 export const FRAME_ANCESTORS_CSP = "frame-ancestors 'self' https://peptideos.us https://www.peptideos.us";
 
-/** True only when this directive's single source is exactly `'none'`. */
+/** True only when this directive's single source is `'none'`, in any letter case. */
 function isExactFrameAncestorsNone(directive: string): boolean {
-  return /^frame-ancestors\s+'none'$/.test(directive);
+  return /^frame-ancestors\s+'none'$/i.test(directive);
 }
 
 /**
  * Put `frame-ancestors` on one CSP header.
- * An exact `frame-ancestors 'none'` (no other sources) is kept.
+ * An exact `frame-ancestors 'none'` (no other sources) is kept, in any letter case.
  * Any other source list, including `'none'` followed by another source, is
  * replaced so a second CSP header is never added.
  */

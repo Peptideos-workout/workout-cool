@@ -43,6 +43,9 @@ test("mergeFrameAncestors appends when CSP has no frame-ancestors and keeps a st
 
 test("mergeFrameAncestors keeps exact frame-ancestors 'none' and replaces none plus other sources", () => {
   assert.equal(mergeFrameAncestors("frame-ancestors 'none'"), "frame-ancestors 'none'");
+  assert.equal(mergeFrameAncestors("FRAME-ANCESTORS 'NONE'"), "FRAME-ANCESTORS 'NONE'");
+  assert.equal(mergeFrameAncestors("frame-ancestors 'None'"), "frame-ancestors 'None'");
+  assert.equal(mergeFrameAncestors("Frame-Ancestors 'none'"), "Frame-Ancestors 'none'");
   assert.equal(mergeFrameAncestors("frame-ancestors 'none' https://evil.example"), EXACT);
   assert.doesNotMatch(mergeFrameAncestors("frame-ancestors 'none' https://evil.example"), /evil/);
   assert.equal(

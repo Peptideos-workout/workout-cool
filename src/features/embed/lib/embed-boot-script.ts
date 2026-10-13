@@ -1,27 +1,41 @@
-import { EMBED_SESSION_KEY } from "./embed-mode";
+import { EMBED_FRAMEABLE_LOGOUT_PATH, EMBED_PARENT_ORIGINS, EMBED_SESSION_KEY, isEmbedParentOrigin } from "./embed-mode";
 
 /**
  * Blocking head script. It turns on the tab-scoped embed flag before first paint,
  * applies a light or dark theme before next-themes hydrates, and retargets
  * navigations that would otherwise leave the frame.
- * The embed flag stays in sessionStorage. Embed theme is stored at `wc-embed-theme`.
+ * Embed mode applies only while this document is actually framed. A duplicated
+ * tab clears the flag. Embed theme is stored at `wc-embed-theme`.
  * While embed is on, next-themes' default `theme` key is redirected there so a framed
  * visit cannot overwrite the theme used by a normal tab. Storage events for that
  * default key are ignored, so a normal tab cannot change the embed theme.
  * The embed theme comes from `?theme=` and later `wc:theme` messages.
+ * Sign-out never targets the top window. A server-action redirect onto
+ * /auth/signout* is rewritten to a frameable page, because that route sends
+ * frame-ancestors 'none'.
  */
 export function embedBootScript(peptideOrigin = "https://peptideos.us"): string {
-  const parentOrigin = JSON.stringify(new URL(peptideOrigin).origin);
+  const parents = JSON.stringify(bootParentOrigins(peptideOrigin));
+  const frameable = JSON.stringify(EMBED_FRAMEABLE_LOGOUT_PATH);
   return `(function(){
 var KEY=${JSON.stringify(EMBED_SESSION_KEY)};
+var PARENTS=${parents};
+var FRAMEABLE=${frameable};
 var root=document.documentElement;
 var params;
 try{params=new URLSearchParams(location.search);}catch(e){params=new URLSearchParams();}
+var framed=false;
+try{framed=window.parent!==window;}catch(e){framed=false;}
 var enable=false;
 try{
-if(params.get("embed")==="1"){sessionStorage.setItem(KEY,"1");}
-enable=sessionStorage.getItem(KEY)==="1";
-}catch(e){enable=params.get("embed")==="1";}
+if(!framed){sessionStorage.removeItem(KEY);}
+else if(params.get("embed")==="1"){sessionStorage.setItem(KEY,"1");}
+enable=framed&&sessionStorage.getItem(KEY)==="1";
+}catch(e){enable=framed&&params.get("embed")==="1";}
+try{
+if(!framed){document.cookie=KEY+"=; Path=/; Max-Age=0";}
+else if(enable){document.cookie=KEY+"=1; Path=/; SameSite=Lax";}
+}catch(e){}
 if(enable){root.setAttribute("data-wc-embed","1");}
 function embedOn(){return root.getAttribute("data-wc-embed")==="1";}
 var embedTheme="wc-embed-theme";
@@ -82,14 +96,23 @@ if(path===prefixes[i]||path.indexOf(prefixes[i]+"/")===0){return true;}
 }
 return false;
 }
+function blockedSignout(href){
+var raw=String(href||"").trim();
+if(!raw||raw.charAt(0)==="#"){return "";}
+var url;
+try{url=new URL(raw,location.origin);}catch(e){return "";}
+if(!hasPrefix(url.pathname,["/auth/signout","/api/workouts/signout"])){return "";}
+if(url.origin===location.origin){return "frame";}
+if(PARENTS.indexOf(url.origin)!==-1){return "parent";}
+return "";
+}
 function frameTarget(href){
 var raw=String(href||"").trim();
 if(!raw||raw.charAt(0)==="#"||/^javascript:/i.test(raw)||/^data:/i.test(raw)){return null;}
 var url;
 try{url=new URL(raw,location.origin);}catch(e){return "_blank";}
-var signOut=url.origin===location.origin||url.origin===${parentOrigin};
-if(signOut&&hasPrefix(url.pathname,["/auth/signout","/api/workouts/signout"])){return "_top";}
-if(url.origin===${parentOrigin}&&hasPrefix(url.pathname,["/login","/signup","/api/workouts/sso","/dashboard"])){return "_top";}
+if(blockedSignout(raw)){return null;}
+if(PARENTS.indexOf(url.origin)!==-1&&hasPrefix(url.pathname,["/login","/signup","/api/workouts/sso","/dashboard"])){return "_top";}
 var host=url.hostname.toLowerCase();
 var payment=host==="stripe.com"||host.endsWith(".stripe.com");
 payment=payment||host==="paypal.com"||host.endsWith(".paypal.com");
@@ -98,11 +121,19 @@ if(payment&&url.protocol==="https:"){return "_top";}
 if(url.origin===location.origin){return null;}
 return "_blank";
 }
+function holdSignout(event,href){
+var blocked=blockedSignout(href);
+if(!blocked){return false;}
+if(event.preventDefault){event.preventDefault();}
+if(blocked==="frame"&&location.assign){location.assign(FRAMEABLE);}
+return true;
+}
 document.addEventListener("click",function(event){
 if(!embedOn()||!event.target||!event.target.closest){return;}
 var anchor=event.target.closest("a[href]");
 if(!anchor){return;}
 var href=anchor.getAttribute("href")||"";
+if(holdSignout(event,href)){return;}
 var target=frameTarget(href);
 if(!target){return;}
 anchor.setAttribute("target",target);
@@ -114,8 +145,36 @@ if(rel.indexOf("noopener")===-1){anchor.setAttribute("rel",(rel+" noopener noref
 document.addEventListener("submit",function(event){
 if(!embedOn()||!event.target||!event.target.getAttribute){return;}
 var action=event.target.getAttribute("action")||"";
+if(holdSignout(event,action)){return;}
 var target=frameTarget(action);
 if(target){event.target.setAttribute("target",target);}
 },true);
+if(window.fetch){
+var nativeFetch=window.fetch.bind(window);
+window.fetch=function(){
+return Promise.resolve(nativeFetch.apply(window,arguments)).then(function(response){
+if(!embedOn()||!response||!response.headers||!response.headers.get){return response;}
+var header=response.headers.get("x-action-redirect")||"";
+if(blockedSignout(header.split(";")[0])!=="frame"){return response;}
+var headers=new Headers(response.headers);
+var semi=header.indexOf(";");
+var suffix=semi===-1?"":header.slice(semi);
+headers.set("x-action-redirect",FRAMEABLE+suffix);
+headers.delete("content-type");
+return new Response(null,{status:response.status,statusText:response.statusText,headers:headers});
+});
+};
+}
 })();`;
+}
+
+function bootParentOrigins(peptideOrigin: string): string[] {
+  const parents = new Set<string>(EMBED_PARENT_ORIGINS);
+  try {
+    const requested = new URL(peptideOrigin).origin;
+    if (isEmbedParentOrigin(requested)) parents.add(requested);
+  } catch {
+    // A bad configured origin never joins the allowlist.
+  }
+  return [...parents];
 }

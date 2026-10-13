@@ -6,15 +6,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 
 import { EmbedAuthFallbackView } from "../ui/embed-auth-fallback-view";
+import { embedSignedOutDocumentResponse, isEmbedDocumentRequest } from "./embed-signed-out-document";
 import {
   EMBED_BACK_TO_DASHBOARD,
+  EMBED_PARENT_ORIGINS,
   EMBED_SESSION_KEY,
   assignCheckoutUrl,
   checkoutBreakoutTarget,
   embedFrameTarget,
   isEmbedSsoSignal,
   isSsoFailureCode,
+  postEmbedLogoutToParent,
   resolveEmbedEnabled,
+  resolveEmbedParentOrigin,
   shouldShowEmbedAuthFallback
 } from "./embed-mode";
 import { embedBootScript } from "./embed-boot-script";
@@ -48,17 +52,19 @@ test("embed off leaves link targets untouched", () => {
   assert.equal(embedFrameTarget(false, "/en/programs", APP), null);
 });
 
-test("embed on sends sign-out to _top and other external links to _blank", () => {
-  assert.equal(embedFrameTarget(true, `${POS}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`, APP), "_top");
-  assert.equal(embedFrameTarget(true, "/en/auth/signout", APP), "_top");
-  assert.equal(embedFrameTarget(true, "/auth/signout/continue", APP), "_top");
-  assert.equal(embedFrameTarget(true, `${APP}/auth/signout`, APP), "_top");
-  assert.equal(embedFrameTarget(true, `${POS}/auth/signout`, APP), "_top");
+test("embed on keeps sign-out in the frame and sends other external links to _blank", () => {
+  assert.equal(embedFrameTarget(true, `${POS}/api/workouts/signout?redirect=${encodeURIComponent(`${APP}/`)}`, APP), null);
+  assert.equal(embedFrameTarget(true, "/en/auth/signout", APP), null);
+  assert.equal(embedFrameTarget(true, "/auth/signout/continue", APP), null);
+  assert.equal(embedFrameTarget(true, `${APP}/auth/signout`, APP), null);
+  assert.equal(embedFrameTarget(true, `${POS}/auth/signout`, APP), null);
+  assert.notEqual(embedFrameTarget(true, `${POS}/auth/signout`, APP), "_top");
   assert.equal(embedFrameTarget(true, "https://evil.com/auth/signout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://evil.com/api/workouts/signout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://peptideos.us.evil.example/auth/signout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://evil.peptideos.us/api/workouts/signout", APP), "_blank");
-  assert.equal(embedFrameTarget(true, "https://www.peptideos.us/auth/signout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://www.peptideos.us/auth/signout", APP), null);
+  assert.notEqual(embedFrameTarget(true, "https://www.peptideos.us/auth/signout", APP), "_top");
   assert.equal(embedFrameTarget(true, "http://peptideos.us/auth/signout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://workouts.peptideos.us.evil.example/auth/signout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "https://example.com/watch", APP), "_blank");
@@ -67,8 +73,15 @@ test("embed on sends sign-out to _top and other external links to _blank", () =>
   assert.equal(embedFrameTarget(true, "https://www.paypal.com/checkoutnow", APP), "_top");
   assert.equal(embedFrameTarget(true, "https://workout.lemonsqueezy.com/checkout", APP), "_top");
   assert.equal(embedFrameTarget(true, "http://checkout.stripe.com/c/pay/cs_test", APP), "_blank");
+  assert.equal(
+    embedFrameTarget(true, "http://checkout.stripe.com/c/pay/cs_test", APP),
+    embedFrameTarget(true, "http://example.com/video", APP)
+  );
+  assert.notEqual(embedFrameTarget(true, "http://checkout.stripe.com/c/pay/cs_test", APP), "_top");
   assert.equal(embedFrameTarget(true, "http://www.paypal.com/checkoutnow", APP), "_blank");
   assert.equal(embedFrameTarget(true, "http://workout.lemonsqueezy.com/checkout", APP), "_blank");
+  assert.equal(embedFrameTarget(true, "https://www.peptideos.us/login", APP), "_top");
+  assert.equal(embedFrameTarget(true, "https://www.peptideos.us/dashboard", APP), "_top");
   assert.equal(embedFrameTarget(true, "https://notstripe.com/checkout", APP), "_blank");
   assert.equal(embedFrameTarget(true, "/en/premium", APP), null);
   assert.equal(embedFrameTarget(true, "/fr/leaderboard", APP), null);
@@ -284,17 +297,28 @@ function dispatch(documentNode: FakeElement, type: string, target: FakeElement) 
   return event;
 }
 
-function boot(search: string, stored: string | null) {
+function boot(
+  search: string,
+  stored: string | null,
+  options?: { topLevel?: boolean; fetch?: (input: unknown, init?: unknown) => Promise<Response> }
+) {
   const store = new Map<string, string>();
   if (stored !== null) store.set(EMBED_SESSION_KEY, stored);
   const root = element("html");
   const documentNode = element("document");
   const localWrites: string[] = [];
+  const assigned: string[] = [];
+  let cookie = "";
   const context = {
+    parent: null as unknown,
+    fetch: options?.fetch,
     sessionStorage: {
       getItem: (key: string) => store.get(key) ?? null,
       setItem: (key: string, value: string) => {
         store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
       }
     },
     localStorage: {
@@ -303,15 +327,28 @@ function boot(search: string, stored: string | null) {
         localWrites.push(key);
       }
     },
-    location: { search, origin: APP },
+    location: {
+      search,
+      origin: APP,
+      assign: (href: string) => {
+        assigned.push(href);
+      }
+    },
     document: {
       documentElement: root,
-      addEventListener: documentNode.addEventListener.bind(documentNode)
+      addEventListener: documentNode.addEventListener.bind(documentNode),
+      get cookie() {
+        return cookie;
+      },
+      set cookie(value: string) {
+        cookie = value;
+      }
     }
   };
+  context.parent = options?.topLevel ? context : {};
   const run = new Function("window", "document", "sessionStorage", "localStorage", "location", embedBootScript());
   run(context, context.document, context.sessionStorage, context.localStorage, context.location);
-  return { store, root, documentNode, localWrites };
+  return { store, root, documentNode, localWrites, assigned, cookie: () => cookie, fetch: context.fetch };
 }
 
 test("boot script enables embed for this tab only when the query or session flag says so", () => {
@@ -332,8 +369,10 @@ test("boot script enables embed for this tab only when the query or session flag
 test("boot script retargets sign-out and external links only while embed is on", () => {
   const on = boot("?embed=1", null);
   const signOut = element("a", { href: "/en/auth/signout" }, on.documentNode);
-  dispatch(on.documentNode, "click", signOut);
-  assert.equal(signOut.getAttribute("target"), "_top");
+  const signOutEvent = dispatch(on.documentNode, "click", signOut);
+  assert.equal(signOutEvent.defaultPrevented, true);
+  assert.notEqual(signOut.getAttribute("target"), "_top");
+  assert.deepEqual(on.assigned, ["/?embed=1"]);
 
   const evilSignOut = element("a", { href: "https://evil.com/auth/signout" }, on.documentNode);
   dispatch(on.documentNode, "click", evilSignOut);
@@ -344,8 +383,10 @@ test("boot script retargets sign-out and external links only while embed is on",
   assert.equal(lookalike.getAttribute("target"), "_blank");
 
   const peptideSignOut = element("a", { href: `${POS}/auth/signout` }, on.documentNode);
-  dispatch(on.documentNode, "click", peptideSignOut);
-  assert.equal(peptideSignOut.getAttribute("target"), "_top");
+  const peptideEvent = dispatch(on.documentNode, "click", peptideSignOut);
+  assert.equal(peptideEvent.defaultPrevented, true);
+  assert.notEqual(peptideSignOut.getAttribute("target"), "_top");
+  assert.deepEqual(on.assigned, ["/?embed=1"]);
 
   const external = element("a", { href: "https://example.com/video" }, on.documentNode);
   dispatch(on.documentNode, "click", external);
@@ -381,19 +422,138 @@ test("boot script retargets sign-out and external links only while embed is on",
   const insecureStripe = element("a", { href: "http://checkout.stripe.com/c/pay/cs_test" }, on.documentNode);
   dispatch(on.documentNode, "click", insecureStripe);
   assert.equal(insecureStripe.getAttribute("target"), "_blank");
+  assert.notEqual(insecureStripe.getAttribute("target"), "_top");
+  const plainHttp = element("a", { href: "http://example.com/video" }, on.documentNode);
+  dispatch(on.documentNode, "click", plainHttp);
+  assert.equal(insecureStripe.getAttribute("target"), plainHttp.getAttribute("target"));
 
   const entry = element("button", { "data-wc-entry": "premium" }, on.documentNode);
   const entryEvent = dispatch(on.documentNode, "click", entry);
   assert.equal(entryEvent.defaultPrevented, false);
 
   const form = element("form", { action: `${POS}/api/workouts/signout` }, on.documentNode);
-  dispatch(on.documentNode, "submit", form);
-  assert.equal(form.getAttribute("target"), "_top");
+  const formEvent = dispatch(on.documentNode, "submit", form);
+  assert.equal(formEvent.defaultPrevented, true);
+  assert.notEqual(form.getAttribute("target"), "_top");
 
   const off = boot("", null);
   const leaked = element("a", { href: "https://example.com/video" }, off.documentNode);
   dispatch(off.documentNode, "click", leaked);
   assert.equal(leaked.getAttribute("target"), null);
+});
+
+test("a top-level tab clears a leaked embed flag and does not post logout", () => {
+  const leaked = boot("?embed=1", "1", { topLevel: true });
+  assert.equal(leaked.root.getAttribute("data-wc-embed"), null);
+  assert.equal(leaked.store.has(EMBED_SESSION_KEY), false);
+  assert.match(leaked.cookie(), /Max-Age=0/);
+  assert.equal(
+    postEmbedLogoutToParent({
+      embed: true,
+      topLevel: true,
+      parent: { postMessage() {} },
+      referrer: POS
+    }),
+    false
+  );
+});
+
+test("framed logout posts wc:signed-out to an allowlisted parent before signOutAction", () => {
+  const calls: Array<{ message: { type: string; reason: string }; origin: string }> = [];
+  const record = (message: unknown, origin: string) => {
+    if (!message || typeof message !== "object") return;
+    const posted = message as { type: string; reason: string };
+    calls.push({ message: posted, origin });
+  };
+  assert.equal(
+    postEmbedLogoutToParent({
+      embed: true,
+      topLevel: false,
+      parent: { postMessage: record },
+      ancestorOrigins: ["https://www.peptideos.us"]
+    }),
+    true
+  );
+  assert.deepEqual(calls, [{ message: { type: "wc:signed-out", reason: "logout" }, origin: "https://www.peptideos.us" }]);
+  assert.equal(
+    postEmbedLogoutToParent({
+      embed: true,
+      topLevel: false,
+      parent: { postMessage: record },
+      referrer: "https://evil.example/dashboard",
+      ancestorOrigins: ["https://peptideos.us.evil.example"]
+    }),
+    true
+  );
+  assert.equal(calls[1]?.origin, "https://peptideos.us");
+  assert.equal(JSON.stringify(calls).includes("*"), false);
+
+  const logout = readFileSync("src/features/auth/model/useLogout.ts", "utf8");
+  const body = logout.slice(logout.indexOf("mutationFn"));
+  const postAt = body.indexOf("postEmbedLogoutToParent");
+  const actionAt = body.indexOf("signOutAction");
+  assert.ok(postAt !== -1 && actionAt !== -1 && postAt < actionAt);
+
+  const action = readFileSync("src/features/auth/signout/model/signout.action.ts", "utf8");
+  assert.match(action, /EMBED_COOKIE_NAME/);
+  assert.match(action, /redirect\("\/\?embed=1"\)/);
+  assert.match(action, /redirect\("\/auth\/signout\/continue"\)/);
+  const embedRedirect = action.indexOf("redirect(\"/?embed=1\")");
+  const continueRedirect = action.indexOf("redirect(\"/auth/signout/continue\")");
+  assert.ok(embedRedirect !== -1 && embedRedirect < continueRedirect);
+
+  const handoff = readFileSync("src/features/auth/signout/ui/peptideos-signout-handoff.tsx", "utf8");
+  assert.match(handoff, /autoSubmit && !embedded/);
+  assert.doesNotMatch(handoff, /form\.target|_top/);
+});
+
+test("parent origin is an exact frame-ancestors match, otherwise the apex", () => {
+  assert.deepEqual([...EMBED_PARENT_ORIGINS], ["https://peptideos.us", "https://www.peptideos.us"]);
+  assert.equal(resolveEmbedParentOrigin({ ancestorOrigins: ["https://www.peptideos.us"] }), "https://www.peptideos.us");
+  assert.equal(resolveEmbedParentOrigin({ referrer: "https://www.peptideos.us/dashboard" }), "https://www.peptideos.us");
+  assert.equal(resolveEmbedParentOrigin({ referrer: "https://peptideos.us.evil.example/" }), "https://peptideos.us");
+  assert.equal(resolveEmbedParentOrigin({ ancestorOrigins: ["https://evil.peptideos.us"] }), "https://peptideos.us");
+  assert.equal(resolveEmbedParentOrigin({ referrer: "http://peptideos.us/" }), "https://peptideos.us");
+  assert.equal(resolveEmbedParentOrigin({}), "https://peptideos.us");
+});
+
+test("boot script rewrites an embedded sign-out server-action redirect to a frameable page", async () => {
+  const native = async () =>
+    new Response("flight", {
+      headers: {
+        "content-type": "text/x-component",
+        "x-action-redirect": "/en/auth/signout/continue;push"
+      }
+    });
+  const on = boot("?embed=1", null, { fetch: native });
+  const response = await on.fetch?.("/");
+  assert.ok(response);
+  assert.equal(response.headers.get("x-action-redirect"), "/?embed=1;push");
+  assert.equal(response.headers.get("content-type"), null);
+
+  const top = boot("?embed=1", "1", { topLevel: true, fetch: native });
+  const unchanged = await top.fetch?.("/");
+  assert.equal(unchanged?.headers.get("x-action-redirect"), "/en/auth/signout/continue;push");
+  assert.equal(unchanged?.headers.get("content-type"), "text/x-component");
+});
+
+test("an embedded gated request gets a frameable signed-out document and no X-Frame-Options", async () => {
+  assert.equal(isEmbedDocumentRequest("?embed=1", null), true);
+  assert.equal(isEmbedDocumentRequest("", "1"), true);
+  assert.equal(isEmbedDocumentRequest("", null), false);
+  assert.equal(isEmbedDocumentRequest("?embed=0", "0"), false);
+
+  const response = embedSignedOutDocumentResponse("https://peptideos.us", APP);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-frame-options"), null);
+  assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'self' https:\/\/peptideos\.us https:\/\/www\.peptideos\.us/);
+  assert.match(html, /wc:session/);
+  assert.match(html, /signed-out/);
+  assert.match(html, /← Back to dashboard/);
+  assert.match(html, /x-action-redirect/);
+  assert.doesNotMatch(html, /postMessage\([^)]*["']\*["']/);
+  assert.match(readFileSync("proxy.ts", "utf8"), /embedNeedsFallback/);
 });
 
 test("app shell still renders header, footer, card chrome, and bottom nav outside embed mode", () => {

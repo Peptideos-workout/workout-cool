@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 
 import { logSsoEvent } from "../../../../../app/api/peptideos-wc-sso/sso-error-log";
 
+import { EMBED_COOKIE_NAME } from "@/features/embed/lib/embed-mode";
 import {
   issueSignoutContinueToken,
   signoutContinueCookieName,
@@ -28,6 +29,11 @@ export async function signOutAction() {
     await auth.api.signOut({ headers: await headers() });
   } catch (error) {
     logSsoEvent("wc_signout", error);
+  }
+
+  const store = await cookies();
+  if (store.get(EMBED_COOKIE_NAME)?.value === "1") {
+    redirect("/?embed=1");
   }
 
   await issueSignoutContinueCookie();

@@ -3,6 +3,8 @@ import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
+import { embedSignedOutDocumentResponse, isEmbedDocumentRequest } from "@/features/embed/lib/embed-signed-out-document";
+import { EMBED_COOKIE_NAME, isEmbedUnframeableSignoutPath } from "@/features/embed/lib/embed-mode";
 import { applySignoutConfirmSecurityHeaders, signoutContinueProxyResponse } from "@/features/auth/signout/lib/signout-continue-proxy";
 import { isSignoutConfirmPath, isSignoutContinuePath } from "@/features/auth/signout/lib/signout-continue-csp";
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
@@ -56,6 +58,16 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const detectedLocale = detectUserLocale(request);
   const hasSession = Boolean(getSessionCookie(request));
+  const embedded = isEmbedDocumentRequest(request.nextUrl.search, request.cookies.get(EMBED_COOKIE_NAME)?.value);
+  const embedNeedsFallback =
+    embedded && (shouldRedirectSignedOutRequest(pathname, hasSession) || isEmbedUnframeableSignoutPath(pathname));
+
+  if (embedNeedsFallback) {
+    return embedSignedOutDocumentResponse(
+      process.env.NEXT_PUBLIC_PEPTIDEOS_URL,
+      process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL
+    );
+  }
 
   if (shouldRedirectSignedOutRequest(pathname, hasSession)) {
     const returnTo = `${pathname}${request.nextUrl.search}`;

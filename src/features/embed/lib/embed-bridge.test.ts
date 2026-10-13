@@ -221,26 +221,50 @@ test("hidden and foreign paths are not reported, and a top-level page stays sile
 });
 
 test("embed theme is applied before paint and kept after the query is gone", () => {
-  const first = bootTheme("?embed=1&theme=dark", null, null);
+  const first = bootTheme("?embed=1&theme=dark", null, {});
   assert.equal(first.root.getAttribute("data-wc-embed"), "1");
-  assert.equal(first.theme, "dark");
+  assert.equal(first.values.get("wc-embed-theme"), "dark");
+  assert.equal(first.values.get("theme") ?? null, null);
   assert.equal(first.root.classList.contains("dark"), true);
   assert.equal(first.root.style.colorScheme, "dark");
+  first.storage.setItem("theme", "dark");
+  assert.equal(first.values.get("theme") ?? null, null);
+  assert.equal(first.values.get("wc-embed-theme"), "dark");
 
-  const kept = bootTheme("", "1", "dark");
+  const kept = bootTheme("", "1", { "wc-embed-theme": "dark", theme: "light" });
   assert.equal(kept.root.classList.contains("dark"), true);
-  assert.equal(kept.theme, "dark");
+  assert.equal(kept.values.get("wc-embed-theme"), "dark");
+  assert.equal(kept.values.get("theme"), "light");
 
-  const queryWins = bootTheme("?embed=1&theme=light", "1", "dark");
-  assert.equal(queryWins.theme, "light");
+  const queryWins = bootTheme("?embed=1&theme=light", "1", { "wc-embed-theme": "dark", theme: "light" });
+  assert.equal(queryWins.values.get("wc-embed-theme"), "light");
+  assert.equal(queryWins.values.get("theme"), "light");
   assert.equal(queryWins.root.classList.contains("light"), true);
   assert.equal(queryWins.root.classList.contains("dark"), false);
 
-  const outside = bootTheme("?theme=dark", null, null);
+  const outside = bootTheme("?theme=dark", null, { theme: "light", "wc-embed-theme": "dark" });
   assert.equal(outside.root.getAttribute("data-wc-embed"), null);
-  assert.equal(outside.theme, null);
+  assert.equal(outside.values.get("theme"), "light");
+  assert.equal(outside.values.get("wc-embed-theme"), "dark");
   assert.equal(outside.root.classList.contains("dark"), false);
   assert.equal(outside.root.style.colorScheme, "");
+});
+
+test("a non-embed visit after an embed visit keeps the default theme key", () => {
+  const embedded = bootTheme("?embed=1&theme=dark", null, { theme: "light" });
+  assert.equal(embedded.values.get("theme"), "light");
+  assert.equal(embedded.values.get("wc-embed-theme"), "dark");
+  embedded.storage.setItem("theme", "dark");
+  assert.equal(embedded.values.get("theme"), "light");
+
+  const normal = bootTheme("", null, Object.fromEntries(embedded.values));
+  assert.equal(normal.root.getAttribute("data-wc-embed"), null);
+  assert.equal(normal.values.get("theme"), "light");
+  assert.equal(normal.values.get("wc-embed-theme"), "dark");
+  assert.equal(normal.root.classList.contains("dark"), false);
+  normal.storage.setItem("theme", "dark");
+  assert.equal(normal.values.get("theme"), "dark");
+  assert.equal(normal.values.get("wc-embed-theme"), "dark");
 });
 
 test("bridge source never posts to a wildcard and a message cannot sign in or out", () => {
@@ -257,6 +281,8 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   assert.doesNotMatch(bridge, /signOut|signIn|location\.assign|location\.href/);
   assert.doesNotMatch(ui, /useSession/);
   assert.match(providers, /storageKey="theme"/);
+  assert.match(boot, /wc-embed-theme/);
+  assert.doesNotMatch(boot, /localStorage\.setItem\("theme"/);
   assert.match(providers, /<EmbedBridge/);
   assert.match(logout, /notifyEmbedSignedOut\(getConfiguredPeptideOsOrigin\(\)\)/);
   const notifyAt = logout.indexOf("notifyEmbedSignedOut");
@@ -316,11 +342,10 @@ function bridgeHost(
   return host;
 }
 
-function bootTheme(search: string, embedStored: string | null, themeStored: string | null) {
+function bootTheme(search: string, embedStored: string | null, seeded: Record<string, string>) {
   const session = new Map<string, string>();
-  const local = new Map<string, string>();
+  const local = new Map<string, string>(Object.entries(seeded));
   if (embedStored !== null) session.set("wc-embed", embedStored);
-  if (themeStored !== null) local.set("theme", themeStored);
   const classes = new Set<string>();
   const root = {
     attrs: {} as Record<string, string>,
@@ -337,6 +362,17 @@ function bootTheme(search: string, embedStored: string | null, themeStored: stri
       this.attrs[name] = value;
     }
   };
+  const storage = {
+    getItem(key: string) {
+      return local.get(key) ?? null;
+    },
+    setItem(key: string, value: string) {
+      local.set(key, value);
+    },
+    removeItem(key: string) {
+      local.delete(key);
+    }
+  };
   const documentNode = {
     documentElement: root,
     addEventListener: () => undefined
@@ -346,14 +382,11 @@ function bootTheme(search: string, embedStored: string | null, themeStored: stri
       getItem: (key: string) => session.get(key) ?? null,
       setItem: (key: string, value: string) => session.set(key, value)
     },
-    localStorage: {
-      getItem: (key: string) => local.get(key) ?? null,
-      setItem: (key: string, value: string) => local.set(key, value)
-    },
+    localStorage: storage,
     location: { search, origin: "https://workouts.peptideos.us" },
     document: documentNode
   };
   const run = new Function("window", "document", "sessionStorage", "localStorage", "location", embedBootScript());
   run(context, context.document, context.sessionStorage, context.localStorage, context.location);
-  return { root, theme: local.get("theme") ?? null };
+  return { root, storage, values: local };
 }

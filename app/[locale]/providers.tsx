@@ -29,6 +29,7 @@ export const Providers = ({ children, locale }: PropsWithChildren<{ locale: stri
       <NuqsAdapter>
         <QueryClientProvider client={queryClient}>
           <I18nProviderClient locale={locale}>
+            {/* Non-embed persistence stays on the default "theme" key. Embed mode remaps it. */}
             <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem storageKey="theme">
               <EmbedBridge />
               <LocaleDetector />

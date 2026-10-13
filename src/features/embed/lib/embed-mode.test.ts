@@ -155,7 +155,8 @@ test("boot script stores embed in sessionStorage and never posts to a wildcard o
   assert.doesNotMatch(script, /\/premium","\/leaderboard/);
   assert.match(script, /sessionStorage/);
   assert.match(script, new RegExp(EMBED_SESSION_KEY));
-  assert.match(script, /localStorage\.setItem\("theme"/);
+  assert.match(script, /wc-embed-theme/);
+  assert.doesNotMatch(script, /localStorage\.setItem\("theme"/);
   assert.doesNotMatch(script, /localStorage\.setItem\([^)]*wc-embed/);
   assert.doesNotMatch(script, /postMessage/);
   assert.doesNotMatch(script, /["']\*["']/);

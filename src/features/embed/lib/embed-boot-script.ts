@@ -4,7 +4,9 @@ import { EMBED_SESSION_KEY } from "./embed-mode";
  * Blocking head script. It turns on the tab-scoped embed flag before first paint,
  * applies a light or dark theme before next-themes hydrates, and retargets
  * navigations that would otherwise leave the frame.
- * The embed flag stays in sessionStorage. Only the next-themes `theme` key uses localStorage.
+ * The embed flag stays in sessionStorage. Embed theme is stored at `wc-embed-theme`.
+ * While embed is on, next-themes' default `theme` key is redirected there so a framed
+ * visit cannot overwrite the theme used by a normal tab.
  */
 export function embedBootScript(peptideOrigin = "https://peptideos.us"): string {
   const parentOrigin = JSON.stringify(new URL(peptideOrigin).origin);
@@ -20,14 +22,27 @@ enable=sessionStorage.getItem(KEY)==="1";
 }catch(e){enable=params.get("embed")==="1";}
 if(enable){root.setAttribute("data-wc-embed","1");}
 function embedOn(){return root.getAttribute("data-wc-embed")==="1";}
+var embedTheme="wc-embed-theme";
+var defaultTheme="theme";
+function isolateThemeStorage(){
+if(!embedOn()||!localStorage.getItem||!localStorage.setItem||!localStorage.removeItem){return;}
+try{
+var getItem=localStorage.getItem.bind(localStorage);
+var setItem=localStorage.setItem.bind(localStorage);
+var removeItem=localStorage.removeItem.bind(localStorage);
+localStorage.getItem=function(key){return getItem(key===defaultTheme?embedTheme:key);};
+localStorage.setItem=function(key,value){setItem(key===defaultTheme?embedTheme:key,value);};
+localStorage.removeItem=function(key){removeItem(key===defaultTheme?embedTheme:key);};
+}catch(e){}
+}
 function applyTheme(){
 if(!embedOn()){return;}
 var requested=params.get("theme");
 var theme=requested==="light"||requested==="dark"?requested:"";
 try{
-if(theme){localStorage.setItem("theme",theme);}
+if(theme){localStorage.setItem(embedTheme,theme);}
 else{
-var stored=localStorage.getItem("theme");
+var stored=localStorage.getItem(embedTheme);
 if(stored==="light"||stored==="dark"){theme=stored;}
 }
 }catch(e){}
@@ -39,6 +54,7 @@ root.classList.add(theme);
 }
 if(root.style){root.style.colorScheme=theme;}
 }
+isolateThemeStorage();
 applyTheme();
 function stripLocale(pathname){
 var path=String(pathname||"").split("?")[0].split("#")[0];

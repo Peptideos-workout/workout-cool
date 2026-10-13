@@ -80,17 +80,19 @@ export function isPaymentCheckoutHost(hostname: string): boolean {
 }
 
 /**
- * Checkout destinations leave the frame at the top level. Same-origin premium
- * and leaderboard pages stay inside the pane.
+ * In embed mode, only https payment-provider hosts leave via the top window.
+ * Same-origin checkout stays in the pane. Every other cross-origin URL is refused.
+ * Outside embed mode the caller navigates the current window.
  */
-export function checkoutBreakoutTarget(embed: boolean, href: string, pageOrigin: string): "_top" | "self" {
+export function checkoutBreakoutTarget(embed: boolean, href: string, pageOrigin: string): "_top" | "self" | "refuse" {
   if (!embed) return "self";
   try {
     const url = new URL(href, pageOrigin);
-    if (url.origin !== pageOrigin || isPaymentCheckoutHost(url.hostname)) return "_top";
-    return "self";
+    if (url.origin === pageOrigin) return "self";
+    if (url.protocol === "https:" && isPaymentCheckoutHost(url.hostname)) return "_top";
+    return "refuse";
   } catch {
-    return "_top";
+    return "refuse";
   }
 }
 
@@ -101,10 +103,17 @@ export interface CheckoutAssignRuntime {
   assignTop: (href: string) => void;
 }
 
+const REFUSED_CHECKOUT_LOG = "Refused embed checkout navigation to a non-payment host";
+
 /** Programmatic Stripe and billing navigations. Links still use embedFrameTarget. */
 export function assignCheckoutUrl(href: string, runtime: CheckoutAssignRuntime = browserCheckoutRuntime()): void {
-  if (checkoutBreakoutTarget(runtime.embed, href, runtime.pageOrigin) === "_top") {
+  const target = checkoutBreakoutTarget(runtime.embed, href, runtime.pageOrigin);
+  if (target === "_top") {
     runtime.assignTop(href);
+    return;
+  }
+  if (target === "refuse") {
+    console.error(REFUSED_CHECKOUT_LOG);
     return;
   }
   runtime.assignSelf(href);

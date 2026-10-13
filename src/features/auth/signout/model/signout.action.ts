@@ -28,7 +28,7 @@ async function issueSignoutContinueCookie() {
   store.set(signoutContinueCookieName(secure), token, signoutContinueCookieOptions(secure));
 }
 
-export async function signOutAction(input?: { embedded?: boolean }) {
+export async function signOutAction(input?: FormData | { embedded?: boolean }) {
   const store = await cookies();
   // No-op only for an explicit framed request that also has the embed cookie.
   // A top-level tab shares that cookie and must still sign out.

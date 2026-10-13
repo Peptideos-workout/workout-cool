@@ -56,7 +56,7 @@ function splitName(displayName: string | undefined, email: string): { firstName:
   return { firstName: local || "Athlete", lastName: "User", name: `${local} User` };
 }
 
-function finalizeSession(origin: string, signInRes: Response, redirectParam: string | undefined, status: 303 | 307): NextResponse {
+function finalizeSession(origin: string, signInRes: Response, redirectParam: string | undefined, status: 303): NextResponse {
   const redirect = NextResponse.redirect(ssoFinalizeLocation(origin, redirectParam), status);
   mergeSetCookies(signInRes, redirect);
   return applySsoResponseHeaders(redirect);
@@ -174,7 +174,7 @@ async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
 interface SsoSubmission {
   token?: string;
   redirect?: string;
-  status: 303 | 307;
+  status: 303;
 }
 
 async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps, submission: SsoSubmission): Promise<NextResponse> {
@@ -271,19 +271,26 @@ function ssoPayloadTooLarge(request: NextRequest, workoutOrigin: string): NextRe
   return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref);
 }
 
-/** GET `?token=` rollout path. Redirect stays 307 so a navigation remains a GET. */
-export async function runPeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps): Promise<NextResponse> {
-  return executePeptideOsSso(request, deps, {
-    token: request.nextUrl.searchParams.get("token")?.trim(),
-    redirect: request.nextUrl.searchParams.get("redirect") ?? undefined,
-    status: 307
-  });
+/**
+ * Non-POST methods are not a handoff. Arguments are ignored, so a `?token=` query value
+ * is never read, validated, logged, or consumed.
+ */
+export function ssoMethodNotAllowed(..._ignored: unknown[]): NextResponse {
+  const response = NextResponse.json({ error: "method_not_allowed" }, { status: 405 });
+  response.headers.set("Allow", "POST");
+  return applySsoResponseHeaders(response);
+}
+
+/** HEAD matches the other rejections, with an empty body. */
+export function ssoHeadNotAllowed(..._ignored: unknown[]): NextResponse {
+  const response = new NextResponse(null, { status: 405 });
+  response.headers.set("Allow", "POST");
+  return applySsoResponseHeaders(response);
 }
 
 /**
  * Form POST from PeptideOS. Origin is checked before the handoff is read or consumed.
  * Success is 303 so the browser GETs the sanitized workout URL instead of re-POSTing it.
- * The consume, account, and session steps are the same as GET.
  */
 export async function runPeptideOsSsoPost(
   request: NextRequest,

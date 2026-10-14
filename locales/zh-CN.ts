@@ -459,6 +459,7 @@ export default {
     premium_tooltip: "成为高级",
     tools: "工具",
     tools_tooltip: "浏览工具",
+    label: "主导航",
     profile: "个人资料",
     profile_tooltip: "查看您的个人资料",
     leaderboard: "排行榜",
@@ -647,6 +648,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "构建您的锻炼",
     confirm_delete: "您确定要删除此锻炼回合吗？",
     steps: {
       equipment: {

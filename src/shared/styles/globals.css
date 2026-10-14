@@ -71,6 +71,43 @@
   --color-warning-content: oklch(41% 0.112 45.904);
   --color-error: oklch(71% 0.194 13.428);
   --color-error-content: oklch(27% 0.105 12.094);
+
+  /* Public shell. Same values as the embed --dash tokens, under a local name. */
+  --wc-dash-page: #f6f3ec;
+  --wc-dash-panel: #ffffff;
+  --wc-dash-inner: #f3faf8;
+  --wc-dash-card: #e7f3ef;
+  --wc-dash-border: #5e8a80;
+  --wc-dash-text: #10211e;
+  --wc-dash-secondary: #33414a;
+  --wc-dash-accent: #0a5c52;
+  --wc-dash-ink: #ffffff;
+  --wc-dash-link: #075e56;
+  --wc-dash-error: #9f1239;
+
+  /* Phone nav: 2 columns / 3 rows below 448px. 65 × 3 = 195. */
+  --wc-nav-rows: 3;
+  --wc-nav-row-h: 65px;
+  --wc-nav-h: calc(var(--wc-nav-rows) * var(--wc-nav-row-h));
+}
+
+/* 3 columns / 2 rows from 448px. 67 × 2 = 134. The fixed nav ends at 640px. */
+@media (min-width: 448px) {
+  :root {
+    --wc-nav-rows: 2;
+    --wc-nav-row-h: 67px;
+  }
+}
+
+/* DaisyUI tooltips stay in the tree at opacity 0. Their ::before is position absolute and still widens the page. */
+.tooltip[data-tip]::before {
+  content: none;
+}
+
+.tooltip[data-tip]:hover::before,
+.tooltip[data-tip]:focus::before,
+.tooltip[data-tip]:focus-within::before {
+  content: attr(data-tip);
 }
 
 :root:has(:is(.modal-open, .modal:target, .modal-toggle:checked + .modal, .modal[open])) {
@@ -140,6 +177,18 @@
   --color-warning-content: oklch(41% 0.112 45.904);
   --color-error: oklch(71% 0.194 13.428);
   --color-error-content: oklch(27% 0.105 12.094);
+
+  --wc-dash-page: #0b0f14;
+  --wc-dash-panel: #0b0f14;
+  --wc-dash-inner: #1d2530;
+  --wc-dash-card: #151b23;
+  --wc-dash-border: #6e8296;
+  --wc-dash-text: #f2f5f8;
+  --wc-dash-secondary: #b4becb;
+  --wc-dash-accent: #2dd4bf;
+  --wc-dash-ink: #04201c;
+  --wc-dash-link: #5eead4;
+  --wc-dash-error: #fecdd3;
 }
 
 @layer components {

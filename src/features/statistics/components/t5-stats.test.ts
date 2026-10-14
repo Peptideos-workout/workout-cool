@@ -281,20 +281,29 @@ test("stats copy keys and chart data props stay put", () => {
 test("timer, nav, and version chip reserve space", () => {
   const timer = read(TIMER);
   const main = read(MAIN);
+  const root = read("app/[locale]/layout.tsx");
   const nav = read(NAV);
   const footer = read(FOOTER);
   const version = read(VERSION);
+  const modal = read(MODAL);
+  const frame = root.slice(root.indexOf('data-wc-frame=""') - 240, root.indexOf('data-wc-frame=""'));
+  const shell = main.slice(main.indexOf('data-wc-shell=""') - 400, main.indexOf('data-wc-shell=""'));
+  const mainClass = main.slice(main.indexOf('data-wc-main=""') - 240, main.indexOf('data-wc-main=""'));
+  for (const source of [frame, shell, mainClass]) {
+    assert.doesNotMatch(source, /overflow-auto/);
+    assert.doesNotMatch(source, /max-h-\[100dvh\]/);
+    assert.doesNotMatch(source, /overflow-hidden/);
+  }
+  assert.match(main, /max-sm:pb-\[calc\(182px\+25px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(
     timer,
-    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:mb-4 sm:fixed sm:bottom-20 sm:left-1\/2 sm:-translate-x-1\/2/,
+    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:sticky max-sm:bottom-\[182px\] sm:fixed sm:bottom-20 sm:left-1\/2 sm:z-50 sm:-translate-x-1\/2/,
   );
+  assert.match(timer, /sm:z-50/);
   assert.doesNotMatch(timer, /fixed bottom-36/);
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
-  assert.match(main, /overflow-auto max-sm:pb-4/);
-  assert.doesNotMatch(main, /overflow-y-auto/);
-  assert.match(main, /max-sm:h-\[100dvh\] max-sm:max-h-\[100dvh\] max-sm:min-h-0/);
   assert.match(nav, /max-sm:order-3 max-sm:pb-12/);
   assert.doesNotMatch(nav, /max-sm:fixed/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
@@ -302,6 +311,8 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
   assert.equal(version.split("v{appVersion}").length - 1, 2);
   assert.doesNotMatch(version, /max-sm:bottom-36/);
+  assert.equal(modal.split("bg-[var(--wc-dash-page)]").length - 1, 2);
+  assert.match(modal, /w-\[calc\(100vw-16px\)\] max-w-\[calc\(100vw-16px\)\]/);
   const embed = read("src/features/embed/embed-theme.css");
   assert.match(
     embed,

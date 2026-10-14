@@ -350,7 +350,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
           className={cn(
             "flex w-full items-center justify-center bg-base-200 bg-hero-light antialiased",
             "dark:bg-[#18181b] dark:bg-hero-dark dark:text-gray-200",
-            "min-h-screen max-sm:h-[100dvh] max-sm:min-h-0 max-sm:overflow-hidden max-sm:p-0",
+            "relative min-h-screen max-sm:p-0",
             GeistMono.variable,
             GeistSans.variable,
             inter.variable,
@@ -367,10 +367,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             <AdBlockerForPremium />
             <NextTopLoader color="#FF5722" delay={100} showSpinner={false} />
 
-            <div
-              className="flex min-h-screen w-full items-center justify-center max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:min-h-0 max-sm:overflow-hidden"
-              data-wc-frame=""
-            >
+            <div className="flex min-h-screen w-full items-center justify-center" data-wc-frame="">
               <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center" data-wc-frame="">
                 <div className="contents" data-wc-chrome="banner">
                   <VerticalLeftBanner />

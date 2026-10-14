@@ -21,6 +21,7 @@ const MAIN = "app/[locale]/(app)/layout.tsx";
 const NAV = "src/features/layout/BottomNavigation.tsx";
 const FOOTER = "src/features/layout/Footer.tsx";
 const VERSION = "src/components/version.tsx";
+const SETS = "src/features/workout-session/ui/workout-session-sets.tsx";
 const STATS_FILES = [PAGE, BROWSER, TIMEFRAME, WEIGHT, ONE_RM, VOLUME, CHARTS, OVERLAY, MODAL];
 
 const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
@@ -294,20 +295,23 @@ test("timer, nav, and version chip reserve space", () => {
     assert.doesNotMatch(source, /max-h-\[100dvh\]/);
     assert.doesNotMatch(source, /overflow-hidden/);
   }
-  assert.match(main, /max-sm:pb-\[calc\(182px\+25px\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(main, /max-sm:pb-\[calc\(134px\+25px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(
     timer,
-    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:sticky max-sm:bottom-\[182px\] sm:fixed sm:bottom-20 sm:left-1\/2 sm:z-50 sm:-translate-x-1\/2/,
+    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:bottom-20 sm:left-1\/2 sm:z-50 sm:mb-6 sm:-translate-x-1\/2/,
   );
+  assert.match(timer, /max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50/);
   assert.match(timer, /sm:z-50/);
   assert.doesNotMatch(timer, /fixed bottom-36/);
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
-  assert.match(nav, /max-sm:order-3 max-sm:pb-12/);
-  assert.doesNotMatch(nav, /max-sm:fixed/);
+  assert.match(nav, /max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40/);
+  assert.match(nav, /max-sm:pb-\[env\(safe-area-inset-bottom\)\]/);
+  assert.doesNotMatch(nav, /max-sm:order-3/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
-  assert.match(version, /absolute bottom-2 right-4 z-50/);
+  assert.match(version, /absolute bottom-2 right-4 z-50 max-sm:fixed max-sm:bottom-\[134px\]/);
+  assert.match(read(SETS), /sm:pb-40/);
   assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
   assert.equal(version.split("v{appVersion}").length - 1, 2);
   assert.doesNotMatch(version, /max-sm:bottom-36/);

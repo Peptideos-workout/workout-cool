@@ -350,7 +350,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
           className={cn(
             "flex w-full items-center justify-center bg-base-200 bg-hero-light antialiased",
             "dark:bg-[#18181b] dark:bg-hero-dark dark:text-gray-200",
-            "relative min-h-screen max-sm:p-0",
+            "min-h-screen max-sm:p-0",
             GeistMono.variable,
             GeistSans.variable,
             inter.variable,

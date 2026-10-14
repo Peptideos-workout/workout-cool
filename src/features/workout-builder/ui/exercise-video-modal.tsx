@@ -65,10 +65,10 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-h-[80vh] max-w-2xl border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)]">
-        <DialogHeader className="flex flex-row items-center justify-between px-4 pt-4 pb-2">
-          <DialogTitle className="text-lg md:text-xl font-bold flex flex-col gap-2">
-            <span className="pr-10 text-left text-lg text-[var(--wc-dash-text)]">{title}</span>
+      <DialogContent className="max-h-[80vh] w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] overflow-x-hidden border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] sm:max-w-2xl [&>button]:!right-2 [&>button]:top-2 [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)]">
+        <DialogHeader className="flex flex-row items-start justify-between px-4 pb-2 pr-16 pt-4">
+          <DialogTitle className="text-lg md:text-xl font-bold flex min-w-0 flex-col gap-2">
+            <span className="break-words text-left text-lg text-[var(--wc-dash-text)]">{title}</span>
             <div className="flex flex-wrap gap-2 mt-2">
               {type.map((type) => renderBadge(type, badgeColors.TYPE))}
               {pMuscles.map((pMuscle) => renderBadge(pMuscle, badgeColors.PRIMARY_MUSCLE))}
@@ -80,16 +80,16 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
         </DialogHeader>
         {/* @ts-expect-error Tabs shadcn */}
         <Tabs className="flex-1" onValueChange={setActiveTab} value={activeTab}>
-          <TabsList className="mx-4 grid w-full grid-cols-2 rounded-xl bg-[var(--wc-dash-inner)]" style={{ width: "calc(100% - 2rem)" }}>
+          <TabsList className="mx-4 grid w-[calc(100%-2rem)] min-w-0 grid-cols-2 rounded-xl bg-[var(--wc-dash-inner)]">
             <TabsTrigger
-              className="!min-h-12 !text-lg !text-[var(--wc-dash-text)] data-[state=active]:!bg-[var(--wc-dash-accent)] data-[state=active]:!text-[var(--wc-dash-ink)]"
+              className="!min-h-12 !text-lg !text-[var(--wc-dash-text)] min-w-0 !whitespace-normal data-[state=active]:!bg-[var(--wc-dash-accent)] data-[state=active]:!text-[var(--wc-dash-ink)]"
               value="video"
             >
               <Play size={16} />
               {t("statistics.tabs.video")}
             </TabsTrigger>
             <TabsTrigger
-              className="!min-h-12 !text-lg !text-[var(--wc-dash-text)] data-[state=active]:!bg-[var(--wc-dash-accent)] data-[state=active]:!text-[var(--wc-dash-ink)]"
+              className="!min-h-12 !text-lg !text-[var(--wc-dash-text)] min-w-0 !whitespace-normal data-[state=active]:!bg-[var(--wc-dash-accent)] data-[state=active]:!text-[var(--wc-dash-ink)]"
               value="statistics"
             >
               <BarChart3 size={16} />
@@ -107,7 +107,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
             )}
 
             {/* Vidéo */}
-            <div className="flex aspect-video w-full items-center justify-center bg-[var(--wc-dash-text)]">
+            <div className="flex aspect-video w-full items-center justify-center bg-[var(--wc-dash-page)]">
               {videoUrl ? (
                 youTubeEmbedUrl ? (
                   <iframe
@@ -119,10 +119,10 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                     title={title ?? ""}
                   />
                 ) : (
-                  <video autoPlay className="h-full w-full bg-[var(--wc-dash-text)] object-contain" controls poster="" src={videoUrl} />
+                  <video autoPlay className="h-full w-full bg-[var(--wc-dash-page)] object-contain" controls poster="" src={videoUrl} />
                 )
               ) : (
-                <div className="p-8 text-center text-lg text-[var(--wc-dash-page)]">{t("workout_builder.exercise.no_video_available")}</div>
+                <div className="p-8 text-center text-lg text-[var(--wc-dash-text)]">{t("workout_builder.exercise.no_video_available")}</div>
               )}
             </div>
 
@@ -138,14 +138,16 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
           <TabsContent className="mt-0" value="statistics">
             <div className="space-y-5 px-3 pb-6 pt-4 md:px-6">
               {/* Header — title + timeframe aligned */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 max-w-full flex-1 items-center gap-2">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--wc-dash-accent)]">
                     <BarChart3 className="h-5 w-5 text-[var(--wc-dash-ink)]" />
                   </div>
-                  <h3 className="truncate text-lg font-semibold text-[var(--wc-dash-text)]">{t("statistics.performance_over_time")}</h3>
+                  <h3 className="min-w-0 whitespace-normal text-lg font-semibold text-[var(--wc-dash-text)]">
+                    {t("statistics.performance_over_time")}
+                  </h3>
                 </div>
-                <TimeframeSelector className="shrink-0" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
+                <TimeframeSelector className="max-w-full" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
               </div>
 
               {/* Charts in card */}

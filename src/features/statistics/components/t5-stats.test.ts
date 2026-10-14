@@ -179,6 +179,10 @@ test("stats handlers, hrefs, and conditionals stay put", () => {
   assert.match(browser, /\{selectedExercise \? \(/);
   assert.equal(browser.split("disabled=").length - 1, 0);
   assert.match(timeframe, /onValueChange=\{\(value\) => onSelect\(value as StatisticsTimeframe\)\}/);
+  const simpleSelect = read("src/components/ui/simple-select.tsx");
+  assert.match(simpleSelect, /onValueChange=\{\(newValue\) => onValueChange\(newValue as T\)\}/);
+  assert.match(simpleSelect, /!min-h-12 w-full !text-lg/);
+  assert.match(simpleSelect, /!min-h-12 !text-lg text-\[var\(--wc-dash-text\)\]/);
   assert.match(timeframe, /value=\{selected\}/);
   assert.match(modal, /onValueChange=\{setActiveTab\}/);
   assert.match(modal, /value=\{activeTab\}/);
@@ -280,18 +284,27 @@ test("timer, nav, and version chip reserve space", () => {
   const nav = read(NAV);
   const footer = read(FOOTER);
   const version = read(VERSION);
-  assert.match(timer, /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:mb-4/);
+  assert.match(
+    timer,
+    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:mb-4 sm:fixed sm:bottom-20 sm:left-1\/2 sm:-translate-x-1\/2/,
+  );
   assert.doesNotMatch(timer, /fixed bottom-36/);
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
-  assert.match(main, /max-sm:overflow-y-auto max-sm:pb-4/);
+  assert.match(main, /overflow-auto max-sm:pb-4/);
+  assert.doesNotMatch(main, /overflow-y-auto/);
   assert.match(main, /max-sm:h-\[100dvh\] max-sm:max-h-\[100dvh\] max-sm:min-h-0/);
   assert.match(nav, /max-sm:order-3 max-sm:pb-12/);
   assert.doesNotMatch(nav, /max-sm:fixed/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
   assert.match(version, /absolute bottom-2 right-4 z-50/);
   assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
-  assert.match(version, /v\{appVersion\}/);
+  assert.equal(version.split("v{appVersion}").length - 1, 2);
   assert.doesNotMatch(version, /max-sm:bottom-36/);
+  const embed = read("src/features/embed/embed-theme.css");
+  assert.match(
+    embed,
+    /html\[data-wc-embed="1"\] \[data-wc-frame\],\s*html\[data-wc-embed="1"\] \[data-wc-shell\],\s*html\[data-wc-embed="1"\] \[data-wc-main\] \{\s*max-height: none !important;\s*overflow: visible !important;\s*\}/,
+  );
 });

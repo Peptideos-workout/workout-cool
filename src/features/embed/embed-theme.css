@@ -254,6 +254,13 @@ html[data-wc-embed="1"] [data-wc-embed-fallback] a {
   }
 }
 
+html[data-wc-embed="1"] [data-wc-frame],
+html[data-wc-embed="1"] [data-wc-shell],
+html[data-wc-embed="1"] [data-wc-main] {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
 html[data-wc-embed="1"] [data-wc-main] {
   padding: 28px 20px 0 !important;
 }

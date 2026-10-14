@@ -186,8 +186,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
+    <div className="relative flex flex-col">
+      <div className="pb-20">
         <Breadcrumbs items={breadcrumbItems} />
         {(env.NEXT_PUBLIC_TOP_PROGRAM_DETAILS_BANNER_AD_SLOT || env.NEXT_PUBLIC_EZOIC_TOP_PROGRAM_DETAILS_PLACEMENT_ID) && (
           <HorizontalTopBanner

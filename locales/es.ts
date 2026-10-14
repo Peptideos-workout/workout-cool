@@ -459,6 +459,7 @@ export default {
     leaderboard_tooltip: "Ver ranking de entrenamiento",
     tools: "Herramientas",
     tools_tooltip: "Explorar herramientas",
+    label: "Navegación principal",
     profile: "Perfil",
     profile_tooltip: "Ver tu perfil",
   },
@@ -652,6 +653,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Build your workout",
     confirm_delete: "¿Estás seguro de que quieres eliminar esta sesión de entrenamiento?",
     steps: {
       equipment: {

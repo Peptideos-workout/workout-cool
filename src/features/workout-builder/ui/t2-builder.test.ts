@@ -71,15 +71,21 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   const stepper = read("src/features/workout-builder/ui/workout-stepper.tsx");
   const css = read("src/features/embed/embed-theme.css");
 
-  const tealMark = '"border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive || isCompleted';
-  const tealLabel = '"text-[var(--wc-dash-accent)]": isActive || isCompleted';
+  const tealMark =
+    "\"border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]\": isActive || isCompleted";
+  const tealLabel = "\"text-[var(--wc-dash-accent)]\": isActive || isCompleted";
   assert.equal(header.split(tealMark).length - 1, 2);
   assert.equal(header.split(tealLabel).length - 1, 2);
   assert.doesNotMatch(header, /": isCompleted,/);
   assert.doesNotMatch(header, /": isActive,/);
   assert.match(header, /isCompleted \? <span className="text-lg font-semibold">✓<\/span>/);
   assert.equal(header.split("✓").length - 1, 2);
-  assert.match(stepper, /data-wc-title="">Build your workout</);
+  assert.match(stepper, /data-wc-title="">\s*\{t\("workout_builder\.title"\)\}/);
+  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.doesNotMatch(stepper, /hidden px-2/);
+  for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
+    assert.match(read(`locales/${locale}.ts`), /title:\s*"Build your workout"/);
+  }
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="active"\][\s\S]*background:\s*var\(--wc-dash-accent\)/);
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="done"\][\s\S]*color:\s*var\(--wc-dash-ink\)/);
   assert.doesNotMatch(header, /text-blue-/);
@@ -106,8 +112,8 @@ test("builder contrast pairs meet AA", () => {
   assert.ok(contrast(light[foreground[1]], light[background[1]]) >= 4.5);
   assert.ok(contrast(dark[foreground[1]], dark[background[1]]) >= 4.5);
 
-  const inactiveTitle = '"text-[var(--wc-dash-secondary)]": !isActive && !isCompleted';
-  const caption = 'isActive || isCompleted ? "text-[var(--wc-dash-text)]" : "text-[var(--wc-dash-secondary)]"';
+  const inactiveTitle = "\"text-[var(--wc-dash-secondary)]\": !isActive && !isCompleted";
+  const caption = "isActive || isCompleted ? \"text-[var(--wc-dash-text)]\" : \"text-[var(--wc-dash-secondary)]\"";
   assert.equal(header.split(inactiveTitle).length - 1, 2);
   assert.equal(header.split(caption).length - 1, 2);
   assert.match(header, /text-lg/);
@@ -123,6 +129,12 @@ test("builder contrast pairs meet AA", () => {
   assert.ok(contrast(dark.secondary, dark.card) >= 4.5);
   assert.ok(contrast(dark.accent, dark.card) >= 4.5);
   assert.ok(contrast(dark.ink, dark.accent) >= 4.5);
+  assert.ok(contrast(light.secondary, light.inner) >= 3);
+  assert.ok(contrast(dark.secondary, dark.inner) >= 3);
+  const embed = read("src/features/embed/embed-theme.css");
+  assert.match(embed, /\[data-wc-step-previous\]:disabled \{[^}]*color:\s*var\(--wc-dash-secondary\)/);
+  assert.match(embed, /\[data-wc-step-next\]:not\(:disabled\):hover \{[^}]*color-mix\(in srgb, var\(--wc-dash-accent\)/);
+  assert.match(embed, /\[data-wc-step-previous\]:not\(:disabled\):hover \{[^}]*var\(--wc-dash-card\)/);
 
   assert.match(remove, /text-\[var\(--wc-dash-error\)\]/);
   assert.match(read("src/features/workout-builder/ui/exercise-card.tsx"), /workout_builder\.exercise\.remove/);

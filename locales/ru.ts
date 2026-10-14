@@ -456,6 +456,7 @@ export default {
     premium_tooltip: "Стань Премиум",
     tools: "Инструменты",
     tools_tooltip: "Просмотр инструментов",
+    label: "Основная навигация",
     profile: "Профиль",
     profile_tooltip: "Просмотр профиля",
     leaderboard: "Рейтинг",
@@ -1516,6 +1517,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Build your workout",
     confirm_delete: "Вы уверены, что хотите удалить эту тренировочную сессию?",
     steps: {
       equipment: {

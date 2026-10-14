@@ -249,7 +249,7 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.doesNotMatch(footer, /max-sm:bottom-14/);
   assert.match(
     read("src/features/workout-session/ui/workout-session-timer.tsx"),
-    /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/,
+    /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\+33px\)\]/,
   );
   assert.match(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-28/);
   assert.doesNotMatch(main, /max-sm:pb-36/);

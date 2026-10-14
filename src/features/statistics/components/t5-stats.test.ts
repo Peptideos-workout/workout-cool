@@ -119,7 +119,10 @@ test("stats text is 18px and tap targets are 48px", () => {
   assert.match(browser, /inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-\[var\(--wc-dash-text\)\]/);
   assert.match(
     browser,
-    /mb-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-\[var\(--wc-dash-accent\)\] px-4 text-lg text-\[var\(--wc-dash-ink\)\]/,
+    new RegExp(
+      "mb-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl " +
+        "bg-\\[var\\(--wc-dash-accent\\)\\] px-4 text-lg text-\\[var\\(--wc-dash-ink\\)\\]",
+    ),
   );
   assert.match(browser, /min-h-12 w-full rounded-xl border border-\[var\(--wc-dash-border\)\]/);
   assert.match(page, /text-lg text-\[var\(--wc-dash-secondary\)\]/);
@@ -301,12 +304,14 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(
     timer,
-    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:fixed max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0/,
+    new RegExp(
+      "relative mx-auto mb-3 w-fit max-w-\\[calc\\(100vw-16px\\)\\] max-sm:fixed " +
+        "max-sm:bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+env\\(safe-area-inset-bottom\\)\\+33px\\)\\] " +
+        "max-sm:left-1\\/2 max-sm:-translate-x-1\\/2 max-sm:z-50 max-sm:mb-0 " +
+        "sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0",
+    ),
   );
-  assert.match(
-    timer,
-    /max-sm:fixed max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/,
-  );
+  assert.match(timer, /max-sm:fixed max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\+33px\)\]/);
   assert.match(timer, /max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50/);
   assert.match(timer, /sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50/);
   assert.match(timer, /sm:z-50/);
@@ -338,6 +343,11 @@ test("timer, nav, and version chip reserve space", () => {
   const embed = read("src/features/embed/embed-theme.css");
   assert.match(
     embed,
-    /html\[data-wc-embed="1"\] \[data-wc-frame\],\s*html\[data-wc-embed="1"\] \[data-wc-shell\],\s*html\[data-wc-embed="1"\] \[data-wc-main\] \{\s*max-height: none !important;\s*overflow: visible !important;\s*\}/,
+    new RegExp(
+      "html\\[data-wc-embed=\"1\"\\] \\[data-wc-frame\\],\\s*" +
+        "html\\[data-wc-embed=\"1\"\\] \\[data-wc-shell\\],\\s*" +
+        "html\\[data-wc-embed=\"1\"\\] \\[data-wc-main\\] \\{\\s*" +
+        "max-height: none !important;\\s*overflow: visible !important;\\s*\\}",
+    ),
   );
 });

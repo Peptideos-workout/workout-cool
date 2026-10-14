@@ -318,7 +318,8 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(version, /max-sm:bottom-\[calc\(136px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(version, /fixed/);
   assert.match(read(SETS), /sm:pb-40/);
-  assert.match(read(STEPPER), /w-full max-w-6xl mx-auto sm:pr-64/);
+  assert.match(read(STEPPER), /w-full max-w-6xl mx-auto sm:pr-64 xl:pr-0/);
+  assert.match(root, /<div className="relative flex min-h-screen w-full items-center justify-center" data-wc-frame="">/);
   assert.match(read(STEP_FOOTER), /max-sm:bottom-\[159px\]/);
   assert.match(read(DETAIL), /className="pb-16"/);
   const bodyAt = root.indexOf("<body");

@@ -1517,7 +1517,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
-    title: "Build your workout",
+    title: "Составить свою тренировку",
     confirm_delete: "Вы уверены, что хотите удалить эту тренировочную сессию?",
     steps: {
       equipment: {

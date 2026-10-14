@@ -83,9 +83,17 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   assert.match(stepper, /data-wc-title="">\s*\{t\("workout_builder\.title"\)\}/);
   assert.doesNotMatch(stepper, /data-wc-lead/);
   assert.doesNotMatch(stepper, /hidden px-2/);
-  for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
-    assert.match(read(`locales/${locale}.ts`), /title:\s*"Build your workout"/);
-  }
+  assert.match(read("locales/en.ts"), /title:\s*"Build your workout"/);
+  assert.match(read("locales/fr.ts"), /title:\s*"Construire votre entraînement"/);
+  assert.match(read("locales/es.ts"), /title:\s*"Construir tu entrenamiento"/);
+  assert.match(read("locales/pt.ts"), /title:\s*"Construir o seu treino"/);
+  assert.match(read("locales/ru.ts"), /title:\s*"Составить свою тренировку"/);
+  assert.match(read("locales/zh-CN.ts"), /title:\s*"构建您的锻炼"/);
+  assert.doesNotMatch(css, /\[data-wc-lead\]/);
+  assert.match(
+    read("src/features/workout-builder/ui/workout-stepper-footer.tsx"),
+    /hover:!bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_78%,var\(--wc-dash-ink\)\)\]/,
+  );
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="active"\][\s\S]*background:\s*var\(--wc-dash-accent\)/);
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="done"\][\s\S]*color:\s*var\(--wc-dash-ink\)/);
   assert.doesNotMatch(header, /text-blue-/);

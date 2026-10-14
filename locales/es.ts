@@ -653,7 +653,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
-    title: "Build your workout",
+    title: "Construir tu entrenamiento",
     confirm_delete: "¿Estás seguro de que quieres eliminar esta sesión de entrenamiento?",
     steps: {
       equipment: {

@@ -222,7 +222,7 @@ test("phone nav clearance matches the two-column nav", () => {
   const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
   const globals = read("src/shared/styles/globals.css");
   assert.match(nav, /grid grid-cols-2 min-\[448px\]:grid-cols-3/);
-  assert.match(nav, /min-\[768px\]:flex/);
+  assert.match(nav, /lg:flex/);
   assert.match(nav, /whitespace-nowrap/);
   assert.match(nav, /aria-label=\{t\("bottom_navigation\.label"\)\}/);
   assert.match(globals, /--wc-nav-h:\s*195px/);

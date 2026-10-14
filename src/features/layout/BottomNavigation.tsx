@@ -104,8 +104,8 @@ export function BottomNavigation() {
       <div className="relative py-2 sm:px-3 lg:px-0">
         <div
           className={
-            "grid grid-cols-2 min-[448px]:grid-cols-3 gap-1 max-w-full mx-auto " +
-            "lg:flex lg:items-center lg:justify-center lg:gap-1"
+            "grid grid-cols-2 min-[448px]:grid-cols-3 gap-1 max-w-full mx-auto" +
+            (tabs.length <= 5 ? " lg:flex lg:items-center lg:justify-center lg:gap-1" : "")
           }
           data-wc-nav-grid=""
           style={{ "--wc-nav-tabs": String(tabs.length) } as CSSProperties}

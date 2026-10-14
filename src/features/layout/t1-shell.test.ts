@@ -231,7 +231,7 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(globals, /--wc-nav-h:\s*195px/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-h:\s*134px/);
   assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
-  const mainMarker = main.indexOf('data-wc-main=""');
+  const mainMarker = main.indexOf("data-wc-main=\"\"");
   assert.ok(mainMarker > 0);
   assert.doesNotMatch(main.slice(mainMarker - 180, mainMarker), /pb-\[var\(--wc-nav-h\)\]/);
   assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);

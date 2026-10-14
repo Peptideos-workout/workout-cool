@@ -61,5 +61,9 @@ test("embed SSO errors, including forbidden origin, break Log in and Sign up out
     }
     assert.equal(links.signupHref, "https://peptideos.us/signup");
     assert.equal(links.dashboardHref, "https://peptideos.us/dashboard");
+    assert.match(html, /wc:session/);
+    assert.match(html, /"signed-out"/);
+    assert.match(html, /https:\/\/www\.peptideos\.us/);
+    assert.doesNotMatch(html, /postMessage\([^)]*["']\*["']/);
   }
 });

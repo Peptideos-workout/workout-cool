@@ -66,6 +66,7 @@ test("CSP is assigned only in the global header, SSO and sign-out responses, and
     "app/api/peptideos-wc-sso/sso-response.ts",
     "next.config.ts",
     "src/features/auth/signout/lib/signout-continue-proxy.ts",
+    "src/features/embed/lib/embed-signed-out-document.ts",
     "src/shared/lib/frame-ancestors.ts"
   ]);
 });

@@ -1,4 +1,4 @@
-import { EMBED_BACK_TO_DASHBOARD } from "@/features/embed/lib/embed-mode";
+import { EMBED_BACK_TO_DASHBOARD, embedSignedOutSessionBootstrap } from "@/features/embed/lib/embed-mode";
 
 const DEFAULT_LOCALE = "en";
 
@@ -118,6 +118,7 @@ export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHr
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(copy.title)}</title>
+    ${input.embed ? `<script>${embedSignedOutSessionBootstrap()}</script>` : ""}
     <style>
       body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
       main { max-width: 28rem; margin: 12vh auto; padding: 2rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; }

@@ -178,6 +178,7 @@ export const Header = () => {
                 <li>
                   <button
                     className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                    data-wc-signout=""
                     onClick={handleSignOut}
                   >
                     <LogOut className="w-4 h-4" />

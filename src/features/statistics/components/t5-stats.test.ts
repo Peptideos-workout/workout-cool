@@ -22,6 +22,9 @@ const NAV = "src/features/layout/BottomNavigation.tsx";
 const FOOTER = "src/features/layout/Footer.tsx";
 const VERSION = "src/components/version.tsx";
 const SETS = "src/features/workout-session/ui/workout-session-sets.tsx";
+const DETAIL = "src/features/programs/ui/program-detail-page.tsx";
+const STEP_FOOTER = "src/features/workout-builder/ui/workout-stepper-footer.tsx";
+const STEPPER = "src/features/workout-builder/ui/workout-stepper.tsx";
 const STATS_FILES = [PAGE, BROWSER, TIMEFRAME, WEIGHT, ONE_RM, VOLUME, CHARTS, OVERLAY, MODAL];
 
 const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
@@ -298,9 +301,10 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(main, /max-sm:pb-\[calc\(134px\+25px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(
     timer,
-    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:bottom-20 sm:left-1\/2 sm:z-50 sm:mb-6 sm:-translate-x-1\/2/,
+    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-6 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0/,
   );
   assert.match(timer, /max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50/);
+  assert.match(timer, /sm:right-6 sm:bottom-6 sm:left-auto sm:translate-x-0 sm:z-50/);
   assert.match(timer, /sm:z-50/);
   assert.doesNotMatch(timer, /fixed bottom-36/);
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
@@ -310,8 +314,17 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(nav, /max-sm:pb-\[env\(safe-area-inset-bottom\)\]/);
   assert.doesNotMatch(nav, /max-sm:order-3/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
-  assert.match(version, /absolute bottom-2 right-4 z-50 max-sm:fixed max-sm:bottom-\[134px\]/);
+  assert.match(version, /absolute bottom-2 right-4 z-50 sm:bottom-28 sm:left-4 sm:right-auto/);
+  assert.match(version, /max-sm:bottom-\[calc\(136px\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.doesNotMatch(version, /fixed/);
   assert.match(read(SETS), /sm:pb-40/);
+  assert.match(read(STEPPER), /w-full max-w-6xl mx-auto sm:pr-64/);
+  assert.match(read(STEP_FOOTER), /max-sm:bottom-\[159px\]/);
+  assert.match(read(DETAIL), /className="pb-16"/);
+  const bodyAt = root.indexOf("<body");
+  const bodyOpen = root.slice(bodyAt, root.indexOf("GeistMono", bodyAt));
+  assert.match(bodyOpen, /"min-h-screen max-sm:p-0"/);
+  assert.doesNotMatch(bodyOpen, /\brelative\b/);
   assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
   assert.equal(version.split("v{appVersion}").length - 1, 2);
   assert.doesNotMatch(version, /max-sm:bottom-36/);

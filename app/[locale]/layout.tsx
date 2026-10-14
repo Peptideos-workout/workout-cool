@@ -367,7 +367,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             <AdBlockerForPremium />
             <NextTopLoader color="#FF5722" delay={100} showSpinner={false} />
 
-            <div className="flex min-h-screen w-full items-center justify-center" data-wc-frame="">
+            <div className="relative flex min-h-screen w-full items-center justify-center" data-wc-frame="">
               <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center" data-wc-frame="">
                 <div className="contents" data-wc-chrome="banner">
                   <VerticalLeftBanner />
@@ -377,8 +377,8 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
                   <VerticalRightBanner />
                 </div>
               </div>
+              <Version />
             </div>
-            <Version />
 
             <TailwindIndicator />
           </Providers>

@@ -137,8 +137,8 @@ export function WelcomeModal({
           <div className="flex gap-3">
             <Button
               className={
-                `!min-h-12 flex-1 !border !border-[var(--wc-dash-border)] ` +
-                `!bg-[var(--wc-dash-panel)] !text-lg !text-[var(--wc-dash-text)]`
+                "!min-h-12 flex-1 !border !border-[var(--wc-dash-border)] " +
+                "!bg-[var(--wc-dash-panel)] !text-lg !text-[var(--wc-dash-text)]"
               }
               onClick={onClose}
               size="large"

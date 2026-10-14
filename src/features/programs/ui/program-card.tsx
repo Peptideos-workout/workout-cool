@@ -171,7 +171,7 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
                 {program.equipment.slice(0, 3).map((equipment, index) => (
                   <span className="inline-flex items-center" key={equipment}>
                     {getAttributeValueLabel(equipment as ExerciseAttributeValueEnum, t)}
-                    {index < Math.min(program.equipment.length, 3) - 1 && <span className="ml-1 text-[var(--wc-dash-border)]">•</span>}
+                    {index < Math.min(program.equipment.length, 3) - 1 && <span className="ml-1 text-[var(--wc-dash-secondary)]">•</span>}
                   </span>
                 ))}
                 {program.equipment.length > 3 && <span className="text-[var(--wc-dash-secondary)]">+{program.equipment.length - 3}</span>}

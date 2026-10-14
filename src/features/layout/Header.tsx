@@ -80,7 +80,7 @@ export const Header = () => {
           {!session.data ? (
             <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
               <Link
-                className="!no-underline !text-lg !min-h-12 inline-flex items-center"
+                className="!no-underline !text-lg !min-h-12 !min-w-12 shrink-0 inline-flex items-center justify-center"
                 href={getConfiguredPeptideOsLoginUrl()}
                 prefetch={false}
                 size="sm"
@@ -124,7 +124,7 @@ export const Header = () => {
                 tabIndex={0}
               >
                 <li>
-                  <Link className="!no-underline" href="/profile" size="base" variant="nav">
+                  <Link className="!no-underline min-h-12 text-lg" href="/profile" size="base" variant="nav">
                     <User className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                     {t("commons.profile")}
                   </Link>
@@ -134,7 +134,7 @@ export const Header = () => {
                 {!allFeaturesFree && (
                   <li>
                     <Link
-                      className="!no-underline"
+                      className="!no-underline min-h-12 text-lg"
                       data-wc-entry="premium"
                       href={isPremium ? "/api/premium/billing-portal" : "/premium"}
                       size="base"
@@ -177,7 +177,7 @@ export const Header = () => {
 
                 <li>
                   <button
-                    className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                    className="flex min-h-12 items-center gap-2 text-lg text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
                     data-wc-signout=""
                     onClick={handleSignOut}
                   >

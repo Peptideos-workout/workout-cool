@@ -108,7 +108,7 @@ test("stats screens use dash tokens and no raw hex", () => {
   }
   const theme = read(THEME);
   assert.doesNotMatch(theme, /#[0-9a-fA-F]{3,8}/);
-  assert.equal(theme.split('isDark ? "var(--wc-dash-').length - 1, 9);
+  assert.equal(theme.split("isDark ? \"var(--wc-dash-").length - 1, 9);
 });
 
 test("stats text is 18px and tap targets are 48px", () => {
@@ -290,20 +290,24 @@ test("timer, nav, and version chip reserve space", () => {
   const footer = read(FOOTER);
   const version = read(VERSION);
   const modal = read(MODAL);
-  const frame = root.slice(root.indexOf('data-wc-frame=""') - 240, root.indexOf('data-wc-frame=""'));
-  const shell = main.slice(main.indexOf('data-wc-shell=""') - 400, main.indexOf('data-wc-shell=""'));
-  const mainClass = main.slice(main.indexOf('data-wc-main=""') - 240, main.indexOf('data-wc-main=""'));
+  const frame = root.slice(root.indexOf("data-wc-frame=\"\"") - 240, root.indexOf("data-wc-frame=\"\""));
+  const shell = main.slice(main.indexOf("data-wc-shell=\"\"") - 400, main.indexOf("data-wc-shell=\"\""));
+  const mainClass = main.slice(main.indexOf("data-wc-main=\"\"") - 240, main.indexOf("data-wc-main=\"\""));
   for (const source of [frame, shell, mainClass]) {
     assert.doesNotMatch(source, /overflow-auto/);
     assert.doesNotMatch(source, /max-h-\[100dvh\]/);
     assert.doesNotMatch(source, /overflow-hidden/);
   }
-  assert.match(main, /max-sm:pb-\[calc\(134px\+25px\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(
     timer,
-    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0/,
+    /relative mx-auto mb-3 w-fit max-w-\[calc\(100vw-16px\)\] max-sm:fixed max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0/,
   );
-  assert.match(timer, /max-sm:fixed max-sm:bottom-\[146px\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50/);
+  assert.match(
+    timer,
+    /max-sm:fixed max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/,
+  );
+  assert.match(timer, /max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50/);
   assert.match(timer, /sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50/);
   assert.match(timer, /sm:z-50/);
   assert.doesNotMatch(timer, /fixed bottom-36/);
@@ -315,12 +319,12 @@ test("timer, nav, and version chip reserve space", () => {
   assert.doesNotMatch(nav, /max-sm:order-3/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
   assert.match(version, /absolute bottom-2 right-4 z-50 sm:bottom-28 sm:left-4 sm:right-auto/);
-  assert.match(version, /max-sm:bottom-\[calc\(136px\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(version, /fixed/);
   assert.match(read(SETS), /sm:pb-40/);
   assert.match(read(STEPPER), /w-full max-w-6xl mx-auto sm:pr-64 xl:pr-0/);
   assert.match(root, /<div className="relative flex min-h-screen w-full items-center justify-center" data-wc-frame="">/);
-  assert.match(read(STEP_FOOTER), /max-sm:bottom-\[159px\]/);
+  assert.match(read(STEP_FOOTER), /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(read(DETAIL), /className="pb-16"/);
   const bodyAt = root.indexOf("<body");
   const bodyOpen = root.slice(bodyAt, root.indexOf("GeistMono", bodyAt));

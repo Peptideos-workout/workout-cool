@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Dumbbell, Grid, Hammer, Crown, Activity, Trophy } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 
+import type { CSSProperties } from "react";
+
 import { cn } from "@/shared/lib/utils";
 import { paths } from "@/shared/constants/paths";
 import { SiteConfig } from "@/shared/config/site-config";
@@ -88,6 +90,7 @@ export function BottomNavigation() {
 
   return (
     <nav
+      aria-label={t("bottom_navigation.label")}
       className={
         "relative shrink-0 border-t border-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)] bg-white/90 backdrop-blur-xl " +
         "dark:border-slate-700/50 dark:bg-[color-mix(in_srgb,var(--wc-dash-card)_90%,transparent)] " +
@@ -99,7 +102,11 @@ export function BottomNavigation() {
       <div className="pointer-events-none absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-accent)_3%,transparent)]" />
 
       <div className="relative sm:px-3 py-2">
-        <div className="grid grid-cols-3 gap-1 max-w-full mx-auto sm:flex sm:items-center sm:justify-center sm:gap-2" data-wc-nav-grid="">
+        <div
+          className="grid grid-cols-2 min-[431px]:grid-cols-3 gap-1 max-w-full mx-auto sm:flex sm:items-center sm:justify-center sm:gap-2"
+          data-wc-nav-grid=""
+          style={{ "--wc-nav-tabs": String(tabs.length) } as CSSProperties}
+        >
           {tabs.map((tab) => {
             const isActive = tab.isActive;
             const isPremium = tab.id === "premium";
@@ -173,7 +180,7 @@ export function BottomNavigation() {
                 {/* Label - responsive text */}
                 <span
                   className={cn(
-                    "text-lg font-semibold transition-all duration-300 ease-out leading-tight whitespace-normal text-center",
+                    "text-lg font-semibold transition-all duration-300 ease-out leading-tight whitespace-nowrap text-center",
                     isActive || isPremium ? "text-[var(--wc-dash-link)]" : "text-[var(--wc-dash-text)]",
                   )}
                 >

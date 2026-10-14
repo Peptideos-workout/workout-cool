@@ -29,7 +29,10 @@ export function WorkoutBuilderFooter({
   const isFinalStep = currentStep === totalSteps;
 
   return (
-    <div className="w-full sticky bottom-0 max-sm:bottom-[159px] z-30" data-wc-step-footer="">
+    <div
+      className="sticky bottom-0 z-30 w-full max-sm:bottom-[calc(var(--wc-nav-h)+env(safe-area-inset-bottom))]"
+      data-wc-step-footer=""
+    >
       {/* Mobile layout - vertical stack */}
       <div className="flex flex-col gap-4 px-2 sm:px-6 pb-2">
         {bottomBanner}
@@ -42,7 +45,7 @@ export function WorkoutBuilderFooter({
         >
           {/* Previous button */}
           <Button
-            className={`flex-1 rounded-full !h-auto !min-h-12 !text-lg text-[var(--wc-dash-text)] ${isFinalStep ? "w-full" : ""}`}
+            className={`flex-1 rounded-full !h-auto !min-h-12 !text-lg text-[var(--wc-dash-text)] disabled:pointer-events-auto ${isFinalStep ? "w-full" : ""}`}
             data-wc-step-previous=""
             disabled={isFirstStep}
             onClick={onPrevious}
@@ -60,7 +63,7 @@ export function WorkoutBuilderFooter({
             <RewardedAdGate onRewardGranted={onStartWorkout}>
               <Button
                 asChild
-                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]"
+                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)] disabled:pointer-events-auto"
                 data-wc-step-next=""
                 disabled={!canContinue}
                 size="default"
@@ -74,7 +77,7 @@ export function WorkoutBuilderFooter({
             </RewardedAdGate>
           ) : (
             <Button
-              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]"
+              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)] disabled:pointer-events-auto"
               data-wc-step-next=""
               disabled={!canContinue}
               onClick={onNext}

@@ -17,7 +17,8 @@ export const Version = ({ variant = "chip" }: VersionProps) => {
   return (
     <div
       className={
-        "absolute bottom-2 right-4 z-50 sm:bottom-28 sm:left-4 sm:right-auto " + "max-sm:bottom-[calc(136px+env(safe-area-inset-bottom))]"
+        "absolute bottom-2 right-4 z-50 sm:bottom-28 sm:left-4 sm:right-auto " +
+        "max-sm:bottom-[calc(var(--wc-nav-h)+env(safe-area-inset-bottom))]"
       }
       data-wc-chrome="version"
     >

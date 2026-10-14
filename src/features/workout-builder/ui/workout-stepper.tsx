@@ -351,10 +351,13 @@ export function WorkoutStepper() {
     <div className="w-full max-w-6xl mx-auto h-full" data-wc-builder="">
       {renderTopBanner()}
 
-      <div className="hidden px-2 sm:px-6" data-wc-intro="">
-        <p data-wc-kicker="">{t("bottom_navigation.workouts")}</p>
-        <h1 data-wc-title="">Build your workout</h1>
-        <p data-wc-lead="">{steps.find((step) => step.isActive)?.description}</p>
+      <div className="px-2 pb-4 sm:px-6" data-wc-intro="">
+        <p className="text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
+          {t("bottom_navigation.workouts")}
+        </p>
+        <h1 className="mt-2 text-3xl font-bold text-[var(--wc-dash-text)]" data-wc-title="">
+          {t("workout_builder.title")}
+        </h1>
       </div>
 
       <div data-wc-step-sheet="">

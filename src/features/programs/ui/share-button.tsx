@@ -73,9 +73,9 @@ export function ShareButton({ programTitle, programDescription, className = "", 
       {shareMessage && (
         <div
           className={
-            `absolute -top-12 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded border ` +
-            `border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] px-2 py-1 text-lg ` +
-            `text-[var(--wc-dash-text)]`
+            "absolute -top-12 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded border " +
+            "border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] px-2 py-1 text-lg " +
+            "text-[var(--wc-dash-text)]"
           }
         >
           {shareMessage}

@@ -202,8 +202,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
           {/* Mascot Emoji */}
           <div
             className={
-              `absolute right-4 top-4 flex h-16 w-16 items-center justify-center rounded-full ` +
-              `border-2 border-[var(--wc-dash-ink)] bg-[var(--wc-dash-accent)]`
+              "absolute right-4 top-4 flex h-16 w-16 items-center justify-center rounded-full " +
+              "border-2 border-[var(--wc-dash-ink)] bg-[var(--wc-dash-accent)]"
             }
           >
             <Image
@@ -220,8 +220,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
               <div className="mb-3 flex items-center gap-2">
                 <span
                   className={
-                    `inline-flex min-h-12 items-center gap-1 rounded-full bg-[var(--wc-dash-ink)] ` +
-                    `px-3 text-lg font-medium text-[var(--wc-dash-accent)]`
+                    "inline-flex min-h-12 items-center gap-1 rounded-full bg-[var(--wc-dash-ink)] " +
+                    "px-3 text-lg font-medium text-[var(--wc-dash-accent)]"
                   }
                 >
                   <Zap className="h-5 w-5" size={12} />
@@ -229,8 +229,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                 </span>
                 <span
                   className={
-                    `inline-flex min-h-12 items-center gap-1 rounded-full border ` +
-                    `border-[var(--wc-dash-ink)] px-3 text-lg font-medium text-[var(--wc-dash-ink)]`
+                    "inline-flex min-h-12 items-center gap-1 rounded-full border border-[var(--wc-dash-border)] " +
+                    "bg-[var(--wc-dash-panel)] px-3 text-lg font-medium text-[var(--wc-dash-text)]"
                   }
                 >
                   <Users className="h-5 w-5" size={12} />
@@ -277,8 +277,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                 {!isPremium && (
                   <div
                     className={
-                      `relative overflow-hidden rounded-xl border-2 border-dashed ` +
-                      `border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-6`
+                      "relative overflow-hidden rounded-xl border-2 border-dashed " +
+                      "border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-6"
                     }
                   >
                     {/* Subtle animation background */}
@@ -402,8 +402,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       </h3>
                       <div
                         className={
-                          `inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 ` +
-                          `text-lg font-bold text-[var(--wc-dash-ink)]`
+                          "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                          "text-lg font-bold text-[var(--wc-dash-ink)]"
                         }
                       >
                         {program.coaches.length}
@@ -413,9 +413,9 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       {program.coaches.map((coach) => (
                         <div
                           className={
-                            `flex flex-shrink-0 flex-col items-center gap-3 rounded-xl border-2 ` +
-                            `border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-3 transition-all ` +
-                            `duration-200 ease-in-out`
+                            "flex flex-shrink-0 flex-col items-center gap-3 rounded-xl border-2 " +
+                            "border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-3 transition-all " +
+                            "duration-200 ease-in-out"
                           }
                           key={coach.id}
                         >
@@ -483,7 +483,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       return (
                         <div
                           className={
-                            `rounded-xl border-2 border-dashed border-[var(--wc-dash-border)] ` + `bg-[var(--wc-dash-card)] p-8 text-center`
+                            "rounded-xl border-2 border-dashed border-[var(--wc-dash-border)] " + "bg-[var(--wc-dash-card)] p-8 text-center"
                           }
                         >
                           <div className="flex flex-col items-center gap-3">
@@ -562,8 +562,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                               {isCompleted && (
                                 <div
                                   className={
-                                    `inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 ` +
-                                    `text-lg font-bold text-[var(--wc-dash-ink)]`
+                                    "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                                    "text-lg font-bold text-[var(--wc-dash-ink)]"
                                   }
                                 >
                                   {t("programs.completed")}
@@ -572,8 +572,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                               {!isCompleted && !sessionPaywalled && (
                                 <div
                                   className={
-                                    `inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 ` +
-                                    `text-lg font-bold text-[var(--wc-dash-ink)]`
+                                    "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                                    "text-lg font-bold text-[var(--wc-dash-ink)]"
                                   }
                                 >
                                   {t("programs.free")}
@@ -582,9 +582,9 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                               {!isCompleted && sessionPaywalled && (
                                 <div
                                   className={
-                                    `inline-flex min-h-12 items-center rounded-full border ` +
-                                    `border-[var(--wc-dash-link)] bg-[var(--wc-dash-card)] px-3 text-lg font-bold ` +
-                                    `text-[var(--wc-dash-link)]`
+                                    "inline-flex min-h-12 items-center rounded-full border " +
+                                    "border-[var(--wc-dash-link)] bg-[var(--wc-dash-card)] px-3 text-lg font-bold " +
+                                    "text-[var(--wc-dash-link)]"
                                   }
                                 >
                                   {t("programs.premium")}
@@ -648,9 +648,9 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
       {isProgramCompleted && (
         <div
           className={
-            `absolute bottom-2 left-0 right-0 z-1 mx-auto flex min-h-12 max-w-xs items-center ` +
-            `justify-center gap-2 rounded-full bg-[var(--wc-dash-accent)] px-4 py-3 text-lg ` +
-            `font-bold text-[var(--wc-dash-ink)]`
+            "absolute bottom-2 left-0 right-0 z-1 mx-auto flex min-h-12 max-w-xs items-center " +
+            "justify-center gap-2 rounded-full bg-[var(--wc-dash-accent)] px-4 py-3 text-lg " +
+            "font-bold text-[var(--wc-dash-ink)]"
           }
         >
           <Trophy className="h-5 w-5 text-[var(--wc-dash-ink)]" size={18} />

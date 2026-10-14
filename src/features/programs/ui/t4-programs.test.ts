@@ -15,9 +15,9 @@ const WELCOME = "src/features/programs/ui/welcome-modal.tsx";
 const FILES = [CARD, DETAIL, PROGRESS, LIST, SHARE, WELCOME];
 
 const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
-const CONFETTI_COLORS = 'colors: ["#4F8EF7", "#25CB78", "#FFD700"]';
-const ACTIVE_TAB = '"!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]"';
-const INACTIVE_TAB = '"!text-[var(--wc-dash-text)]"';
+const CONFETTI_COLORS = "colors: [\"#4F8EF7\", \"#25CB78\", \"#FFD700\"]";
+const ACTIVE_TAB = "\"!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]\"";
+const INACTIVE_TAB = "\"!text-[var(--wc-dash-text)]\"";
 
 function blockForSelector(css: string, selector: string) {
   let from = 0;
@@ -120,6 +120,10 @@ test("program text is 18px and tap targets are 48px", () => {
   assert.match(list, /inline-flex min-h-12 items-center rounded-full border border-\[var\(--wc-dash-border\)\]/);
   assert.match(list, /bg-\[var\(--wc-dash-card\)\] px-4 text-lg font-medium text-\[var\(--wc-dash-accent\)\]/);
   assert.match(detail, /bg-\[var\(--wc-dash-accent\)\] px-6 py-4 text-lg font-bold text-\[var\(--wc-dash-ink\)\]/);
+  assert.match(detail, /bg-\[var\(--wc-dash-panel\)\] px-3 text-lg font-medium text-\[var\(--wc-dash-text\)\]/);
+  assert.match(card, /text-\[var\(--wc-dash-secondary\)\]">•/);
+  assert.match(list, /animate-fade-in-up/);
+  assert.match(list, /animationDelay: `\$\{index \* 100\}ms`/);
   assert.match(detail, /z-1 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-0/);
   assert.match(welcome, /!min-h-12 flex-1 !border-0 !bg-\[var\(--wc-dash-accent\)\] !text-lg !text-\[var\(--wc-dash-ink\)\]/);
   assert.match(welcome, /!min-h-12 flex-1 !border !border-\[var\(--wc-dash-border\)\]/);
@@ -170,7 +174,7 @@ test("program handlers, hrefs, disabled expressions, and conditionals stay byte-
   assert.match(card, /case "ADVANCED":/);
   assert.match(card, /size === "large" \? 16 : 14/);
   assert.match(card, /size === "large" \? 24 : 20/);
-  assert.equal(count(card, 'size === "large" ? 24 : 20'), 2);
+  assert.equal(count(card, "size === \"large\" ? 24 : 20"), 2);
   assert.match(card, /\{isLocked && <span className=\{premiumKicker\}>Premium<\/span>\}/);
   assert.match(card, /\{isLocked \? \(/);
   assert.match(card, /\{!isLocked && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-\[var\(--wc-dash-accent\)\]" \/>\}/);
@@ -245,68 +249,68 @@ test("program copy stays on the existing translation keys", () => {
   const expected: Record<string, Record<string, number>> = {
     [CARD]: {
       "`levels.${program.level}`": 2,
-      '"programs.week_short"': 2,
-      '"programs.min_short"': 1,
+      "\"programs.week_short\"": 2,
+      "\"programs.min_short\"": 1,
     },
     [DETAIL]: {
-      '"about"': 1,
-      '"breadcrumbs.home"': 1,
-      '"programs.workout_programs"': 1,
-      '"refresh"': 1,
+      "\"about\"": 1,
+      "\"breadcrumbs.home\"": 1,
+      "\"programs.workout_programs\"": 1,
+      "\"refresh\"": 1,
       "`levels.${program.level}`": 3,
-      '"programs.about"': 1,
-      '"programs.sessions"': 2,
-      '"programs.important_info"': 1,
-      '"programs.donation_teaser"': 1,
-      '"programs.community"': 1,
-      '"programs.community_count"': 1,
-      '"commons.share"': 1,
-      '"programs.characteristics"': 1,
-      '"programs.weeks"': 2,
-      '"programs.sessions_per_week"': 2,
-      '"programs.session_duration"': 1,
-      '"programs.your_coach"': 1,
-      '"programs.week_short"': 1,
-      '"programs.sessions_coming_soon"': 1,
-      '"programs.sessions_in_creation"': 1,
-      '"programs.completed"': 1,
-      '"programs.free"': 1,
-      '"programs.premium"': 1,
-      '"programs.exercises"': 1,
-      '"programs.min_short"': 1,
-      '"programs.continue"': 1,
-      '"programs.join_cta"': 1,
-      '"programs.program_completed"': 1,
+      "\"programs.about\"": 1,
+      "\"programs.sessions\"": 2,
+      "\"programs.important_info\"": 1,
+      "\"programs.donation_teaser\"": 1,
+      "\"programs.community\"": 1,
+      "\"programs.community_count\"": 1,
+      "\"commons.share\"": 1,
+      "\"programs.characteristics\"": 1,
+      "\"programs.weeks\"": 2,
+      "\"programs.sessions_per_week\"": 2,
+      "\"programs.session_duration\"": 1,
+      "\"programs.your_coach\"": 1,
+      "\"programs.week_short\"": 1,
+      "\"programs.sessions_coming_soon\"": 1,
+      "\"programs.sessions_in_creation\"": 1,
+      "\"programs.completed\"": 1,
+      "\"programs.free\"": 1,
+      "\"programs.premium\"": 1,
+      "\"programs.exercises\"": 1,
+      "\"programs.min_short\"": 1,
+      "\"programs.continue\"": 1,
+      "\"programs.join_cta\"": 1,
+      "\"programs.program_completed\"": 1,
     },
     [PROGRESS]: {
-      '"refresh"': 1,
-      '"programs.my_progress"': 1,
-      '"programs.completed_sets"': 1,
-      '"programs.completed_feminine"': 1,
-      '"programs.week"': 1,
-      '"programs.session"': 1,
+      "\"refresh\"": 1,
+      "\"programs.my_progress\"": 1,
+      "\"programs.completed_sets\"": 1,
+      "\"programs.completed_feminine\"": 1,
+      "\"programs.week\"": 1,
+      "\"programs.session\"": 1,
     },
     [LIST]: {
-      '"programs.no_programs_available"': 1,
-      '"programs.no_programs_available_description"': 1,
-      '"programs.workout_programs"': 2,
-      '"commons.new"': 1,
-      '"programs.workout_programs_description"': 1,
-      '"programs.available_programs"': 1,
-      '"programs.more_programs_coming_title"': 1,
-      '"programs.more_programs_coming_description"': 1,
-      '"programs.coming_strength"': 1,
-      '"programs.coming_cardio"': 1,
-      '"programs.coming_yoga"': 1,
+      "\"programs.no_programs_available\"": 1,
+      "\"programs.no_programs_available_description\"": 1,
+      "\"programs.workout_programs\"": 2,
+      "\"commons.new\"": 1,
+      "\"programs.workout_programs_description\"": 1,
+      "\"programs.available_programs\"": 1,
+      "\"programs.more_programs_coming_title\"": 1,
+      "\"programs.more_programs_coming_description\"": 1,
+      "\"programs.coming_strength\"": 1,
+      "\"programs.coming_cardio\"": 1,
+      "\"programs.coming_yoga\"": 1,
     },
     [WELCOME]: {
-      '"programs.welcome_modal.welcome_title"': 1,
-      '"programs.welcome_modal.subtitle"': 1,
-      '"programs.welcome_modal.level_label"': 1,
-      '"programs.welcome_modal.duration_label"': 1,
-      '"programs.welcome_modal.frequency_label"': 1,
-      '"programs.welcome_modal.later_button"': 1,
-      '"programs.welcome_modal.start_button"': 1,
+      "\"programs.welcome_modal.welcome_title\"": 1,
+      "\"programs.welcome_modal.subtitle\"": 1,
+      "\"programs.welcome_modal.level_label\"": 1,
+      "\"programs.welcome_modal.duration_label\"": 1,
+      "\"programs.welcome_modal.frequency_label\"": 1,
+      "\"programs.welcome_modal.later_button\"": 1,
+      "\"programs.welcome_modal.start_button\"": 1,
     },
   };
 

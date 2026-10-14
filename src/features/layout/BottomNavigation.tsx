@@ -97,9 +97,12 @@ export function BottomNavigation() {
       {/* Subtle background gradient */}
       <div className="pointer-events-none absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-accent)_3%,transparent)]" />
 
-      <div className="relative sm:px-3 py-2">
+      <div className="relative py-2 sm:px-3 min-[768px]:px-0">
         <div
-          className="grid grid-cols-2 min-[431px]:grid-cols-3 gap-1 max-w-full mx-auto sm:flex sm:items-center sm:justify-center sm:gap-2"
+          className={
+            "grid grid-cols-2 min-[448px]:grid-cols-3 gap-1 max-w-full mx-auto " +
+            "min-[768px]:flex min-[768px]:items-center min-[768px]:justify-center min-[768px]:gap-1"
+          }
           data-wc-nav-grid=""
           style={{ "--wc-nav-tabs": String(tabs.length) } as CSSProperties}
         >
@@ -111,7 +114,8 @@ export function BottomNavigation() {
             return (
               <Link
                 className={cn(
-                  "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 sm:px-4 py-1 rounded-2xl transition-all duration-300 ease-out",
+                  "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 py-1",
+                  "min-[768px]:min-w-min min-[768px]:px-0 rounded-2xl transition-all duration-300 ease-out",
                   "hover:scale-105 active:scale-95",
                   isActive && isPremium
                     ? "border border-[color-mix(in_srgb,var(--wc-dash-link)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-link)_8%,transparent)]"

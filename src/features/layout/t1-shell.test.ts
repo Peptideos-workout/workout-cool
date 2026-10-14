@@ -87,10 +87,17 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onPrevious=\{prevStep\}/);
   assert.match(stepper, /onStartWorkout=\{handleStartWorkout\}/);
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
-  assert.match(stepper, /Build your workout/);
   assert.match(stepper, /data-wc-intro/);
+  assert.match(stepper, /data-wc-kicker/);
+  assert.match(stepper, /data-wc-title/);
+  assert.match(stepper, /workout_builder\.title/);
+  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.doesNotMatch(stepper, /className="hidden[^"]*" data-wc-intro/);
   assert.match(stepper, /data-wc-step-sheet/);
+  assert.match(stepper, /bottom_navigation\.workouts/);
   assert.match(footer, /data-wc-step-next/);
+  assert.match(footer, /data-wc-step-previous/);
+  assert.match(footer, /disabled=\{isFirstStep\}/);
   assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /data-wc-step-mark/);
   assert.match(read("src/features/embed/embed-theme.css"), /data-wc-intro/);
   assert.match(read("src/features/embed/embed-theme.css"), /data-wc-step-sheet/);
@@ -158,6 +165,8 @@ test("public Log in is 18px and at least 48px", () => {
   const login = header.slice(Math.max(0, loginAt - 500), loginAt + loginCall.length);
   assert.match(login, /!text-lg/);
   assert.match(login, /!min-h-12/);
+  assert.match(login, /!min-w-12/);
+  assert.match(login, /shrink-0/);
   assert.match(login, /inline-flex/);
   assert.match(login, /items-center/);
   assert.match(login, /getConfiguredPeptideOsLoginUrl\(\)/);
@@ -209,6 +218,60 @@ test("nav isActive and isPremium ternary structure is unchanged", () => {
   assert.equal(skeleton.split("{isActive&&(").length - 1, 2);
 });
 
+test("phone nav clearance matches the two-column nav", () => {
+  const nav = read("src/features/layout/BottomNavigation.tsx");
+  const main = read("app/[locale]/(app)/layout.tsx");
+  const version = read("src/components/version.tsx");
+  const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
+  const globals = read("src/shared/styles/globals.css");
+  assert.match(nav, /grid grid-cols-2 min-\[431px\]:grid-cols-3/);
+  assert.match(nav, /whitespace-nowrap/);
+  assert.match(nav, /aria-label=\{t\("bottom_navigation\.label"\)\}/);
+  assert.match(globals, /--wc-nav-h:\s*195px/);
+  assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\]/);
+  assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\][\s\S]*data-wc-shell=""/);
+  assert.match(version, /max-sm:fixed max-sm:bottom-\[var\(--wc-nav-h\)\] max-sm:z-50/);
+  assert.match(footer, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(footer, /disabled:pointer-events-auto/);
+  assert.doesNotMatch(footer, /max-sm:bottom-14/);
+  assert.match(read("src/features/workout-session/ui/workout-session-timer.tsx"), /bottom-\[var\(--wc-nav-h\)\]/);
+  assert.doesNotMatch(main, /max-sm:pb-36/);
+  assert.doesNotMatch(version, /max-sm:bottom-36/);
+  for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
+    assert.match(read(`locales/${locale}.ts`), /label:\s*"/);
+  }
+  assert.match(read("locales/en.ts"), /label:\s*"Main navigation"/);
+});
+
+test("header dropdown items are 18px and 48px", () => {
+  const header = read("src/features/layout/Header.tsx");
+  assert.match(header, /className="!no-underline min-h-12 text-lg" href="\/profile"/);
+  assert.match(header, /className="!no-underline min-h-12 text-lg"\n\s+data-wc-entry="premium"/);
+  assert.match(header, /min-h-12 items-center gap-2 text-lg text-gray-700/);
+  assert.match(header, /data-wc-signout=""/);
+  assert.match(header, /onClick=\{handleSignOut\}/);
+  assert.match(header, /commons\.profile/);
+  assert.match(header, /commons\.manage_subscription/);
+  assert.match(header, /commons\.remove_ads/);
+  assert.match(header, /commons\.logout/);
+});
+
+test("embed nav grid fits five or six tabs", () => {
+  const css = read("src/features/embed/embed-theme.css");
+  const desktop = new RegExp(
+    "\\[data-wc-nav-grid\\] \\{\\s*display: grid !important;\\s*" +
+      "grid-template-columns: repeat\\(var\\(--wc-nav-tabs, 5\\), minmax\\(0, 1fr\\)\\);",
+  );
+  const phone = new RegExp(
+    "@media \\(max-width: 639px\\) \\{\\s*html\\[data-wc-embed=\"1\"\\] \\[data-wc-nav-grid\\] \\{\\s*" +
+      "grid-template-columns: repeat\\(3, minmax\\(0, 1fr\\)\\);",
+  );
+  assert.match(css, desktop);
+  assert.match(read("src/features/layout/BottomNavigation.tsx"), /--wc-nav-tabs/);
+  assert.match(css, phone);
+  assert.doesNotMatch(css, /repeat\(5,/);
+});
+
 test("embed nav labels stay visible", () => {
   const css = read("src/features/embed/embed-theme.css");
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a > span \{[^}]*display:\s*block\s*!important/);
@@ -251,8 +314,11 @@ test("public Sign up, nav labels, and the version chip are at least 18px", () =>
   assert.match(signup, /whitespace-nowrap/);
   assert.match(signup, /commons\.signup/);
   assert.match(nav, /text-lg/);
-  assert.match(nav, /whitespace-normal/);
+  assert.match(nav, /whitespace-nowrap/);
+  assert.doesNotMatch(nav, /whitespace-normal/);
+  assert.match(nav, /grid grid-cols-2 min-\[431px\]:grid-cols-3/);
   assert.doesNotMatch(nav, /truncate/);
+  assert.doesNotMatch(nav, /text-ellipsis/);
   assert.doesNotMatch(nav, /text-xs/);
   assert.doesNotMatch(nav, /text-\[9px\]/);
   assert.match(version, /text-lg/);

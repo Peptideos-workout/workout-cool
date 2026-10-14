@@ -118,10 +118,10 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   assert.match(sets, /!min-h-12 !border !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
   assert.match(sets, /!text-lg !text-\[var\(--wc-dash-text\)\]/);
   const quitClass =
-    'className="border-0 bg-transparent px-3 !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"';
+    "className=\"border-0 bg-transparent px-3 !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(header, new RegExp(quitClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const dialogQuit =
-    'className="w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"';
+    "className=\"w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(quit, new RegExp(dialogQuit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(row, /aria-label="Supprimer la série"[\s\S]*className=\{`\$\{plainErrorButton\} !min-h-12 !min-w-12 px-3`\}/);
   assert.match(row, /<Trash2 className="h-5 w-5" \/>/);
@@ -185,7 +185,7 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
   assert.match(quit, /t\("workout_builder\.session\.continue_workout"\)/);
 
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
-  assert.match(timer, /fixed bottom-36 left-1\/2 z-50 mb-3 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-20/);
+  assert.match(timer, /fixed bottom-\[var\(--wc-nav-h\)\] left-1\/2 z-50 mb-3 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-20/);
   assert.match(timer, /rounded-full border border-\[var\(--wc-dash-border\)\] bg-\[var\(--wc-dash-card\)\] px-4 py-2 shadow-lg/);
   assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
   assert.match(sets, /px-3 pb-8 sm:px-6 \[html\[data-wc-embed='1'\]_&\]:pb-8/);

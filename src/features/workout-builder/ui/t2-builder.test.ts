@@ -92,7 +92,7 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   assert.doesNotMatch(css, /\[data-wc-lead\]/);
   assert.match(
     read("src/features/workout-builder/ui/workout-stepper-footer.tsx"),
-    /hover:!bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_78%,var\(--wc-dash-ink\)\)\]/,
+    /hover:\[&:not\(:disabled\)\]:!bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_78%,var\(--wc-dash-ink\)\)\]/,
   );
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="active"\][\s\S]*background:\s*var\(--wc-dash-accent\)/);
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="done"\][\s\S]*color:\s*var\(--wc-dash-ink\)/);

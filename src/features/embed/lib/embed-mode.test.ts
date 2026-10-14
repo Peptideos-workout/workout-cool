@@ -894,6 +894,7 @@ function runTopLevelEmbedEscape(href: string, topLevel: boolean): string | null 
   windowObj.parent = topLevel ? windowObj : {};
   const location = {
     href,
+    origin: new URL(href).origin,
     replace(next: string) {
       replaced = next;
     }
@@ -907,12 +908,17 @@ test("a top-level fallback drops embed=1 and stays on the same path", async () =
   const script = embedTopLevelEmbedQueryEscape();
   assert.doesNotMatch(script, /https?:/);
   assert.doesNotMatch(script, /peptideos\.us/);
-  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, true), "/en/profile");
+  const samePath = runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, true);
+  assert.equal(samePath, "/en/profile");
+  assert.equal(new URL(samePath ?? "", APP).origin, new URL(APP).origin);
   assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1&theme=dark`, true), "/en/profile?theme=dark");
   assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?foo=1&embed=1#sets`, true), "/en/profile?foo=1#sets");
   assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?theme=dark`, true), null);
   assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, false), null);
   assert.equal(runTopLevelEmbedEscape("https://peptideos.us.evil.com/en/profile?embed=1", true), "/en/profile");
+  assert.equal(runTopLevelEmbedEscape(`${APP}//evil.com/x?embed=1`, true), null);
+  assert.equal(runTopLevelEmbedEscape(`${APP}/\\evil.com?embed=1`, true), null);
+  assert.equal(runTopLevelEmbedEscape(`${APP}///evil.com?embed=1`, true), null);
 
   await withPeptideEnv(async () => {
     const response = await proxy(new NextRequest(`${APP}/en/profile?embed=1`));
@@ -920,6 +926,10 @@ test("a top-level fallback drops embed=1 and stays on the same path", async () =
     assert.equal(response.status, 200);
     assert.equal(html.includes(script), true);
     assert.doesNotMatch(html, /location\.replace\([^)]*https?:/);
+
+    const openRedirect = await proxy(new NextRequest(`${APP}//evil.com/x?embed=1`));
+    assert.equal(openRedirect.status, 200);
+    assert.equal((await openRedirect.text()).includes(script), true);
   });
 });
 

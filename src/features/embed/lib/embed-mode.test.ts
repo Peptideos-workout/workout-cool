@@ -888,13 +888,20 @@ test("a top-level ?embed=1 with no Sec-Fetch-Dest header does not turn on embed 
   });
 });
 
-function runTopLevelEmbedEscape(href: string, topLevel: boolean): string | null {
+interface EmbedEscapeInput {
+  href: string;
+  topLevel: boolean;
+  expected: string | null;
+  pageOrigin?: string;
+}
+
+function runTopLevelEmbedEscape(href: string, topLevel: boolean, pageOrigin?: string): string | null {
   let replaced: string | null = null;
   const windowObj = { parent: null as unknown };
   windowObj.parent = topLevel ? windowObj : {};
   const location = {
     href,
-    origin: new URL(href).origin,
+    origin: pageOrigin ?? new URL(href).origin,
     replace(next: string) {
       replaced = next;
     }
@@ -906,19 +913,31 @@ function runTopLevelEmbedEscape(href: string, topLevel: boolean): string | null 
 
 test("a top-level fallback drops embed=1 and stays on the same path", async () => {
   const script = embedTopLevelEmbedQueryEscape();
+  const origin = new URL(APP).origin;
   assert.doesNotMatch(script, /https?:/);
   assert.doesNotMatch(script, /peptideos\.us/);
-  const samePath = runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, true);
-  assert.equal(samePath, "/en/profile");
-  assert.equal(new URL(samePath ?? "", APP).origin, new URL(APP).origin);
-  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1&theme=dark`, true), "/en/profile?theme=dark");
-  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?foo=1&embed=1#sets`, true), "/en/profile?foo=1#sets");
-  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?theme=dark`, true), null);
-  assert.equal(runTopLevelEmbedEscape(`${APP}/en/profile?embed=1`, false), null);
-  assert.equal(runTopLevelEmbedEscape("https://peptideos.us.evil.com/en/profile?embed=1", true), "/en/profile");
-  assert.equal(runTopLevelEmbedEscape(`${APP}//evil.com/x?embed=1`, true), null);
-  assert.equal(runTopLevelEmbedEscape(`${APP}/\\evil.com?embed=1`, true), null);
-  assert.equal(runTopLevelEmbedEscape(`${APP}///evil.com?embed=1`, true), null);
+  const inputs: EmbedEscapeInput[] = [
+    { href: `${APP}/en/profile?embed=1`, topLevel: true, expected: "/en/profile" },
+    { href: `${APP}/en/profile?embed=1&theme=dark`, topLevel: true, expected: "/en/profile?theme=dark" },
+    { href: `${APP}/en/profile?foo=1&embed=1#sets`, topLevel: true, expected: "/en/profile?foo=1#sets" },
+    { href: `${APP}/en/profile?theme=dark`, topLevel: true, expected: null },
+    { href: `${APP}/en/profile?embed=1`, topLevel: false, expected: null },
+    { href: "https://peptideos.us.evil.com/en/profile?embed=1", topLevel: true, expected: "/en/profile" },
+    { href: `${APP}//evil.com/x?embed=1`, topLevel: true, expected: null },
+    { href: `${APP}/\\evil.com?embed=1`, topLevel: true, expected: null },
+    { href: `${APP}///evil.com?embed=1`, topLevel: true, expected: null },
+    { href: "https://evil.com/x?embed=1", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "javascript:alert(1)", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "http://evil.com", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "http://evil.com/x?embed=1", topLevel: true, expected: null, pageOrigin: origin }
+  ];
+  for (const input of inputs) {
+    const result = runTopLevelEmbedEscape(input.href, input.topLevel, input.pageOrigin);
+    assert.equal(result, input.expected);
+    if (result !== null) {
+      assert.equal(new URL(result, origin).origin, origin);
+    }
+  }
 
   await withPeptideEnv(async () => {
     const response = await proxy(new NextRequest(`${APP}/en/profile?embed=1`));

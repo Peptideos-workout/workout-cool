@@ -6,6 +6,15 @@ import { WorkoutSet, WorkoutSetType, WorkoutSetUnit } from "@/features/workout-s
 import { getWorkoutSetTypeLabels } from "@/features/workout-session/lib/workout-set-labels";
 import { Button } from "@/components/ui/button";
 
+const sessionField =
+  "min-h-14 rounded border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] " + "px-3 text-lg font-bold text-[var(--wc-dash-text)]";
+const plainErrorButton = "border-0 bg-transparent !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent";
+const accentButton =
+  "!min-h-12 !bg-[var(--wc-dash-accent)] !text-lg font-bold !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]";
+const secondaryButton =
+  "!min-h-12 !border !border-[var(--wc-dash-border)] !bg-[var(--wc-dash-panel)] !text-lg font-bold " +
+  "!text-[var(--wc-dash-text)] shadow-none hover:!bg-[var(--wc-dash-inner)]";
+
 interface WorkoutSetRowProps {
   set: WorkoutSet;
   setIndex: number;
@@ -81,7 +90,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
         return (
           <div className="flex gap-1 w-full">
             <input
-              className="border border-black rounded px-1 py-2 w-1/2 text-base text-center font-bold dark:bg-slate-800 dark:placeholder:text-slate-500"
+              className={`${sessionField} w-1/2 text-center`}
               disabled={set.completed}
               min={0}
               onChange={handleValueIntChange(columnIndex)}
@@ -91,7 +100,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
               value={valuesInt[columnIndex] ?? ""}
             />
             <input
-              className="border border-black rounded px-1 py-2 w-1/2 text-base text-center font-bold dark:bg-slate-800 dark:placeholder:text-slate-500"
+              className={`${sessionField} w-1/2 text-center`}
               disabled={set.completed}
               max={59}
               min={0}
@@ -107,7 +116,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
         return (
           <div className="flex gap-1 w-full items-center">
             <input
-              className="border border-black rounded px-1 py-2 w-1/2 text-base text-center font-bold dark:bg-slate-800"
+              className={`${sessionField} w-1/2 text-center`}
               disabled={set.completed}
               min={0}
               onChange={handleValueIntChange(columnIndex)}
@@ -117,7 +126,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
               value={valuesInt[columnIndex] ?? ""}
             />
             <select
-              className="border border-black rounded px-1 py-2 w-1/2 text-base font-bold bg-white dark:bg-slate-800 dark:text-gray-200 h-10 "
+              className={`${sessionField} w-1/2`}
               disabled={set.completed}
               onChange={handleUnitChange(columnIndex)}
               value={units[columnIndex] ?? "kg"}
@@ -130,7 +139,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
       case "REPS":
         return (
           <input
-            className="border border-black rounded px-1 py-2 w-full text-base text-center font-bold dark:bg-slate-800"
+            className={`${sessionField} w-full text-center`}
             disabled={set.completed}
             min={0}
             onChange={handleValueIntChange(columnIndex)}
@@ -141,15 +150,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
           />
         );
       case "BODYWEIGHT":
-        return (
-          <input
-            className="border border-black rounded px-1 py-2 w-full text-base text-center font-bold dark:bg-slate-800"
-            disabled={set.completed}
-            placeholder=""
-            readOnly
-            value="✔"
-          />
-        );
+        return <input className={`${sessionField} w-full text-center`} disabled={set.completed} placeholder="" readOnly value="✔" />;
       default:
         return null;
     }
@@ -157,30 +158,31 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
 
   return (
     <div
-      className={`w-full py-4 flex flex-col gap-2 rounded-xl shadow-sm mb-3 relative px-2 sm:px-4 transition-all duration-500 ${
+      className={`relative mb-3 flex w-full flex-col gap-2 rounded-xl px-2 py-4 transition-all duration-500 sm:px-4 ${
         set.completed
-          ? "bg-green-50/50 dark:bg-green-950/20 border-2 border-green-300 dark:border-green-800"
-          : "bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50"
+          ? "border-2 border-[var(--wc-dash-accent)] bg-[var(--wc-dash-inner)]"
+          : "border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]"
       }`}
     >
       <div className="flex items-center justify-between mb-2">
         <div
-          className={`text-white text-xs font-bold px-3 py-1 rounded-full shadow transition-all duration-500 ${
+          className={`inline-flex min-h-12 items-center rounded-full px-3 text-lg font-bold transition-all duration-500 ${
             set.completed
-              ? "bg-green-500 dark:bg-green-700 dark:text-green-100"
-              : "bg-blue-500 dark:bg-blue-900 dark:text-blue-300"
+              ? "bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]"
+              : "border border-[var(--wc-dash-accent)] bg-[var(--wc-dash-card)] text-[var(--wc-dash-accent)]"
           }`}
         >
           {set.completed ? "✓" : ""} SET {setIndex + 1}
         </div>
         <Button
           aria-label="Supprimer la série"
-          className="bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/60 text-red-600 dark:text-red-300 rounded-full p-1 h-8 w-8 flex items-center justify-center shadow transition"
+          className={`${plainErrorButton} !min-h-12 !min-w-12 px-3`}
           disabled={set.completed}
           onClick={onRemove}
           type="button"
+          variant="ghost"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-5 w-5" />
         </Button>
       </div>
 
@@ -194,7 +196,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
             <div className="flex flex-col w-full md:w-auto" key={columnIndex}>
               <div className="flex items-center w-full gap-1 mb-1">
                 <select
-                  className="border border-black dark:border-slate-700 rounded font-bold px-1 py-2 text-base w-full bg-white dark:bg-slate-800 dark:text-gray-200 min-w-0 h-10 "
+                  className={`${sessionField} w-full min-w-0`}
                   disabled={set.completed}
                   onChange={handleTypeChange(columnIndex)}
                   value={type}
@@ -207,12 +209,12 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
                 </select>
                 {types.length > 1 && (
                   <Button
-                    className="p-1 h-auto bg-red-500 hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-800 flex-shrink-0"
+                    className={`${plainErrorButton} !min-h-12 !min-w-12 flex-shrink-0`}
                     onClick={() => removeColumn(columnIndex)}
                     size="small"
-                    variant="destructive"
+                    variant="ghost"
                   >
-                    <Minus className="h-3 w-3" />
+                    <Minus className="h-5 w-5" />
                   </Button>
                 )}
               </div>
@@ -226,7 +228,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
       {types.length < MAX_WORKOUT_SET_COLUMNS && !set.completed && (
         <div className="flex w-full justify-start mt-1">
           <Button
-            className="font-bold px-4 py-2 text-sm rounded-xl w-full md:w-auto mt-2"
+            className={`${secondaryButton} mt-2 w-full px-4 md:w-auto`}
             disabled={set.completed}
             onClick={addColumn}
             variant="outline"
@@ -240,20 +242,12 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
 
       {/* Finish & Edit buttons, full width on mobile */}
       <div className="flex gap-2 w-full md:w-auto mt-2">
-        <Button
-          className=" dark:text-white font-bold px-4 py-2 text-sm rounded-xl flex-1"
-          disabled={set.completed}
-          onClick={onFinish}
-          variant="default"
-        >
+        <Button className={`${accentButton} flex-1 px-4`} disabled={set.completed} onClick={onFinish} variant="default">
+          <span aria-hidden="true">✓</span>
           {t("workout_builder.session.finish_set")}
         </Button>
         {set.completed && (
-          <Button
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2 text-sm rounded-xl flex-1 border border-gray-300"
-            onClick={handleEdit}
-            variant="outline"
-          >
+          <Button className={`${secondaryButton} flex-1 px-4`} onClick={handleEdit} variant="outline">
             {t("commons.edit")}
           </Button>
         )}

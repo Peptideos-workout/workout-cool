@@ -16,7 +16,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <div
       className={
         "card mx-auto flex w-full max-w-3xl min-h-[500px] flex-col rounded-lg border border-base-200 bg-white shadow-xl " +
-        "dark:border-slate-700 dark:bg-[#232324] max-sm:rounded-none"
+        "max-sm:rounded-none max-sm:pb-[calc(var(--wc-nav-h)+25px+env(safe-area-inset-bottom))] " +
+        "dark:border-slate-700 dark:bg-[#232324]"
       }
       data-wc-shell=""
     >
@@ -24,10 +25,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <EmbedAuthFallback />
       </Suspense>
       <Header />
-      <div
-        className="flex flex-1 flex-col max-sm:order-1 max-sm:pb-[calc(var(--wc-nav-h)+25px+env(safe-area-inset-bottom))]"
-        data-wc-main=""
-      >
+      <div className="flex flex-1 flex-col max-sm:order-1" data-wc-main="">
         {children}
         <Version variant="meta" />
       </div>

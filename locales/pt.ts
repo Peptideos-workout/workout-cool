@@ -461,6 +461,7 @@ export default {
     leaderboard_tooltip: "Ver ranking de treinos",
     tools: "Ferramentas",
     tools_tooltip: "Explorar ferramentas",
+    label: "Navegação principal",
     profile: "Perfil",
     profile_tooltip: "Ver o seu perfil",
   },

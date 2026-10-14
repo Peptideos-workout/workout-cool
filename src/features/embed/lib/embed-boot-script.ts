@@ -1,14 +1,17 @@
 import { EMBED_FRAMEABLE_LOGOUT_PATH, EMBED_PARENT_ORIGINS, EMBED_SESSION_KEY, isEmbedParentOrigin } from "./embed-mode";
 
 /**
- * Blocking head script. It turns on the tab-scoped embed flag before first paint
- * and retargets navigations that would otherwise leave the frame.
+ * Blocking script. It turns on the tab-scoped embed flag before the rest of the
+ * body is parsed, applies a light or dark theme before next-themes hydrates, and
+ * retargets navigations that would otherwise leave the frame.
  * Embed mode applies only while this document is actually framed
  * (`window.parent !== window`). A top-level `?embed=1` does not set the flag.
  * A duplicated tab clears the flag. A new tab opened with target=_blank, a modifier click,
- * a middle click, or window.open has the flag removed before that tab is
- * created, then restored on this frame. Theme persistence is added by the
- * postMessage bridge.
+ * created, then restored on this frame. Embed theme is stored at `wc-embed-theme`.
+ * While embed is on, next-themes' default `theme` key is redirected there so a framed
+ * visit cannot overwrite the theme used by a normal tab. Storage events for that
+ * default key are ignored, so a normal tab cannot change the embed theme.
+ * The embed theme comes from `?theme=` and later `wc:theme` messages.
  * Sign-out never targets the top window. A server-action redirect onto
  * /auth/signout* is rewritten to a frameable page, because that route sends
  * frame-ancestors 'none'.
@@ -37,6 +40,50 @@ else if(enable){document.cookie=KEY+"=1; Path=/; SameSite=Lax";}
 }catch(e){}
 if(enable){root.setAttribute("data-wc-embed","1");}
 function embedOn(){return root.getAttribute("data-wc-embed")==="1";}
+var embedTheme="wc-embed-theme";
+var defaultTheme="theme";
+function isolateThemeStorage(){
+if(!embedOn()||!localStorage.getItem||!localStorage.setItem||!localStorage.removeItem){return;}
+try{
+var getItem=localStorage.getItem.bind(localStorage);
+var setItem=localStorage.setItem.bind(localStorage);
+var removeItem=localStorage.removeItem.bind(localStorage);
+localStorage.getItem=function(key){return getItem(key===defaultTheme?embedTheme:key);};
+localStorage.setItem=function(key,value){setItem(key===defaultTheme?embedTheme:key,value);};
+localStorage.removeItem=function(key){removeItem(key===defaultTheme?embedTheme:key);};
+}catch(e){}
+}
+function applyTheme(){
+if(!embedOn()){return;}
+var requested=params.get("theme");
+var theme=requested==="light"||requested==="dark"?requested:"";
+try{
+if(theme){localStorage.setItem(embedTheme,theme);}
+else{
+var stored=localStorage.getItem(embedTheme);
+if(stored==="light"||stored==="dark"){theme=stored;}
+}
+}catch(e){}
+if(theme!=="light"&&theme!=="dark"){return;}
+if(root.classList){
+root.classList.remove("light");
+root.classList.remove("dark");
+root.classList.add(theme);
+}
+if(root.style){root.style.colorScheme=theme;}
+}
+function ignoreDefaultThemeStorage(){
+if(!embedOn()||typeof window.addEventListener!=="function"){return;}
+try{
+window.addEventListener("storage",function(event){
+if(!event||event.key!==defaultTheme){return;}
+if(event.stopImmediatePropagation){event.stopImmediatePropagation();}
+},true);
+}catch(e){}
+}
+isolateThemeStorage();
+ignoreDefaultThemeStorage();
+applyTheme();
 function stripLocale(pathname){
 var path=String(pathname||"").split("?")[0].split("#")[0];
 if(path.length>1&&path.charAt(path.length-1)==="/"){path=path.slice(0,-1);}

@@ -211,13 +211,15 @@ test("embed auth fallback opens PeptideOS at the top and uses the exact back lab
   assert.match(html, /data-wc-embed-fallback/);
 });
 
-test("boot script uses sessionStorage, never localStorage, and never a wildcard origin", () => {
+test("boot script stores embed in sessionStorage and never posts to a wildcard origin", () => {
   const script = embedBootScript();
   assert.doesNotMatch(script, /data-wc-entry/);
   assert.doesNotMatch(script, /\/premium","\/leaderboard/);
   assert.match(script, /sessionStorage/);
   assert.match(script, new RegExp(EMBED_SESSION_KEY));
-  assert.doesNotMatch(script, /localStorage/);
+  assert.match(script, /wc-embed-theme/);
+  assert.doesNotMatch(script, /localStorage\.setItem\("theme"/);
+  assert.doesNotMatch(script, /localStorage\.setItem\([^)]*wc-embed/);
   assert.doesNotMatch(script, /postMessage/);
   assert.doesNotMatch(script, /["']\*["']/);
 });
@@ -626,11 +628,12 @@ test("framed logout posts wc:signed-out and does not run the server action", () 
   const logout = readFileSync("src/features/auth/model/useLogout.ts", "utf8");
   const body = logout.slice(logout.indexOf("mutationFn"));
   const embedAt = body.indexOf("isEmbedFrame()");
+  const markAt = body.indexOf("markExplicitEmbedLogout(pathname)");
   const postAt = body.indexOf("postEmbedLogoutToParent()");
   const returnAt = body.indexOf("return;");
   const actionAt = body.indexOf("() => signOutAction()");
-  assert.ok(embedAt !== -1 && postAt !== -1 && returnAt !== -1 && actionAt !== -1);
-  assert.ok(embedAt < postAt && postAt < returnAt && returnAt < actionAt);
+  assert.ok(embedAt !== -1 && markAt !== -1 && postAt !== -1 && returnAt !== -1 && actionAt !== -1);
+  assert.ok(embedAt < markAt && markAt < postAt && postAt < returnAt && returnAt < actionAt);
   assert.match(logout, /wc:signed-out/);
 
   const action = readFileSync("src/features/auth/signout/model/signout.action.ts", "utf8");

@@ -43,7 +43,7 @@ function flattenMedia(css: string): string {
     }
     parts.push(css.slice(index, mediaAt));
     const open = css.indexOf("{", mediaAt);
-    assert.match(css.slice(mediaAt, open), /@media\s*\(\s*max-width:\s*639px\s*\)/);
+    assert.match(css.slice(mediaAt, open), /@media\s*\(\s*min-width:\s*448px\s*\)/);
     let depth = 0;
     let cursor = open;
     for (; cursor < css.length; cursor += 1) {
@@ -117,12 +117,12 @@ test("embed tokens match PeptideOS light and dark values and keep the page trans
     assert.match(dark.body, new RegExp(`${name}:\\s*${value}`), name);
   }
 
-  assert.match(light.body, /--color-base-100:\s*var\(--dash-panel\)/);
-  assert.match(light.body, /--color-base-200:\s*var\(--dash-inner\)/);
-  assert.match(light.body, /--color-base-300:\s*var\(--dash-card\)/);
-  assert.match(light.body, /--color-primary:\s*var\(--dash-accent\)/);
-  assert.match(light.body, /--color-accent:\s*var\(--dash-link\)/);
-  assert.match(light.body, /--color-primary-content:\s*var\(--dash-ink\)/);
+  assert.match(light.body, /--color-base-100:\s*var\(--wc-dash-panel\)/);
+  assert.match(light.body, /--color-base-200:\s*var\(--wc-dash-inner\)/);
+  assert.match(light.body, /--color-base-300:\s*var\(--wc-dash-card\)/);
+  assert.match(light.body, /--color-primary:\s*var\(--wc-dash-accent\)/);
+  assert.match(light.body, /--color-accent:\s*var\(--wc-dash-link\)/);
+  assert.match(light.body, /--color-primary-content:\s*var\(--wc-dash-ink\)/);
 
   const page = parsed.filter((rule) => /html\[data-wc-embed="1"\]/.test(rule.selector) && /background/.test(rule.body));
   assert.ok(page.some((rule) => /transparent/.test(rule.body)));

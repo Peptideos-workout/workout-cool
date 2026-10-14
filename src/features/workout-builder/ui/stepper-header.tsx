@@ -22,6 +22,7 @@ function StepperStep({
   onStepClick,
 }: StepperStepProps & { currentStep: number; onStepClick?: (stepNumber: number) => void }) {
   const canClick = stepNumber < currentStep || isCompleted;
+  const StepTitle = isActive ? "h1" : "h3";
 
   const handleClick = () => {
     if (canClick && onStepClick) {
@@ -52,7 +53,7 @@ function StepperStep({
 
         {/* Contenu textuel à droite */}
         <div className="ml-4">
-          <h3
+          <StepTitle
             className={cn("font-semibold text-lg transition-colors", {
               "text-[var(--wc-dash-accent)]": isActive || isCompleted,
               "text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
@@ -60,7 +61,7 @@ function StepperStep({
             data-wc-step-title=""
           >
             {title}
-          </h3>
+          </StepTitle>
           <p
             className={cn(
               "text-lg mt-1 transition-colors",
@@ -94,7 +95,7 @@ function StepperStep({
 
         {/* Contenu textuel en bas */}
         <div className="mt-3">
-          <h3
+          <StepTitle
             className={cn("font-semibold text-lg transition-colors", {
               "text-[var(--wc-dash-accent)]": isActive || isCompleted,
               "text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
@@ -102,7 +103,7 @@ function StepperStep({
             data-wc-step-title=""
           >
             {title}
-          </h3>
+          </StepTitle>
           <p
             className={cn(
               "text-lg mt-1 transition-colors",

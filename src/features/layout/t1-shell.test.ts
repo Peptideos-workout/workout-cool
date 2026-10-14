@@ -89,8 +89,12 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
   assert.match(stepper, /data-wc-intro/);
   assert.match(stepper, /data-wc-kicker/);
-  assert.match(stepper, /data-wc-title/);
+  assert.match(stepper, /<h2 className="mt-2 text-3xl font-bold text-\[var\(--wc-dash-text\)\]" data-wc-title="">/);
+  assert.match(stepper, /\{t\("workout_builder\.title"\)\}/);
+  assert.doesNotMatch(stepper, /<h1[^>]*data-wc-title/);
+  assert.doesNotMatch(stepper, /Build your workout/);
   assert.match(stepper, /data-wc-lead/);
+  assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h1" : "h3"/);
   assert.match(stepper, /data-wc-step-sheet/);
   assert.match(stepper, /bottom_navigation\.workouts/);
   assert.match(footer, /data-wc-step-next/);
@@ -133,10 +137,10 @@ test("T1 embed presentation is scoped, 18px, and does not letter-wrap", () => {
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\][\s\S]*font-size:\s*18px/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a[\s\S]*min-height:\s*56px/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a span[\s\S]*font-size:\s*18px/);
-  assert.match(css, /data-wc-nav-premium[\s\S]*var\(--dash-link\)/);
+  assert.match(css, /data-wc-nav-premium[\s\S]*var\(--wc-dash-link\)/);
   assert.match(css, /min-height:\s*48px/);
-  assert.match(css, /@media \(max-width:\s*639px\)/);
-  assert.doesNotMatch(css, /@media \(min-width/);
+  assert.match(css, /@media \(min-width:\s*448px\)/);
+  assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /\[data-wc-chrome="version"\][\s\S]*display:\s*none/);
 });
@@ -225,8 +229,11 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(nav, /tabs\.length <= 5 \? " lg:flex lg:items-center lg:justify-center lg:gap-1" : ""/);
   assert.match(nav, /whitespace-nowrap/);
   assert.match(nav, /aria-label=\{t\("bottom_navigation\.label"\)\}/);
-  assert.match(globals, /--wc-nav-h:\s*195px/);
-  assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-h:\s*134px/);
+  assert.match(globals, /--wc-nav-rows:\s*3/);
+  assert.match(globals, /--wc-nav-row-h:\s*65px/);
+  assert.match(globals, /--wc-nav-h:\s*calc\(var\(--wc-nav-rows\) \* var\(--wc-nav-row-h\)\)/);
+  assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-rows:\s*2/);
+  assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-row-h:\s*67px/);
   assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\]/);
   assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\][\s\S]*data-wc-shell=""/);
   const mainMarker = main.indexOf("data-wc-main=\"\"");
@@ -245,6 +252,12 @@ test("phone nav clearance matches the two-column nav", () => {
     assert.match(read(`locales/${locale}.ts`), /label:\s*"/);
   }
   assert.match(read("locales/en.ts"), /label:\s*"Main navigation"/);
+  assert.match(read("locales/en.ts"), /title:\s*"Build your workout"/);
+  assert.match(read("locales/fr.ts"), /title:\s*"Construire votre entraînement"/);
+  assert.match(read("locales/es.ts"), /title:\s*"Construir tu entrenamiento"/);
+  assert.match(read("locales/pt.ts"), /title:\s*"Construir o seu treino"/);
+  assert.match(read("locales/ru.ts"), /title:\s*"Составить свою тренировку"/);
+  assert.match(read("locales/zh-CN.ts"), /title:\s*"构建您的锻炼"/);
 });
 
 test("header dropdown items are 18px and 48px", () => {
@@ -258,16 +271,19 @@ test("header dropdown items are 18px and 48px", () => {
   assert.match(header, /commons\.manage_subscription/);
   assert.match(header, /commons\.remove_ads/);
   assert.match(header, /commons\.logout/);
+  const password = read("src/features/update-password/ui/change-password-menu-item.tsx");
+  assert.match(password, /size="base"/);
+  assert.match(password, /!min-h-12 !text-lg/);
 });
 
 test("embed nav grid fits five or six tabs", () => {
   const css = read("src/features/embed/embed-theme.css");
   const desktop = new RegExp(
     "\\[data-wc-nav-grid\\] \\{\\s*display: grid !important;\\s*" +
-      "grid-template-columns: repeat\\(var\\(--wc-nav-tabs, 5\\), minmax\\(0, 1fr\\)\\);",
+      "grid-template-columns: repeat\\(2, minmax\\(0, 1fr\\)\\);",
   );
   const phone = new RegExp(
-    "@media \\(max-width: 639px\\) \\{\\s*html\\[data-wc-embed=\"1\"\\] \\[data-wc-nav-grid\\] \\{\\s*" +
+    "@media \\(min-width: 448px\\) \\{\\s*html\\[data-wc-embed=\"1\"\\] \\[data-wc-nav-grid\\] \\{\\s*" +
       "grid-template-columns: repeat\\(3, minmax\\(0, 1fr\\)\\);",
   );
   assert.match(css, desktop);
@@ -288,9 +304,9 @@ test("embed active and meta contrast colors hold", () => {
   const css = read("src/features/embed/embed-theme.css");
   assert.match(
     css,
-    /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a\[data-active="true"\] \{[^}]*background:\s*var\(--dash-accent\)\s*!important;[^}]*color:\s*var\(--dash-ink\)\s*!important/,
+    /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a\[data-active="true"\] \{[^}]*background:\s*var\(--wc-dash-accent\)\s*!important;[^}]*color:\s*var\(--wc-dash-ink\)\s*!important/,
   );
-  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\] \{[^}]*color:\s*var\(--dash-secondary\)\s*!important/);
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\] \{[^}]*color:\s*var\(--wc-dash-secondary\)\s*!important/);
 });
 
 test("embed nav icons stay visible at 24px", () => {
@@ -329,14 +345,15 @@ test("public Sign up, nav labels, and the version chip are at least 18px", () =>
   assert.doesNotMatch(version, /text-xs/);
 });
 
-test("embed colors outside the token blocks use dash variables", () => {
+test("embed colors outside the token blocks use wc-dash variables", () => {
   const css = read("src/features/embed/embed-theme.css");
   const withoutTokens = css
     .replace(/html\[data-wc-embed="1"\] \{[\s\S]*?\n\}/, "")
     .replace(/html\[data-wc-embed="1"\]\.dark \{[\s\S]*?\n\}/, "");
   assert.doesNotMatch(withoutTokens, /#(?:5eead4|2dd4bf|10211e|f2f5f8|0a5c52|075e56|33414a|b4becb|ffffff)/i);
-  assert.match(css, /var\(--dash-accent\)/);
-  assert.match(css, /var\(--dash-link\)/);
-  assert.match(css, /var\(--dash-ink\)/);
-  assert.match(css, /var\(--dash-secondary\)/);
+  assert.doesNotMatch(withoutTokens, /var\(--dash-/);
+  assert.match(withoutTokens, /var\(--wc-dash-accent\)/);
+  assert.match(withoutTokens, /var\(--wc-dash-link\)/);
+  assert.match(withoutTokens, /var\(--wc-dash-ink\)/);
+  assert.match(withoutTokens, /var\(--wc-dash-secondary\)/);
 });

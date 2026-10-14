@@ -45,7 +45,7 @@ export const Header = () => {
   return (
     <>
       <div
-        className="navbar h-auto max-sm:overflow-x-clip flex-wrap gap-y-2 bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg"
+        className="navbar h-auto flex-wrap gap-y-2 rounded-tl-lg rounded-tr-lg bg-base-100 px-2 dark:bg-black dark:text-gray-200 sm:px-4 max-sm:shrink-0 max-sm:overflow-x-clip"
         data-wc-chrome="header"
       >
         {/* Logo and Title */}

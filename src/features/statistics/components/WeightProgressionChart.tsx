@@ -66,7 +66,7 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
           }}
         >
           <p className="font-medium">{label}</p>
-          <p className="text-blue-600">
+          <p className="text-[var(--wc-dash-accent)]">
             {t("statistics.weight")}: {payload[0].value} {unit}
           </p>
         </div>
@@ -78,7 +78,7 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
   return (
     <div
       aria-label={t("statistics.weight_progression_chart")}
-      className={cn("rounded-lg p-4 shadow-sm relative border border-gray-400 dark:border-gray-600", className)}
+      className={cn("relative rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-4", className)}
       role="img"
       style={{ backgroundColor: colors.cardBackground }}
     >
@@ -93,7 +93,7 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
             <XAxis
               axisLine={{ stroke: colors.border }}
               dataKey="formattedDate"
-              tick={{ fontSize: 12, fill: colors.textMuted }}
+              tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
             />
             <YAxis
@@ -104,15 +104,15 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
                 position: "insideLeft",
                 style: { textAnchor: "middle", fill: colors.text },
               }}
-              tick={{ fontSize: 12, fill: colors.textMuted }}
+              tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
-              activeDot={{ r: 6, fill: "#3B82F6" }}
+              activeDot={{ r: 6, fill: "var(--wc-dash-accent)" }}
               dataKey="weight"
-              dot={{ fill: "#3B82F6", strokeWidth: 2, r: 4 }}
-              stroke="#3B82F6"
+              dot={{ fill: "var(--wc-dash-accent)", strokeWidth: 2, r: 4 }}
+              stroke="var(--wc-dash-accent)"
               strokeWidth={2}
               type="monotone"
             />
@@ -126,7 +126,7 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
             <p className="text-lg font-semibold" style={{ color: colors.text }}>
               {t("statistics.no_data_yet")}
             </p>
-            <p className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
+            <p className="mt-2 text-lg" style={{ color: colors.textSecondary }}>
               {t("statistics.start_tracking")}
             </p>
           </div>

@@ -41,12 +41,12 @@ const AnimatedChart: React.FC = () => {
   const pathData = data.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x * 40} ${100 - point.y}`).join(" ");
 
   return (
-    <div className="relative w-full h-32 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-lg overflow-hidden">
+    <div className="relative h-32 w-full overflow-hidden rounded-xl bg-[var(--wc-dash-inner)]">
       <svg className="w-full h-full" viewBox="0 0 240 100">
         {/* Grid */}
         <defs>
           <pattern height="20" id="grid" patternUnits="userSpaceOnUse" width="40">
-            <path d="M 40 0 L 0 0 0 20" fill="none" stroke="rgba(139,92,246,0.1)" strokeWidth="1" />
+            <path d="M 40 0 L 0 0 0 20" fill="none" stroke="var(--wc-dash-border)" strokeWidth="1" />
           </pattern>
         </defs>
         <rect fill="url(#grid)" height="100%" width="100%" />
@@ -67,8 +67,8 @@ const AnimatedChart: React.FC = () => {
         {/* Gradient definition */}
         <defs>
           <linearGradient id="gradient" x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" stopColor="#8B5CF6" />
-            <stop offset="100%" stopColor="#3B82F6" />
+            <stop offset="0%" stopColor="var(--wc-dash-accent)" />
+            <stop offset="100%" stopColor="var(--wc-dash-link)" />
           </linearGradient>
         </defs>
 
@@ -78,7 +78,7 @@ const AnimatedChart: React.FC = () => {
             animate={{ scale: 1 }}
             cx={point.x * 40}
             cy={100 - point.y}
-            fill="#8B5CF6"
+            fill="var(--wc-dash-accent)"
             initial={{ scale: 0 }}
             key={index}
             r="4"
@@ -88,8 +88,8 @@ const AnimatedChart: React.FC = () => {
       </svg>
 
       {/* Overlay stats */}
-      <div className="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded px-2 py-1 text-xs">
-        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+      <div className="absolute right-2 top-2 rounded-xl bg-[var(--wc-dash-panel)] px-2 py-1 text-lg">
+        <div className="flex items-center gap-1 text-[var(--wc-dash-link)]">
           <TrendingUp className="w-3 h-3" />
           <span className="font-semibold">+12.5%</span>
         </div>
@@ -123,19 +123,19 @@ const AnimatedMetrics: React.FC = () => {
 
   return (
     <div className="grid grid-cols-3 gap-4">
-      <motion.div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-3 text-center" whileHover={{ scale: 1.05 }}>
-        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{metrics.totalVolume.toLocaleString(locale)}</p>
-        <p className="text-xs text-black dark:text-gray-400">{t("statistics.total_volume")}</p>
+      <motion.div className="rounded-xl bg-[var(--wc-dash-panel)] p-3 text-center" whileHover={{ scale: 1.05 }}>
+        <p className="text-2xl font-bold text-[var(--wc-dash-accent)]">{metrics.totalVolume.toLocaleString(locale)}</p>
+        <p className="text-lg text-[var(--wc-dash-text)]">{t("statistics.total_volume")}</p>
       </motion.div>
 
-      <motion.div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-3 text-center" whileHover={{ scale: 1.05 }}>
-        <p className="text-2xl font-bold text-green-600 dark:text-green-400">+{metrics.prIncrease}%</p>
-        <p className="text-xs text-black dark:text-gray-400">{t("statistics.pr_increase")}</p>
+      <motion.div className="rounded-xl bg-[var(--wc-dash-panel)] p-3 text-center" whileHover={{ scale: 1.05 }}>
+        <p className="text-2xl font-bold text-[var(--wc-dash-link)]">+{metrics.prIncrease}%</p>
+        <p className="text-lg text-[var(--wc-dash-text)]">{t("statistics.pr_increase")}</p>
       </motion.div>
 
-      <motion.div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg p-3 text-center" whileHover={{ scale: 1.05 }}>
-        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{metrics.weightProgression}%</p>
-        <p className="text-xs text-black dark:text-gray-400">{t("statistics.weight_progress")}</p>
+      <motion.div className="rounded-xl bg-[var(--wc-dash-panel)] p-3 text-center" whileHover={{ scale: 1.05 }}>
+        <p className="text-2xl font-bold text-[var(--wc-dash-accent)]">{metrics.weightProgression}%</p>
+        <p className="text-lg text-[var(--wc-dash-text)]">{t("statistics.weight_progress")}</p>
       </motion.div>
     </div>
   );
@@ -151,11 +151,7 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className={cn(
-        "absolute inset-0 z-50 bg-gradient-to-br from-purple-900/90 via-blue-900/90 to-purple-900/90 backdrop-blur-sm rounded-lg",
-        "flex flex-col items-center justify-center p-8",
-        className,
-      )}
+      className={cn("absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl bg-[var(--wc-dash-accent)] p-8", className)}
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
     >
@@ -172,15 +168,15 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
         }}
       >
         <div className="relative">
-          <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-6 rounded-full shadow-2xl">
-            <Lock className="w-12 h-12 text-white" />
+          <div className="rounded-full bg-[var(--wc-dash-ink)] p-6">
+            <Lock className="h-12 w-12 text-[var(--wc-dash-accent)]" />
           </div>
           <motion.div
             animate={{ opacity: [0, 1, 0] }}
-            className="absolute -top-1 -right-1 bg-orange-500 p-2 rounded-full"
+            className="absolute -right-1 -top-1 rounded-full bg-[var(--wc-dash-ink)] p-2"
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Crown className="w-4 h-4 text-white" />
+            <Crown className="h-5 w-5 text-[var(--wc-dash-accent)]" />
           </motion.div>
         </div>
       </motion.div>
@@ -188,7 +184,7 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
       {/* Titre principal */}
       <motion.h3
         animate={{ y: 0, opacity: 1 }}
-        className="text-3xl font-bold text-white mb-2 text-center"
+        className="mb-2 text-center text-3xl font-bold text-[var(--wc-dash-ink)]"
         initial={{ y: 20, opacity: 0 }}
         transition={{ delay: 0.2 }}
       >
@@ -197,7 +193,7 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
 
       <motion.p
         animate={{ y: 0, opacity: 1 }}
-        className="text-purple-200 text-center mb-6 max-w-md"
+        className="mb-6 max-w-md text-center text-lg text-[var(--wc-dash-ink)]"
         initial={{ y: 20, opacity: 0 }}
         transition={{ delay: 0.3 }}
       >
@@ -227,13 +223,13 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
       {/* Boutons d'action */}
       <div className="flex items-center gap-4">
         <motion.button
-          className="group relative overflow-hidden bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300"
+          className="group relative inline-flex min-h-12 items-center rounded-xl bg-[var(--wc-dash-ink)] px-6 py-3 text-lg font-bold text-[var(--wc-dash-accent)]"
           data-wc-entry="premium"
           onClick={onUpgrade}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="pointer-events-none absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-accent)_20%,transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           <div className="relative flex items-center gap-2">
             <Zap className="w-5 h-5" />
             <span>{t("statistics.upgrade_now")}</span>
@@ -245,20 +241,20 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
       {/* Éléments de confiance */}
       <motion.div
         animate={{ y: 0, opacity: 1 }}
-        className="mt-6 flex items-center gap-4 text-sm text-purple-200"
+        className="mt-6 flex flex-wrap items-center gap-4 text-lg text-[var(--wc-dash-ink)]"
         initial={{ y: 20, opacity: 0 }}
         transition={{ delay: 0.6 }}
       >
         <div className="flex items-center gap-1">
-          <Star className="w-4 h-4 text-yellow-400" />
+          <Star className="h-5 w-5 text-[var(--wc-dash-ink)]" />
           <span>{t("statistics.rating")}</span>
         </div>
         <div className="flex items-center gap-1">
-          <Eye className="w-4 h-4" />
+          <Eye className="h-5 w-5" />
           <span>{t("statistics.no_ads")}</span>
         </div>
         <div className="flex items-center gap-1">
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="h-5 w-5" />
           <span>{t("statistics.cancel_anytime")}</span>
         </div>
       </motion.div>
@@ -268,15 +264,15 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
         {showTeaserModal && (
           <motion.div
             animate={{ opacity: 1, scale: 1 }}
-            className="absolute inset-0 bg-black/50 flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--wc-dash-text)_50%,transparent)]"
             exit={{ opacity: 0, scale: 0.8 }}
             initial={{ opacity: 0, scale: 0.8 }}
           >
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl max-w-sm mx-4">
-              <h4 className="text-xl font-bold text-center mb-4">{t("statistics.preview_notice")}</h4>
-              <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{t("statistics.preview_description")}</p>
+            <div className="mx-4 max-w-sm rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-6">
+              <h4 className="mb-4 text-center text-xl font-bold text-[var(--wc-dash-text)]">{t("statistics.preview_notice")}</h4>
+              <p className="mb-6 text-center text-lg text-[var(--wc-dash-secondary)]">{t("statistics.preview_description")}</p>
               <button
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300"
+                className="min-h-12 w-full rounded-xl bg-[var(--wc-dash-accent)] py-3 text-lg font-bold text-[var(--wc-dash-ink)]"
                 onClick={() => {
                   setShowTeaserModal(false);
                   onUpgrade?.();

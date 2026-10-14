@@ -84,10 +84,10 @@ export function VolumeChart({ data, height = 300, className }: VolumeChartProps)
           }}
         >
           <p className="font-medium">{label}</p>
-          <p className="text-green-600">
+          <p className="text-[var(--wc-dash-accent)]">
             {t("statistics.volume")}: {data.formattedVolume}
           </p>
-          <p className="text-sm" style={{ color: colors.textSecondary }}>
+          <p className="text-lg" style={{ color: colors.textSecondary }}>
             {data.setCount} sets
           </p>
         </div>
@@ -99,7 +99,7 @@ export function VolumeChart({ data, height = 300, className }: VolumeChartProps)
   return (
     <div
       aria-label={t("statistics.volume_chart")}
-      className={cn("rounded-lg p-4 shadow-sm relative border border-gray-400 dark:border-gray-600", className)}
+      className={cn("relative rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-4", className)}
       role="img"
       style={{ backgroundColor: colors.cardBackground }}
     >
@@ -114,7 +114,7 @@ export function VolumeChart({ data, height = 300, className }: VolumeChartProps)
             <XAxis
               axisLine={{ stroke: colors.border }}
               dataKey="formattedWeek"
-              tick={{ fontSize: 12, fill: colors.textMuted }}
+              tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
             />
             <YAxis
@@ -125,18 +125,18 @@ export function VolumeChart({ data, height = 300, className }: VolumeChartProps)
                 position: "insideLeft",
                 style: { textAnchor: "middle", fill: colors.text },
               }}
-              tick={{ fontSize: 12, fill: colors.textMuted }}
+              tick={{ fontSize: 18, fill: colors.textMuted }}
               tickFormatter={formatVolume}
               tickLine={{ stroke: colors.border }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="totalVolume" fill="#10B981" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="totalVolume" fill="var(--wc-dash-accent)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       <div className="mt-4 text-center">
-        <p className="text-xs" style={{ color: colors.textSecondary }}>
+        <p className="text-lg" style={{ color: colors.textSecondary }}>
           {t("statistics.volume_calculation")}
         </p>
       </div>
@@ -147,7 +147,7 @@ export function VolumeChart({ data, height = 300, className }: VolumeChartProps)
             <p className="text-lg font-semibold" style={{ color: colors.text }}>
               {t("statistics.no_volume_data")}
             </p>
-            <p className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
+            <p className="mt-2 text-lg" style={{ color: colors.textSecondary }}>
               {t("statistics.complete_workouts")}
             </p>
           </div>

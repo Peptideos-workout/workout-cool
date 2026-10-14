@@ -88,7 +88,10 @@ export function BottomNavigation() {
 
   return (
     <nav
-      className="relative bg-white/90 dark:bg-[color-mix(in_srgb,var(--wc-dash-card)_90%,transparent)] backdrop-blur-xl border-t border-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)] dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40"
+      className={
+        "relative shrink-0 border-t border-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)] bg-white/90 backdrop-blur-xl " +
+        "dark:border-slate-700/50 dark:bg-[color-mix(in_srgb,var(--wc-dash-card)_90%,transparent)] max-sm:order-3 max-sm:pb-12"
+      }
       data-wc-chrome="nav"
     >
       {/* Subtle background gradient */}

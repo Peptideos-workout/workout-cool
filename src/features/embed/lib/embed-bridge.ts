@@ -1,4 +1,4 @@
-import { shouldShowEmbedAuthFallback } from "./embed-mode";
+import { isEmbedParentOrigin, shouldShowEmbedAuthFallback } from "./embed-mode";
 
 import { stripLocalePrefix } from "@/features/auth/lib/locale-path";
 
@@ -40,6 +40,8 @@ export interface EmbedSessionInput {
   sessionResolved: boolean;
   hasSession: boolean;
   ssoError?: boolean;
+  pathname?: string;
+  explicitLogout?: boolean;
 }
 
 export type EmbedSessionState = (typeof EMBED_SESSION_STATE)[keyof typeof EMBED_SESSION_STATE];
@@ -65,6 +67,8 @@ export interface ParentThemeEvent {
 
 export interface EmbedBridgeHost {
   parentOrigin: string;
+  /** When set, these exact origins are used until a valid wc:theme locks one. */
+  outboundOrigins?: readonly string[];
   isEmbed: () => boolean;
   isTopLevel: () => boolean;
   parent: EmbedMessagePort | null;
@@ -139,16 +143,39 @@ export function isEmbedSignedOutPath(input: string): boolean {
   return stripped === "/auth/signout" || stripped.startsWith("/auth/signout/");
 }
 
+let explicitLogoutPath: string | null = null;
+
+/** Page that started logout. Cleared once the user leaves it for a non-sign-out path. */
+export function markExplicitEmbedLogout(pathname: string): void {
+  explicitLogoutPath = pathname;
+}
+
+export function explicitEmbedLogoutOnPath(pathname: string): boolean {
+  return explicitLogoutPath !== null && explicitLogoutPath === pathname;
+}
+
+export function releaseExplicitEmbedLogout(pathname: string): void {
+  if (explicitLogoutPath === null || explicitLogoutPath === pathname) return;
+  if (isEmbedSignedOutPath(pathname)) return;
+  explicitLogoutPath = null;
+}
+
+export function clearExplicitEmbedLogout(): void {
+  explicitLogoutPath = null;
+}
+
 export function postToParent(parent: EmbedMessagePort | null, origin: string, message: EmbedChildMessage): boolean {
   const targetOrigin = exactOrigin(origin);
-  if (!parent || !targetOrigin) return false;
+  if (!parent || !targetOrigin || !isEmbedParentOrigin(targetOrigin)) return false;
   parent.postMessage(message, targetOrigin);
   return true;
 }
 
 export function acceptParentThemeMessage(event: ParentThemeEvent, parent: unknown, peptideOrigin: string): "light" | "dark" | null {
-  const expected = exactOrigin(peptideOrigin);
-  if (!expected || event.origin !== expected || event.source !== parent) return null;
+  if (peptideOrigin.includes("*")) return null;
+  const configured = exactOrigin(peptideOrigin);
+  if (!configured || !isEmbedParentOrigin(configured)) return null;
+  if (!isEmbedParentOrigin(event.origin) || event.source !== parent) return null;
   if (!event.data || typeof event.data !== "object" || Array.isArray(event.data)) return null;
 
   const record = event.data as Record<string, unknown>;
@@ -198,26 +225,33 @@ export function createHeightReporter(post: (height: number) => void, requestFram
 /** Posts height, path, and accepts theme. Inbound messages cannot sign in or out. */
 export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   if (!host.isEmbed() || host.isTopLevel()) return () => undefined;
-  const origin = exactOrigin(host.parentOrigin);
-  if (!origin || !host.parent) return () => undefined;
+  let targets = outboundTargets(host);
+  if (targets.length === 0 || !host.parent) return () => undefined;
 
   const parent = host.parent;
   let stopped = false;
+  // A sign-out page posts nothing: no height, no path, no session, no logout.
+  let suppressPosts = isEmbedSignedOutPath(host.readPath());
+  const post = (message: EmbedChildMessage) => {
+    if (suppressPosts) return;
+    for (const origin of targets) postToParent(parent, origin, message);
+  };
   const reporter = createHeightReporter((height) => {
     if (stopped) return;
-    postToParent(parent, origin, { type: EMBED_CHILD_MESSAGE.height, height });
+    post({ type: EMBED_CHILD_MESSAGE.height, height });
   }, host.requestFrame);
 
   const publishPath = () => {
     if (stopped) return;
     const raw = host.readPath();
     if (isEmbedSignedOutPath(raw)) {
-      postToParent(parent, origin, embedLogoutMessage());
+      suppressPosts = true;
       return;
     }
+    suppressPosts = false;
     const path = reportableEmbedPath(raw);
     if (!path) return;
-    postToParent(parent, origin, { type: EMBED_CHILD_MESSAGE.navigate, path });
+    post({ type: EMBED_CHILD_MESSAGE.navigate, path });
   };
 
   const stopResize = host.subscribeResize(() => {
@@ -225,8 +259,10 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   });
   const stopPath = host.subscribePath(publishPath);
   const stopMessages = host.addMessageListener((event) => {
-    const theme = acceptParentThemeMessage(event, parent, origin);
+    const theme = acceptParentThemeMessage(event, parent, targets[0] ?? host.parentOrigin);
     if (!theme || stopped) return;
+    // A valid wc:theme from the parent locks later posts to that exact origin.
+    if (isEmbedParentOrigin(event.origin)) targets = [event.origin];
     host.setTheme(theme);
   });
 
@@ -251,12 +287,17 @@ export function embedLogoutMessage(): EmbedChildMessageMap["signedOut"] {
 }
 
 /**
- * Null until the session is known. Signed-out matches the Log in / Sign up fallback,
- * including an SSO error before the session request settles.
+ * Null until the session is known. Signed-out matches the Log in / Sign up fallback.
+ * A /auth/signout* page posts nothing, including when a session is still present.
+ * An explicit logout also skips wc:session; useLogout posts wc:signed-out itself.
  */
 export function embedReportedSession(input: EmbedSessionInput): EmbedSessionState | null {
   if (!input.embed) return null;
-  if (shouldShowEmbedAuthFallback(input)) return EMBED_SESSION_STATE.signedOut;
+  if (input.pathname && isEmbedSignedOutPath(input.pathname)) return null;
+  if (shouldShowEmbedAuthFallback(input)) {
+    if (input.explicitLogout) return null;
+    return EMBED_SESSION_STATE.signedOut;
+  }
   if (!input.sessionResolved) return null;
   if (input.hasSession) return EMBED_SESSION_STATE.signedIn;
   return null;
@@ -272,17 +313,27 @@ export function sessionReportToSend(
 }
 
 export function postEmbedSession(
-  origin: string,
+  origin: string | readonly string[],
   state: EmbedSessionState | null,
   runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()
 ): boolean {
   if (!state || !runtime.embed || runtime.topLevel) return false;
-  return postToParent(runtime.parent, origin, embedSessionMessage(state));
+  const origins = typeof origin === "string" ? [origin] : origin;
+  let posted = false;
+  for (const candidate of origins) {
+    if (postToParent(runtime.parent, candidate, embedSessionMessage(state))) posted = true;
+  }
+  return posted;
 }
 
-export function notifyEmbedSignedOut(origin: string, runtime: EmbedSignedOutRuntime = readBrowserEmbedRuntime()): boolean {
-  if (!runtime.embed || runtime.topLevel) return false;
-  return postToParent(runtime.parent, origin, embedLogoutMessage());
+function outboundTargets(host: EmbedBridgeHost): string[] {
+  const listed = (host.outboundOrigins ?? [])
+    .map((origin) => exactOrigin(origin))
+    .filter((origin): origin is string => origin !== null && isEmbedParentOrigin(origin));
+  if (listed.length > 0) return [...new Set(listed)];
+  const single = exactOrigin(host.parentOrigin);
+  if (single && isEmbedParentOrigin(single)) return [single];
+  return [];
 }
 
 function isSafePathname(pathname: string): boolean {

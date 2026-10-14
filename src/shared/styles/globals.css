@@ -85,15 +85,29 @@
   --wc-dash-link: #075e56;
   --wc-dash-error: #9f1239;
 
-  /* Phone nav: 2 columns / 3 rows below 448px. */
-  --wc-nav-h: 195px;
+  /* Phone nav: 2 columns / 3 rows below 448px. 65 × 3 = 195. */
+  --wc-nav-rows: 3;
+  --wc-nav-row-h: 65px;
+  --wc-nav-h: calc(var(--wc-nav-rows) * var(--wc-nav-row-h));
 }
 
-/* 3 columns / 2 rows from 448px. The fixed nav ends at 640px, so this is the clearance above it. */
+/* 3 columns / 2 rows from 448px. 67 × 2 = 134. The fixed nav ends at 640px. */
 @media (min-width: 448px) {
   :root {
-    --wc-nav-h: 134px;
+    --wc-nav-rows: 2;
+    --wc-nav-row-h: 67px;
   }
+}
+
+/* DaisyUI tooltips stay in the tree at opacity 0. Their ::before is position absolute and still widens the page. */
+.tooltip[data-tip]::before {
+  content: none;
+}
+
+.tooltip[data-tip]:hover::before,
+.tooltip[data-tip]:focus::before,
+.tooltip[data-tip]:focus-within::before {
+  content: attr(data-tip);
 }
 
 :root:has(:is(.modal-open, .modal:target, .modal-toggle:checked + .modal, .modal[open])) {

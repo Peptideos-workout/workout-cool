@@ -355,9 +355,12 @@ export function WorkoutStepper() {
         <p className="text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
           {t("bottom_navigation.workouts")}
         </p>
-        <h1 className="mt-2 text-3xl font-bold text-[var(--wc-dash-text)]" data-wc-title="">
+        <h2 className="mt-2 text-3xl font-bold text-[var(--wc-dash-text)]" data-wc-title="">
           {t("workout_builder.title")}
-        </h1>
+        </h2>
+        <p className="mt-2 text-lg text-[var(--wc-dash-secondary)]" data-wc-lead="">
+          {steps.find((step) => step.isActive)?.description}
+        </p>
       </div>
 
       <div data-wc-step-sheet="">

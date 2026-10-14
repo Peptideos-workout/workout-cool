@@ -132,12 +132,15 @@ const ExerciseSelectionModal: React.FC<{
 
   return (
     <div className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box mt-32 w-full max-w-2xl h-full max-h-screen flex flex-col p-4 sm:p-6">
+      <div className="modal-box mt-32 flex h-full max-h-screen w-full max-w-2xl flex-col border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4 text-[var(--wc-dash-text)] sm:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">{t("statistics.select_exercise")}</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>
-            <X className="h-4 w-4" />
+          <h2 className="text-2xl font-bold text-[var(--wc-dash-text)]">{t("statistics.select_exercise")}</h2>
+          <button
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-[var(--wc-dash-text)]"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
         {/* Filters */}
@@ -162,9 +165,9 @@ const ExerciseSelectionModal: React.FC<{
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-[var(--wc-dash-secondary)]" />
             <input
-              className="input input-bordered w-ful placeholder:text-gray-500 dark:placeholder:text-gray-600 w-full"
+              className="min-h-12 w-full rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] pl-10 pr-3 text-lg text-[var(--wc-dash-text)] placeholder:text-[var(--wc-dash-secondary)]"
               onChange={(e) => handleSearch(e.target.value)}
               placeholder={t("statistics.search_exercises")}
             />
@@ -181,13 +184,13 @@ const ExerciseSelectionModal: React.FC<{
 
           {error && (
             <div className="text-center py-8">
-              <p className="text-error">{t("statistics.error_loading_exercises")}</p>
+              <p className="text-lg text-[var(--wc-dash-error)]">{t("statistics.error_loading_exercises")}</p>
             </div>
           )}
 
           {!isLoading && exercises.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">{t("statistics.no_exercises_found")}</p>
+              <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.no_exercises_found")}</p>
             </div>
           )}
 
@@ -198,11 +201,11 @@ const ExerciseSelectionModal: React.FC<{
 
               return (
                 <div
-                  className="flex items-center gap-4 p-3 hover:bg-base-200 rounded-lg cursor-pointer"
+                  className="flex min-h-12 cursor-pointer items-center gap-4 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-3 text-[var(--wc-dash-text)]"
                   key={exercise.id}
                   onClick={() => handleExerciseSelect(exercise)}
                 >
-                  <div className="w-16 h-16 bg-base-200 rounded-full flex items-center justify-center overflow-hidden border border-gray-400 dark:border-gray-600">
+                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)]">
                     {exercise.fullVideoImageUrl && (
                       <Image
                         alt={exercise.name || ""}
@@ -214,8 +217,8 @@ const ExerciseSelectionModal: React.FC<{
                     )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold">{exercise.name}</h4>
-                    <p className="text-sm text-gray-500">{primaryMuscleLabel}</p>
+                    <h4 className="text-lg font-semibold">{exercise.name}</h4>
+                    <p className="text-lg text-[var(--wc-dash-secondary)]">{primaryMuscleLabel}</p>
                   </div>
                 </div>
               );
@@ -317,7 +320,10 @@ export const ExercisesBrowser = () => {
           {/* Header */}
           {unlockStatsUi && (
             <div>
-              <button className="btn btn-primary w-full mb-6" onClick={openExerciseSelection}>
+              <button
+                className="mb-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--wc-dash-accent)] px-4 text-lg text-[var(--wc-dash-ink)]"
+                onClick={openExerciseSelection}
+              >
                 {t("statistics.select_exercise")}
               </button>
             </div>
@@ -325,23 +331,23 @@ export const ExercisesBrowser = () => {
 
           {/* Selected Exercise Info */}
           {selectedExercise && (
-            <div className="bg-base-100 rounded-lg p-6">
-              <h2 className="text-2xl font-bold mb-4">{selectedExercise.name}</h2>
+            <div className="rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-6 text-[var(--wc-dash-text)]">
+              <h2 className="mb-4 text-2xl font-bold">{selectedExercise.name}</h2>
 
-              <div className="flex flex-col gap-2 mb-4">
+              <div className="mb-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">{t("statistics.equipment_label")}</span>
-                  <span className="text-sm">{getExerciseEquipment(selectedExercise).join(", ")}</span>
+                  <span className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.equipment_label")}</span>
+                  <span className="text-lg">{getExerciseEquipment(selectedExercise).join(", ")}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">{t("statistics.primary_muscle_label")}</span>
-                  <span className="text-sm">{getExercisePrimaryMuscles(selectedExercise).join(", ")}</span>
+                  <span className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.primary_muscle_label")}</span>
+                  <span className="text-lg">{getExercisePrimaryMuscles(selectedExercise).join(", ")}</span>
                 </div>
               </div>
 
               {/* Exercise Image */}
-              <div className="bg-base-200 rounded-lg p-4 mb-4">
-                <div className="max-h-48 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden aspect-video border border-gray-400 dark:border-gray-700">
+              <div className="mb-4 rounded-xl bg-[var(--wc-dash-inner)] p-4">
+                <div className="flex aspect-video max-h-48 items-center justify-center overflow-hidden rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)]">
                   {selectedExercise.fullVideoImageUrl ? (
                     <Image
                       alt={selectedExercise.name}
@@ -353,7 +359,7 @@ export const ExercisesBrowser = () => {
                     />
                   ) : (
                     <div className="text-center">
-                      <p className="text-gray-500">{t("statistics.no_image_available")}</p>
+                      <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.no_image_available")}</p>
                     </div>
                   )}
                 </div>
@@ -364,9 +370,9 @@ export const ExercisesBrowser = () => {
           {/* Statistics Section */}
           <div className="space-y-4">
             {/* Time period selector */}
-            <div className="flex items-center justify-between bg-base-100 rounded-lg p-4">
-              <span className="hidden sm:block font-semibold">{t("statistics.title")}</span>
-              <TimeframeSelector className="bg-white" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
+            <div className="flex min-h-12 items-center justify-between rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4">
+              <span className="hidden text-lg font-semibold text-[var(--wc-dash-text)] sm:block">{t("statistics.title")}</span>
+              <TimeframeSelector className="bg-[var(--wc-dash-panel)]" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
             </div>
 
             {/* Stats Charts */}

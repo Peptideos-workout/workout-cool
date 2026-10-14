@@ -236,20 +236,26 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(globals, /--wc-nav-h:\s*calc\(var\(--wc-nav-rows\) \* var\(--wc-nav-row-h\)\)/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-rows:\s*2/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-row-h:\s*67px/);
-  assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\]/);
-  assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\][\s\S]*data-wc-shell=""/);
+  assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\][\s\S]*data-wc-shell=""/);
   const mainMarker = main.indexOf("data-wc-main=\"\"");
   assert.ok(mainMarker > 0);
   assert.doesNotMatch(main.slice(mainMarker - 180, mainMarker), /pb-\[var\(--wc-nav-h\)\]/);
   assert.match(version, /sm:bottom-\[168px\]/);
-  assert.match(version, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(version, /\bfixed\b/);
-  assert.match(footer, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(footer, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(footer, /disabled:pointer-events-auto/);
   assert.doesNotMatch(footer, /max-sm:bottom-14/);
-  assert.match(read("src/features/workout-session/ui/workout-session-timer.tsx"), /bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(
+    read("src/features/workout-session/ui/workout-session-timer.tsx"),
+    /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\+33px\)\]/,
+  );
+  assert.match(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-28/);
   assert.doesNotMatch(main, /max-sm:pb-36/);
+  assert.doesNotMatch(main, /134px/);
   assert.doesNotMatch(version, /max-sm:bottom-36/);
+  assert.doesNotMatch(version, /136px/);
   for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
     assert.match(read(`locales/${locale}.ts`), /label:\s*"/);
   }

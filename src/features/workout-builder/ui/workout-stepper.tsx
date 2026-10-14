@@ -198,7 +198,7 @@ export function WorkoutStepper() {
 
   if (isWorkoutActive && session) {
     return (
-      <div className="w-full max-w-6xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto sm:pr-64 xl:pr-0">
         {(env.NEXT_PUBLIC_TOP_WORKOUT_SESSION_BANNER_AD_SLOT || env.NEXT_PUBLIC_EZOIC_TOP_WORKOUT_SESSION_PLACEMENT_ID) && (
           <HorizontalTopBanner
             adSlot={env.NEXT_PUBLIC_TOP_WORKOUT_SESSION_BANNER_AD_SLOT}

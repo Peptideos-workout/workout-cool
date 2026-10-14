@@ -29,7 +29,10 @@ export function WorkoutBuilderFooter({
   const isFinalStep = currentStep === totalSteps;
 
   return (
-    <div className="w-full sticky bottom-0 max-sm:bottom-[var(--wc-nav-h)] z-30" data-wc-step-footer="">
+    <div
+      className="sticky bottom-0 z-30 w-full max-sm:bottom-[calc(var(--wc-nav-h)+env(safe-area-inset-bottom))]"
+      data-wc-step-footer=""
+    >
       {/* Mobile layout - vertical stack */}
       <div className="flex flex-col gap-4 px-2 sm:px-6 pb-2">
         {bottomBanner}

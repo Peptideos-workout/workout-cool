@@ -25,12 +25,17 @@ export function TimeframeSelector({ selected, onSelect, className }: TimeframeSe
 
   return (
     <Select onValueChange={(value) => onSelect(value as StatisticsTimeframe)} value={selected}>
-      <SelectTrigger className={cn("w-32", className)}>
+      <SelectTrigger
+        className={cn(
+          "!min-h-12 w-auto min-w-12 !text-lg border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]",
+          className,
+        )}
+      >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]">
         {TIMEFRAME_OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem className="!min-h-12 !text-lg text-[var(--wc-dash-text)]" key={option.value} value={option.value}>
             {t(option.labelKey as keyof typeof t)}
           </SelectItem>
         ))}

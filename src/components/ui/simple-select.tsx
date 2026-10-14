@@ -50,12 +50,18 @@ export function SimpleSelect<T extends string = string>({
 }: SimpleSelectProps<T>) {
   return (
     <Select disabled={disabled} onValueChange={(newValue) => onValueChange(newValue as T)} value={value}>
-      <SelectTrigger aria-label={ariaLabel} className={cn("w-full", className)}>
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className={cn(
+          "!min-h-12 w-full !text-lg border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]",
+          className,
+        )}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]">
         {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem className="!min-h-12 !text-lg text-[var(--wc-dash-text)]" key={option.value} value={option.value}>
             {option.label}
           </SelectItem>
         ))}

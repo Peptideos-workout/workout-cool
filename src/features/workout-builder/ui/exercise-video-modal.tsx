@@ -48,16 +48,16 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   // Couleurs pour les badges
   const badgeColors: Record<string, string> = {
-    TYPE: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-100",
-    PRIMARY_MUSCLE: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
-    SECONDARY_MUSCLE: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-100",
-    EQUIPMENT: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100",
-    MECHANICS_TYPE: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100",
+    TYPE: "bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]",
+    PRIMARY_MUSCLE: "bg-[var(--wc-dash-card)] text-[var(--wc-dash-text)]",
+    SECONDARY_MUSCLE: "bg-[var(--wc-dash-inner)] text-[var(--wc-dash-text)]",
+    EQUIPMENT: "border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]",
+    MECHANICS_TYPE: "bg-[var(--wc-dash-link)] text-[var(--wc-dash-ink)]",
   };
 
   const renderBadge = (value: ExerciseAttributeValueEnum, color: string) => {
     return (
-      <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`} key={value}>
+      <span className={`inline-flex min-h-12 items-center rounded-xl px-3 py-2 text-lg font-medium ${color}`} key={value}>
         {getAttributeValueLabel(value, t)}
       </span>
     );
@@ -65,10 +65,10 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-w-2xl p-0 max-h-[80vh]">
-        <DialogHeader className="flex flex-row items-center justify-between px-4 pt-4 pb-2">
-          <DialogTitle className="text-lg md:text-xl font-bold flex flex-col gap-2">
-            <span className="text-slate-700 dark:text-slate-200 pr-10 text-left">{title}</span>
+      <DialogContent className="max-h-[80vh] w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] overflow-x-hidden border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] sm:max-w-2xl [&>button]:!right-2 [&>button]:top-2 [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)]">
+        <DialogHeader className="flex flex-row items-start justify-between px-4 pb-2 pr-16 pt-4">
+          <DialogTitle className="text-lg md:text-xl font-bold flex min-w-0 flex-col gap-2">
+            <span className="break-words text-left text-lg text-[var(--wc-dash-text)]">{title}</span>
             <div className="flex flex-wrap gap-2 mt-2">
               {type.map((type) => renderBadge(type, badgeColors.TYPE))}
               {pMuscles.map((pMuscle) => renderBadge(pMuscle, badgeColors.PRIMARY_MUSCLE))}
@@ -80,12 +80,18 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
         </DialogHeader>
         {/* @ts-expect-error Tabs shadcn */}
         <Tabs className="flex-1" onValueChange={setActiveTab} value={activeTab}>
-          <TabsList className="grid w-full grid-cols-2 mx-4" style={{ width: "calc(100% - 2rem)" }}>
-            <TabsTrigger className="flex items-center gap-2" value="video">
+          <TabsList className="mx-4 grid w-[calc(100%-2rem)] min-w-0 grid-cols-2 rounded-xl bg-[var(--wc-dash-inner)]">
+            <TabsTrigger
+              className="!min-h-12 !text-lg !text-[var(--wc-dash-text)] min-w-0 !whitespace-normal data-[state=active]:!bg-[var(--wc-dash-accent)] data-[state=active]:!text-[var(--wc-dash-ink)]"
+              value="video"
+            >
               <Play size={16} />
               {t("statistics.tabs.video")}
             </TabsTrigger>
-            <TabsTrigger className="flex items-center gap-2" value="statistics">
+            <TabsTrigger
+              className="!min-h-12 !text-lg !text-[var(--wc-dash-text)] min-w-0 !whitespace-normal data-[state=active]:!bg-[var(--wc-dash-accent)] data-[state=active]:!text-[var(--wc-dash-ink)]"
+              value="statistics"
+            >
               <BarChart3 size={16} />
               {t("statistics.title") || "Statistics"}
             </TabsTrigger>
@@ -95,13 +101,13 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
             {/* Introduction */}
             {introduction && (
               <div
-                className="px-6 pt-2 pb-2 text-slate-700 dark:text-slate-200 text-sm md:text-base prose dark:prose-invert max-w-none"
+                className="prose max-w-none px-6 pb-2 pt-2 text-lg text-[var(--wc-dash-text)]"
                 dangerouslySetInnerHTML={{ __html: introduction }}
               />
             )}
 
             {/* Vidéo */}
-            <div className="w-full aspect-video bg-black flex items-center justify-center">
+            <div className="flex aspect-video w-full items-center justify-center bg-[var(--wc-dash-page)]">
               {videoUrl ? (
                 youTubeEmbedUrl ? (
                   <iframe
@@ -113,93 +119,93 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                     title={title ?? ""}
                   />
                 ) : (
-                  <video autoPlay className="w-full h-full object-contain bg-black" controls poster="" src={videoUrl} />
+                  <video autoPlay className="h-full w-full bg-[var(--wc-dash-page)] object-contain" controls poster="" src={videoUrl} />
                 )
               ) : (
-                <div className="text-white text-center p-8">{t("workout_builder.exercise.no_video_available")}</div>
+                <div className="p-8 text-center text-lg text-[var(--wc-dash-text)]">{t("workout_builder.exercise.no_video_available")}</div>
               )}
             </div>
 
             {/* Instructions (description) */}
             {description && (
               <div
-                className="px-6 pt-4 pb-6 text-slate-700 dark:text-slate-200 text-sm md:text-base prose dark:prose-invert max-w-none border-t border-slate-200 dark:border-slate-800 mt-2"
+                className="prose mt-2 max-w-none border-t border-[var(--wc-dash-border)] px-6 pb-6 pt-4 text-lg text-[var(--wc-dash-text)]"
                 dangerouslySetInnerHTML={{ __html: description }}
               />
             )}
           </TabsContent>
 
           <TabsContent className="mt-0" value="statistics">
-            <div className="space-y-5 px-3 md:px-6 pt-4 pb-6">
+            <div className="space-y-5 px-3 pb-6 pt-4 md:px-6">
               {/* Header — title + timeframe aligned */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-                    <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 max-w-full flex-1 items-center gap-2">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--wc-dash-accent)]">
+                    <BarChart3 className="h-5 w-5 text-[var(--wc-dash-ink)]" />
                   </div>
-                  <h3 className="text-base md:text-lg font-semibold text-slate-800 dark:text-slate-200 truncate">
+                  <h3 className="min-w-0 whitespace-normal text-lg font-semibold text-[var(--wc-dash-text)]">
                     {t("statistics.performance_over_time")}
                   </h3>
                 </div>
-                <TimeframeSelector className="shrink-0" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
+                <TimeframeSelector className="max-w-full" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
               </div>
 
               {/* Charts in card */}
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/30 p-3 md:p-4">
+              <div className="rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-3 md:p-4">
                 <ExerciseCharts exerciseId={exercise.id} timeframe={selectedTimeframe} />
               </div>
 
               {/* Premium teaser — Blurred advanced insights (loss aversion + Zeigarnik effect) */}
               {!isPremium && (
-                <div className="relative rounded-xl border border-dashed border-amber-300 dark:border-amber-700/50 overflow-hidden">
+                <div className="relative overflow-hidden rounded-xl border border-dashed border-[var(--wc-dash-border)]">
                   {/* Blurred fake insights */}
-                  <div className="select-none pointer-events-none blur-[6px] opacity-50 p-4 space-y-3">
+                  <div className="pointer-events-none select-none space-y-3 p-4 opacity-50 blur-[6px]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-emerald-500" />
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t("exercise_modal.pr_title")}</span>
+                        <TrendingUp className="h-5 w-5 text-[var(--wc-dash-link)]" />
+                        <span className="text-lg font-semibold text-[var(--wc-dash-text)]">{t("exercise_modal.pr_title")}</span>
                       </div>
-                      <span className="text-lg font-bold text-emerald-500">+12%</span>
+                      <span className="text-lg font-bold text-[var(--wc-dash-link)]">+12%</span>
                     </div>
-                    <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                      <div className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 w-3/4" />
+                    <div className="h-2 rounded-full bg-[var(--wc-dash-inner)]">
+                      <div className="h-2 w-3/4 rounded-full bg-[var(--wc-dash-accent)]" />
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2.5 text-center">
-                        <p className="text-[10px] text-slate-400 uppercase tracking-wide">1RM Est.</p>
-                        <p className="font-bold text-slate-700 dark:text-slate-200">85kg</p>
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg uppercase tracking-wide text-[var(--wc-dash-secondary)]">1RM Est.</p>
+                        <p className="font-bold text-[var(--wc-dash-text)]">85kg</p>
                       </div>
-                      <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2.5 text-center">
-                        <p className="text-[10px] text-slate-400 uppercase tracking-wide">Volume</p>
-                        <p className="font-bold text-slate-700 dark:text-slate-200">2,400kg</p>
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg uppercase tracking-wide text-[var(--wc-dash-secondary)]">Volume</p>
+                        <p className="font-bold text-[var(--wc-dash-text)]">2,400kg</p>
                       </div>
-                      <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2.5 text-center">
-                        <p className="text-[10px] text-slate-400 uppercase tracking-wide">Sessions</p>
-                        <p className="font-bold text-slate-700 dark:text-slate-200">24</p>
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg uppercase tracking-wide text-[var(--wc-dash-secondary)]">Sessions</p>
+                        <p className="font-bold text-[var(--wc-dash-text)]">24</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Overlay CTA */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/30 dark:bg-slate-900/30">
+                  <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--wc-dash-panel)_30%,transparent)]">
                     <Link
-                      className=" flex flex-col items-center gap-2.5 px-6 py-4 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 shadow-xl shadow-amber-500/10 hover:shadow-amber-500/25 transition-all duration-200 hover:scale-[1.02]"
+                      className="flex min-h-12 flex-col items-center gap-2.5 rounded-2xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] px-6 py-4"
                       data-wc-entry="premium"
                       href="/premium"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                          <Crown className="w-4.5 h-4.5 text-white" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-accent)]">
+                          <Crown className="h-5 w-5 text-[var(--wc-dash-ink)]" />
                         </div>
-                        <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{t("exercise_modal.unlock_insights")}</span>
+                        <span className="text-lg font-bold text-[var(--wc-dash-text)]">{t("exercise_modal.unlock_insights")}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-3 text-lg text-[var(--wc-dash-secondary)]">
                         <span className="flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-amber-500" />
+                          <Zap className="h-5 w-5 text-[var(--wc-dash-accent)]" />
                           {t("exercise_modal.feature_pr")}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-amber-500" />
+                          <Lock className="h-5 w-5 text-[var(--wc-dash-accent)]" />
                           {t("exercise_modal.feature_volume")}
                         </span>
                       </div>

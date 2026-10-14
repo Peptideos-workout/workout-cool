@@ -60,7 +60,7 @@ export function WorkoutBuilderFooter({
             <RewardedAdGate onRewardGranted={onStartWorkout}>
               <Button
                 asChild
-                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)] disabled:pointer-events-auto"
+                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto"
                 data-wc-step-next=""
                 disabled={!canContinue}
                 size="default"
@@ -74,7 +74,7 @@ export function WorkoutBuilderFooter({
             </RewardedAdGate>
           ) : (
             <Button
-              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)] disabled:pointer-events-auto"
+              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto"
               data-wc-step-next=""
               disabled={!canContinue}
               onClick={onNext}

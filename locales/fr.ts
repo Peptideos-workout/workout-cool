@@ -440,6 +440,7 @@ export default {
     leaderboard_tooltip: "Voir le classement d'entraînements",
     tools: "Outils",
     tools_tooltip: "Parcourir les outils",
+    label: "Navigation principale",
     profile: "Profil",
     profile_tooltip: "Voir votre profil",
   },

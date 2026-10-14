@@ -438,6 +438,7 @@ export default {
     leaderboard_tooltip: "View workout rankings",
     tools: "Tools",
     tools_tooltip: "Browse tools",
+    label: "Main navigation",
     profile: "Profile",
     profile_tooltip: "View your profile",
   },

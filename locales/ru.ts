@@ -456,6 +456,7 @@ export default {
     premium_tooltip: "Стань Премиум",
     tools: "Инструменты",
     tools_tooltip: "Просмотр инструментов",
+    label: "Основная навигация",
     profile: "Профиль",
     profile_tooltip: "Просмотр профиля",
     leaderboard: "Рейтинг",

@@ -459,6 +459,7 @@ export default {
     leaderboard_tooltip: "Ver ranking de entrenamiento",
     tools: "Herramientas",
     tools_tooltip: "Explorar herramientas",
+    label: "Navegación principal",
     profile: "Perfil",
     profile_tooltip: "Ver tu perfil",
   },

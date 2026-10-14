@@ -41,7 +41,7 @@ export function ProgramProgress({ programId }: ProgramProgressProps) {
   };
 
   if (isLoading) {
-    return <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-20 rounded-xl"></div>;
+    return <div className="h-20 animate-pulse rounded-xl bg-[var(--wc-dash-inner)]"></div>;
   }
 
   if (!progress) {
@@ -51,25 +51,25 @@ export function ProgramProgress({ programId }: ProgramProgressProps) {
   const { stats } = progress;
 
   return (
-    <div className="bg-gradient-to-r from-[#4F8EF7]/10 to-[#25CB78]/10 border-2 border-[#4F8EF7]/20 rounded-xl p-4 mb-6">
-      <div className="flex items-center justify-between mb-3">
+    <div className="mb-6 rounded-xl border-2 border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-4">
+      <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-bold text-lg text-[#4F8EF7]">{t("programs.my_progress")}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <h3 className="text-lg font-bold text-[var(--wc-dash-accent)]">{t("programs.my_progress")}</h3>
+          <p className="text-lg text-[var(--wc-dash-secondary)]">
             {stats.completedSessions} / {stats.totalSessions} {t("programs.completed_sets")}
           </p>
         </div>
-        <div className="text-3xl font-bold text-[#25CB78]">{stats.completionPercentage}%</div>
+        <div className="text-3xl font-bold text-[var(--wc-dash-accent)]">{stats.completionPercentage}%</div>
       </div>
 
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-4 text-lg">
         <div className="flex items-center gap-2">
-          <CheckCircle className="text-[#25CB78]" size={16} />
-          <span className="text-gray-600 dark:text-gray-400">{t("programs.completed_feminine")}</span>
+          <CheckCircle className="h-5 w-5 text-[var(--wc-dash-accent)]" size={16} />
+          <span className="text-[var(--wc-dash-secondary)]">{t("programs.completed_feminine")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <PlayCircle className="text-[#4F8EF7]" size={16} />
-          <span className="text-gray-600 dark:text-gray-400">
+          <PlayCircle className="h-5 w-5 text-[var(--wc-dash-accent)]" size={16} />
+          <span className="text-[var(--wc-dash-secondary)]">
             {t("programs.week")} {stats.currentWeek}, {t("programs.session")} {stats.currentSession}
           </span>
         </div>

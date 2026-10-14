@@ -64,8 +64,8 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
                 <div className="relative">
                   <span
                     className={
-                      `inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 ` +
-                      `text-lg font-bold text-[var(--wc-dash-ink)]`
+                      "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                      "text-lg font-bold text-[var(--wc-dash-ink)]"
                     }
                   >
                     {t("commons.new")}
@@ -104,7 +104,7 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
             <div aria-label={t("programs.workout_programs")} className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6" role="list">
               {programs.map((program, index) => (
                 <article
-                  className={"relative"}
+                  className="relative animate-fade-in-up"
                   key={program.id}
                   role="listitem"
                   style={{
@@ -120,8 +120,8 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
             <aside className="relative mt-12">
               <div
                 className={
-                  `relative rounded-2xl border-2 border-dashed border-[var(--wc-dash-border)] ` +
-                  `bg-[var(--wc-dash-card)] p-3 text-center sm:p-8`
+                  "relative rounded-2xl border-2 border-dashed border-[var(--wc-dash-border)] " +
+                  "bg-[var(--wc-dash-card)] p-3 text-center sm:p-8"
                 }
               >
                 <div className="absolute -right-2 -top-2 sm:right-4 sm:top-4">

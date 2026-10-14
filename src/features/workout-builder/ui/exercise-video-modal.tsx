@@ -184,6 +184,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                   <div className="absolute inset-0 flex items-center justify-center bg-white/30 dark:bg-slate-900/30">
                     <Link
                       className=" flex flex-col items-center gap-2.5 px-6 py-4 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 shadow-xl shadow-amber-500/10 hover:shadow-amber-500/25 transition-all duration-200 hover:scale-[1.02]"
+                      data-wc-entry="premium"
                       href="/premium"
                     >
                       <div className="flex items-center gap-2.5">

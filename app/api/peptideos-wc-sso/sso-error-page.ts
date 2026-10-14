@@ -1,3 +1,5 @@
+import { EMBED_BACK_TO_DASHBOARD, embedSignedOutSessionBootstrap } from "@/features/embed/lib/embed-mode";
+
 const DEFAULT_LOCALE = "en";
 
 const COPY = {
@@ -76,6 +78,18 @@ export function ssoErrorCopy(locale: string, error: string): {
   };
 }
 
+function embedFallbackActions(tryAgainHref: string): string {
+  const links = embedSsoFallbackLinks(tryAgainHref);
+  const login = escapeHtml(links.loginHref);
+  const signup = escapeHtml(links.signupHref);
+  const dashboard = escapeHtml(links.dashboardHref);
+  const loginLink = `<a href="${login}" rel="noopener noreferrer" target="_top">Log in</a>`;
+  const signupLink = `<a href="${signup}" rel="noopener noreferrer" target="_top">Sign up</a>`;
+  const backLink = `<a href="${dashboard}" rel="noopener noreferrer" target="_top">${escapeHtml(EMBED_BACK_TO_DASHBOARD)}</a>`;
+  return `<p>${loginLink} ${signupLink}</p>
+      <p>${backLink}</p>`;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -84,16 +98,27 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHref: string }): string {
+export function embedSsoFallbackLinks(tryAgainHref: string): { loginHref: string; signupHref: string; dashboardHref: string } {
+  const origin = new URL(tryAgainHref).origin;
+  return {
+    loginHref: tryAgainHref,
+    signupHref: new URL("/signup", `${origin}/`).toString(),
+    dashboardHref: new URL("/dashboard", `${origin}/`).toString()
+  };
+}
+
+export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHref: string; embed?: boolean }): string {
   const copy = ssoErrorCopy(input.locale ?? DEFAULT_LOCALE, input.error);
   const href = escapeHtml(input.tryAgainHref);
   const support = copy.supportNote ? `<p class="support">${escapeHtml(copy.supportNote)}</p>` : "";
+  const actions = input.embed ? embedFallbackActions(input.tryAgainHref) : `<p><a href="${href}">${escapeHtml(copy.tryAgain)}</a></p>`;
   return `<!doctype html>
 <html lang="${escapeHtml(normalizeLocale(input.locale))}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(copy.title)}</title>
+    ${input.embed ? `<script>${embedSignedOutSessionBootstrap()}</script>` : ""}
     <style>
       body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
       main { max-width: 28rem; margin: 12vh auto; padding: 2rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; }
@@ -108,7 +133,7 @@ export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHr
       <h1>${escapeHtml(copy.title)}</h1>
       <p>${escapeHtml(copy.message)}</p>
       ${support}
-      <p><a href="${href}">${escapeHtml(copy.tryAgain)}</a></p>
+      ${actions}
     </main>
   </body>
 </html>`;

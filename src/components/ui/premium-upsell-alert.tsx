@@ -50,7 +50,7 @@ export const PremiumUpsellAlert = ({ className }: PremiumUpsellAlertProps) => {
               <Ban className="h-4 w-4" />
               <span>{t("premium.no_ads")}</span>
             </div>
-            <Link href="/premium">
+            <Link data-wc-entry="premium" href="/premium">
               <Button
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 size="small"

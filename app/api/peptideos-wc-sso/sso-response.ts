@@ -30,7 +30,8 @@ export function ssoClientError(
   request: NextRequest,
   body: Record<string, unknown>,
   status: number,
-  tryAgainHref: string
+  tryAgainHref: string,
+  embed = false
 ): NextResponse {
   const safeBody = safeSsoErrorBody(body);
   if (!prefersBrowserSsoErrorPage(request.headers.get("accept"))) {
@@ -39,7 +40,7 @@ export function ssoClientError(
 
   const error = safeBody.error;
   const locale = request.headers.get("accept-language")?.split(",")[0]?.split(";")[0] ?? "en";
-  const response = new NextResponse(ssoErrorHtml({ locale, error, tryAgainHref }), {
+  const response = new NextResponse(ssoErrorHtml({ locale, error, tryAgainHref, embed }), {
     status,
     headers: {
       "Content-Type": "text/html; charset=utf-8"

@@ -64,7 +64,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                   <span>Profil</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => logout.mutate()}>
+              <DropdownMenuItem data-wc-signout="" onClick={() => logout.mutate()}>
                 <div className="flex items-center space-x-2">
                   <LogOut className="h-4 w-4" />
                   <span>Déconnexion</span>

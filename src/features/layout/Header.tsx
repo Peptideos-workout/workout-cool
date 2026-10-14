@@ -11,6 +11,7 @@ import { SiteConfig } from "@/shared/config/site-config";
 import { ChangePasswordMenuItem } from "@/features/update-password/ui/change-password-menu-item";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
+import { assignCheckoutUrl } from "@/features/embed/lib/embed-mode";
 import { useLogout } from "@/features/auth/model/useLogout";
 import { getConfiguredPeptideOsLoginUrl, getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
 import { useSession } from "@/features/auth/lib/auth-client";
@@ -43,7 +44,7 @@ export const Header = () => {
 
   return (
     <>
-      <div className="navbar bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg">
+      <div className="navbar bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg" data-wc-chrome="header">
         {/* Logo and Title */}
         <div className="navbar-start flex items-center gap-2">
           <Link
@@ -114,6 +115,7 @@ export const Header = () => {
                 <li>
                   <Link
                     className="!no-underline"
+                    data-wc-entry="premium"
                     href={isPremium ? "/api/premium/billing-portal" : "/premium"}
                     size="base"
                     variant="nav"
@@ -128,7 +130,7 @@ export const Header = () => {
                           });
                           const data = await response.json();
                           if (data.success && data.url) {
-                            window.location.href = data.url;
+                            assignCheckoutUrl(data.url);
                           }
                         } catch (error) {
                           console.error("Error opening billing portal:", error);
@@ -156,6 +158,7 @@ export const Header = () => {
               <li>
                 <button
                   className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                  data-wc-signout=""
                   onClick={handleSignOut}
                 >
                   <LogOut className="w-4 h-4" />

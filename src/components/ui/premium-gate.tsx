@@ -112,7 +112,7 @@ function PremiumUpgradePrompt({ feature, message, onUpgradePress, className }: P
             <span>{t("premium.unlock_all_features")}</span>
           </div>
 
-          <Link href="/premium" onClick={handleUpgradePress}>
+          <Link data-wc-entry="premium" href="/premium" onClick={handleUpgradePress}>
             <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" size="large">
               {t("commons.upgrade_to_premium")}
             </Button>

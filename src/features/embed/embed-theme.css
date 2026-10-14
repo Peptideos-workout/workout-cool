@@ -1,0 +1,119 @@
+/*
+ * PeptideOS dashboard tokens, copied for embed mode only.
+ * The iframe cannot read the dashboard stylesheet. Non-embed pages never match
+ * these selectors, so their colors and type stay as they are.
+ * --dash-page is available for a later restyle. The embed page background stays
+ * transparent so the frame does not paint its own box.
+ * Viewport min-heights are cleared so height reporting cannot grow the iframe
+ * forever (100vh inside a sized frame is a feedback loop).
+ */
+
+html[data-wc-embed="1"] {
+  --dash-page: #f6f3ec;
+  --dash-panel: #ffffff;
+  --dash-inner: #f3faf8;
+  --dash-card: #e7f3ef;
+  --dash-border: #5e8a80;
+  --dash-text: #10211e;
+  --dash-secondary: #33414a;
+  --dash-accent: #0a5c52;
+  --dash-ink: #ffffff;
+  --dash-link: #075e56;
+  --dash-error: #9f1239;
+  --color-base-100: var(--dash-panel);
+  --color-base-200: var(--dash-inner);
+  --color-base-300: var(--dash-card);
+  --color-base-content: var(--dash-text);
+  --color-primary: var(--dash-accent);
+  --color-primary-content: var(--dash-ink);
+  --color-accent: var(--dash-link);
+  --color-error: var(--dash-error);
+  background-color: transparent !important;
+  background-image: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+html[data-wc-embed="1"].dark {
+  --dash-page: #0b0f14;
+  --dash-panel: #0b0f14;
+  --dash-inner: #1d2530;
+  --dash-card: #151b23;
+  --dash-border: #6e8296;
+  --dash-text: #f2f5f8;
+  --dash-secondary: #b4becb;
+  --dash-accent: #2dd4bf;
+  --dash-ink: #04201c;
+  --dash-link: #5eead4;
+  --dash-error: #fecdd3;
+}
+
+html[data-wc-embed="1"] body {
+  background-color: transparent !important;
+  background-image: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: block !important;
+  font-family: var(--font-inter), sans-serif;
+}
+
+html[data-wc-embed="1"] [data-wc-frame],
+html[data-wc-embed="1"] [data-wc-shell] {
+  background-color: transparent !important;
+  background-image: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  display: block !important;
+}
+
+html[data-wc-embed="1"] [data-wc-shell] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-wc-embed="1"] [data-wc-chrome="header"],
+html[data-wc-embed="1"] [data-wc-chrome="footer"],
+html[data-wc-embed="1"] [data-wc-chrome="banner"],
+html[data-wc-embed="1"] [data-wc-chrome="version"] {
+  display: none !important;
+}
+
+html[data-wc-embed="1"] [data-wc-signout],
+html[data-wc-embed="1"] a[href*="/auth/signout"] {
+  display: none !important;
+}
+
+html[data-wc-embed="1"] [data-wc-chrome="nav"] {
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+}
+
+html[data-wc-embed="1"] [data-wc-main] {
+  padding-bottom: 0 !important;
+}
+
+html[data-wc-embed="1"] .min-h-screen,
+html[data-wc-embed="1"] .min-h-full,
+html[data-wc-embed="1"] .h-screen,
+html[data-wc-embed="1"] .h-full,
+html[data-wc-embed="1"] .max-sm\:min-h-screen,
+html[data-wc-embed="1"] .max-sm\:min-h-full,
+html[data-wc-embed="1"] .min-h-\[50vh\],
+html[data-wc-embed="1"] .min-h-\[500px\] {
+  min-height: 0 !important;
+  height: auto !important;
+}

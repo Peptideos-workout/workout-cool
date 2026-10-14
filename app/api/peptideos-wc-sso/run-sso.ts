@@ -12,6 +12,7 @@ import type { CreatePeptideosAccountResult } from "./create-peptideos-account";
 import type { HandoffClaimRow } from "./consume-handoff";
 import type { AttachTrustedSessionResult } from "./attach-trusted-session";
 
+import { isEmbedSsoSignal } from "@/features/embed/lib/embed-mode";
 import { resolvePeptideOsWorkoutsSsoUrl, ssoFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
 
 export interface PeptideOsSsoDeps {
@@ -80,6 +81,9 @@ const URLENCODED_FORM = "application/x-www-form-urlencoded";
 
 /** Form POST bodies larger than this are rejected before they are parsed. */
 export const SSO_POST_MAX_BYTES = 4 * 1024;
+
+/** Forbidden-origin embed peek. Larger or non-form bodies stay non-embed and are not read. */
+export const EMBED_REJECT_PEEK_MAX_BYTES = 8 * 1024;
 
 type DeclaredSsoBody = "absent" | "empty" | "oversized" | "within-cap";
 
@@ -152,22 +156,110 @@ function isUrlEncodedForm(request: NextRequest): boolean {
   return mediaType === URLENCODED_FORM;
 }
 
-function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string; returnTo?: string } {
+function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: string; returnTo?: string; embed?: string } {
   const params = new URLSearchParams(new TextDecoder().decode(bytes));
   const token = params.get("token")?.trim() ?? "";
   const redirect = params.get("redirect");
   const returnTo = params.get("return");
+  const embed = params.get("embed");
   return {
     token: token || undefined,
     redirect: redirect === null ? undefined : redirect,
-    returnTo: returnTo === null ? undefined : returnTo
+    returnTo: returnTo === null ? undefined : returnTo,
+    embed: embed === null ? undefined : embed
   };
+}
+
+function embedFromRequest(request: NextRequest, embedField?: string | null): boolean {
+  return isEmbedSsoSignal({
+    search: request.nextUrl.search,
+    referer: request.headers.get("referer"),
+    embedField
+  });
+}
+
+async function releaseUnreadBody(request: NextRequest): Promise<void> {
+  try {
+    await request.body?.cancel();
+  } catch {
+    /* already closed */
+  }
+}
+
+async function embedFromRejectedRequest(request: NextRequest): Promise<boolean> {
+  if (embedFromRequest(request)) {
+    await releaseUnreadBody(request);
+    return true;
+  }
+  if (!isUrlEncodedForm(request)) {
+    await releaseUnreadBody(request);
+    return false;
+  }
+
+  const declared = request.headers.get("content-length");
+  if (declared !== null) {
+    const trimmed = declared.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      await releaseUnreadBody(request);
+      return false;
+    }
+    const length = Number(trimmed);
+    if (!Number.isSafeInteger(length) || length === 0 || length > EMBED_REJECT_PEEK_MAX_BYTES) {
+      await releaseUnreadBody(request);
+      return false;
+    }
+  }
+
+  try {
+    const text = await readPeekText(request, EMBED_REJECT_PEEK_MAX_BYTES);
+    if (text === null) return false;
+    return new URLSearchParams(text).get("embed") === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Reads at most `maxBytes`. A body that would pass the cap is dropped and not parsed. */
+async function readPeekText(request: NextRequest, maxBytes: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let oversized = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value || value.byteLength === 0) continue;
+      if (total + value.byteLength > maxBytes) {
+        oversized = true;
+        break;
+      }
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    try {
+      reader.releaseLock();
+    } catch {
+      /* already released */
+    }
+  }
+  if (oversized) return null;
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
 }
 
 type SsoPostRead =
   | { outcome: "empty" }
   | { outcome: "oversized" }
-  | { outcome: "fields"; token?: string; redirect?: string; returnTo?: string };
+  | { outcome: "fields"; token?: string; redirect?: string; returnTo?: string; embed?: string };
 
 /** Size-check the POST, then decode once from the collected bytes as urlencoded. Never calls `formData()`. */
 async function readSsoPost(request: NextRequest): Promise<SsoPostRead> {
@@ -186,6 +278,7 @@ interface SsoSubmission {
   token?: string;
   redirect?: string;
   returnTo?: string;
+  embed?: string;
   status: 303;
 }
 
@@ -193,7 +286,8 @@ async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps,
   const redirectParam = submission.redirect;
   const returnTo = submission.returnTo;
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin, redirectParam);
-  const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref);
+  const embed = embedFromRequest(request, submission.embed);
+  const reply = (body: Record<string, unknown>, status: number) => ssoClientError(request, body, status, tryAgainHref, embed);
   const tokenParam = submission.token?.trim();
   if (!tokenParam) return reply({ error: "missing_token" }, 400);
 
@@ -275,13 +369,13 @@ async function executePeptideOsSso(request: NextRequest, deps: PeptideOsSsoDeps,
 function ssoEmptyBody(request: NextRequest, workoutOrigin: string): NextResponse {
   logSsoEvent("sso_body", undefined, "empty_body");
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
-  return ssoClientError(request, { error: "empty_body" }, 400, tryAgainHref);
+  return ssoClientError(request, { error: "empty_body" }, 400, tryAgainHref, embedFromRequest(request));
 }
 
 function ssoPayloadTooLarge(request: NextRequest, workoutOrigin: string): NextResponse {
   logSsoEvent("sso_body", undefined, "payload_too_large");
   const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, workoutOrigin);
-  return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref);
+  return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref, embedFromRequest(request));
 }
 
 /**
@@ -314,12 +408,13 @@ export async function runPeptideOsSsoPost(
   if (!isExactPeptideOsSsoOrigin(request.headers.get("origin"), expectedOrigin)) {
     logSsoEvent("sso_origin", undefined, "forbidden_origin");
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
-    return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref);
+    const embed = await embedFromRejectedRequest(request);
+    return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref, embed);
   }
 
   if (!isUrlEncodedForm(request)) {
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
-    return ssoClientError(request, { error: "unsupported_media_type" }, 415, tryAgainHref);
+    return ssoClientError(request, { error: "unsupported_media_type" }, 415, tryAgainHref, embedFromRequest(request));
   }
 
   let read: SsoPostRead;
@@ -328,7 +423,7 @@ export async function runPeptideOsSsoPost(
   } catch (e) {
     logSsoEvent("sso_body", e);
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
-    return ssoClientError(request, { error: "sso_internal_error" }, 500, tryAgainHref);
+    return ssoClientError(request, { error: "sso_internal_error" }, 500, tryAgainHref, embedFromRequest(request));
   }
   if (read.outcome === "empty") return ssoEmptyBody(request, deps.workoutOrigin);
   if (read.outcome === "oversized") return ssoPayloadTooLarge(request, deps.workoutOrigin);
@@ -337,6 +432,7 @@ export async function runPeptideOsSsoPost(
     token: read.token,
     redirect: read.redirect,
     returnTo: read.returnTo,
+    embed: read.outcome === "fields" ? read.embed : undefined,
     status: 303
   });
 }

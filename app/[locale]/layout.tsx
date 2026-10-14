@@ -14,6 +14,8 @@ import { getLocalizedMetadata } from "@/shared/config/localized-metadata";
 import { WorkoutSessionsSynchronizer } from "@/features/workout-session/ui/workout-sessions-synchronizer";
 import { FavoriteExercisesSynchronizer } from "@/features/workout-builder/model/favorite-exercises-synchronizer";
 import { ThemeSynchronizer } from "@/features/theme/ui/ThemeSynchronizer";
+import { embedBootScript } from "@/features/embed/lib/embed-boot-script";
+import { getConfiguredPeptideOsOrigin } from "@/features/auth/lib/configured-peptideos-signup";
 import { env } from "@/env";
 import { Version } from "@/components/version";
 import { TailwindIndicator } from "@/components/utils/TailwindIndicator";
@@ -268,6 +270,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
 
             {/* Ezoic Header Script */}
             <script async src="//www.ezojs.com/ezoic/sa.min.js" />
+            {/* the ad loader inserts a script before hydration and shifts this tag */}
             <script
               dangerouslySetInnerHTML={{
                 __html: `
@@ -285,7 +288,8 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
                     window.ezRewardedAds = window.ezRewardedAds || {};
                     window.ezRewardedAds.cmd = window.ezRewardedAds.cmd || [];
                   `,
-              }}
+                }}
+              suppressHydrationWarning
             />
           </>
           {/* )} */}
@@ -354,6 +358,12 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
           )}
           suppressHydrationWarning
         >
+          {/*
+            Blocking embed boot. It stays the first body child, not a head child:
+            Next reorders head around metadata, so this script was hydrating against
+            the AdSense loader. It still runs before the rest of the body is parsed.
+          */}
+          <script dangerouslySetInnerHTML={{ __html: embedBootScript(getConfiguredPeptideOsOrigin()) }} />
           <Providers locale={locale}>
             <ServiceWorkerRegistration />
             <FavoriteExercisesSynchronizer />
@@ -363,11 +373,15 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             <AdBlockerForPremium />
             <NextTopLoader color="#FF5722" delay={100} showSpinner={false} />
 
-            <div className="flex items-center justify-center min-h-screen w-full max-sm:min-h-full">
-              <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center">
-                <VerticalLeftBanner />
+            <div className="flex items-center justify-center min-h-screen w-full max-sm:min-h-full" data-wc-frame="">
+              <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center" data-wc-frame="">
+                <div className="contents" data-wc-chrome="banner">
+                  <VerticalLeftBanner />
+                </div>
                 <div className="min-w-0 sm:min-w-auto w-full sm:w-auto">{children}</div>
-                <VerticalRightBanner />
+                <div className="contents" data-wc-chrome="banner">
+                  <VerticalRightBanner />
+                </div>
               </div>
             </div>
             <Version />

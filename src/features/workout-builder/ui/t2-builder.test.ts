@@ -94,6 +94,7 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
     read("src/features/workout-builder/ui/workout-stepper-footer.tsx"),
     /hover:\[&:not\(:disabled\)\]:!bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_78%,var\(--wc-dash-ink\)\)\]/,
   );
+  assert.equal(read("src/features/workout-builder/ui/workout-stepper-footer.tsx").split("hover:!scale-100").length - 1, 3);
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="active"\][\s\S]*background:\s*var\(--wc-dash-accent\)/);
   assert.match(css, /\[data-wc-step-mark\]\[data-wc-step-state="done"\][\s\S]*color:\s*var\(--wc-dash-ink\)/);
   assert.doesNotMatch(header, /text-blue-/);
@@ -112,7 +113,7 @@ test("builder contrast pairs meet AA", () => {
   }
 
   const continueAt = footer.indexOf("workout_builder.navigation.continue");
-  const continueClasses = footer.slice(Math.max(0, continueAt - 500), continueAt);
+  const continueClasses = footer.slice(Math.max(0, continueAt - 700), continueAt);
   const foreground = continueClasses.match(/!text-\[var\(--wc-dash-([a-z]+)\)\]/);
   const background = continueClasses.match(/!bg-\[var\(--wc-dash-([a-z]+)\)\]/);
   assert.ok(foreground);

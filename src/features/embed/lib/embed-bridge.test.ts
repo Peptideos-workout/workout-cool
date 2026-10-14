@@ -2,17 +2,22 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
+import { embedSignedOutDocumentResponse } from "./embed-signed-out-document";
+import { resolveEmbedOutboundOrigins } from "./embed-mode";
 import {
   acceptParentThemeMessage,
   clampReportedHeight,
   createHeightReporter,
   exactOrigin,
+  clearExplicitEmbedLogout,
   embedLogoutMessage,
   embedReportedSession,
   embedSessionMessage,
-  notifyEmbedSignedOut,
+  explicitEmbedLogoutOnPath,
+  markExplicitEmbedLogout,
   postEmbedSession,
   postToParent,
+  releaseExplicitEmbedLogout,
   sessionReportToSend,
   reportableEmbedPath,
   startEmbedBridge,
@@ -86,7 +91,14 @@ test("postToParent refuses wildcard, path, and non-URL origins", () => {
   assert.equal(calls.length, 0);
   assert.equal(exactOrigin("*"), null);
   assert.equal(postToParent(parent, POS, message), true);
-  assert.deepEqual(calls, [{ message, origin: POS }]);
+  assert.equal(postToParent(parent, "https://www.peptideos.us", message), true);
+  assert.equal(postToParent(parent, "https://evil.example", message), false);
+  assert.equal(postToParent(parent, "https://peptideos.us.evil.example", message), false);
+  assert.deepEqual(calls, [
+    { message, origin: POS },
+    { message, origin: "https://www.peptideos.us" }
+  ]);
+  assert.equal(JSON.stringify(calls).includes("*"), false);
 });
 
 test("reportable paths keep locale and search, and drop auth, admin, and protocol tricks", () => {
@@ -134,6 +146,11 @@ test("parent theme messages require the exact origin, the parent source, and no 
   assert.equal(acceptParentThemeMessage({ ...good, data: { type: "wc:theme" } }, parent, POS), null);
   assert.equal(acceptParentThemeMessage({ ...good, data: null }, parent, POS), null);
   assert.equal(acceptParentThemeMessage(good, parent, "*"), null);
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "https://www.peptideos.us" }, parent, "https://www.peptideos.us"), "dark");
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "https://www.peptideos.us" }, parent, POS), "dark");
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "*" }, parent, POS), null);
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "https://www.peptideos.us.evil.example" }, parent, POS), null);
+  assert.equal(acceptParentThemeMessage({ ...good, origin: "http://peptideos.us" }, parent, POS), null);
 });
 
 test("the bridge posts clamped height and path only to the PeptideOS origin", () => {
@@ -193,25 +210,177 @@ test("a theme message updates theme and cannot sign in or sign out", () => {
   assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
 });
 
-test("sign-out is reported from the sign-out path and from an explicit notify, not from a missing session", () => {
+test("an unresolved parent posts to both origins until wc:theme locks the target", () => {
   const calls: Array<{ message: unknown; origin: string }> = [];
   const frames: Array<() => void> = [];
-  const host = bridgeHost(calls, frames, { height: 400, path: "/fr/auth/signout" });
+  const www = "https://www.peptideos.us";
+  const host = bridgeHost(calls, frames, { height: 400, path: "/programs" });
+  host.parentOrigin = "https://peptideos.us.evil.com";
+  host.outboundOrigins = [POS, www, "http://peptideos.us", "https://peptideos.us.evil.com"];
   startEmbedBridge(host);
-  assert.deepEqual(calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out"), [
-    { message: { type: "wc:signed-out", reason: "logout" }, origin: POS }
-  ]);
+  frames.shift()?.();
 
-  const parent = port(calls);
-  assert.equal(notifyEmbedSignedOut(POS, { embed: true, topLevel: false, parent }), true);
-  assert.equal(notifyEmbedSignedOut("*", { embed: true, topLevel: false, parent }), false);
-  assert.equal(notifyEmbedSignedOut(POS, { embed: false, topLevel: false, parent }), false);
-  assert.equal(notifyEmbedSignedOut(POS, { embed: true, topLevel: true, parent }), false);
-  const signedOut = calls.filter((call) => (call.message as { type: string }).type === "wc:signed-out");
-  assert.equal(signedOut.length, 2);
-  assert.deepEqual(signedOut[1], { message: { type: "wc:signed-out", reason: "logout" }, origin: POS });
-  assert.equal(signedOut.every((call) => call.origin === POS), true);
-  assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:session"), false);
+  const messageType = (call: { message: unknown }) => (call.message as { type?: string }).type;
+  const heightOrigins = calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin);
+  const pathOrigins = calls.filter((call) => messageType(call) === "wc:navigate").map((call) => call.origin);
+  assert.deepEqual(heightOrigins, [POS, www]);
+  assert.deepEqual(pathOrigins, [POS, www]);
+  assert.equal(JSON.stringify(calls).includes("*"), false);
+  assert.equal(JSON.stringify(calls).includes("evil.com"), false);
+  assert.equal(JSON.stringify(calls).includes("http://peptideos.us"), false);
+
+  calls.length = 0;
+  host.emit?.({ origin: "https://peptideos.us.evil.com", source: host.parent, data: { type: "wc:theme", theme: "light" } });
+  host.emit?.({ origin: "http://peptideos.us", source: host.parent, data: { type: "wc:theme", theme: "dark" } });
+  host.resize?.();
+  frames.shift()?.();
+  assert.deepEqual(calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin), [POS, www]);
+
+  calls.length = 0;
+  host.emit?.({ origin: www, source: host.parent, data: { type: "wc:theme", theme: "dark" } });
+  host.resize?.();
+  frames.shift()?.();
+  assert.deepEqual(calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin), [www]);
+
+  const sessionCalls: Array<{ message: unknown; origin: string }> = [];
+  assert.equal(
+    postEmbedSession([POS, www, "https://peptideos.us.evil.com"], "signed-out", {
+      embed: true,
+      topLevel: false,
+      parent: port(sessionCalls)
+    }),
+    true
+  );
+  assert.deepEqual(
+    sessionCalls.map((call) => call.origin),
+    [POS, www]
+  );
+});
+
+test("a www parent with no referrer or ancestorOrigins locks targetOrigin after wc:theme", () => {
+  const www = "https://www.peptideos.us";
+  const outbound = resolveEmbedOutboundOrigins({});
+  assert.deepEqual([...outbound], [POS, www]);
+  assert.deepEqual([...resolveEmbedOutboundOrigins({ referrer: "", ancestorOrigins: [] })], [POS, www]);
+
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const themes: string[] = [];
+  const host = bridgeHost(calls, frames, { height: 640, path: "/programs" });
+  host.parentOrigin = outbound[0] ?? POS;
+  host.outboundOrigins = outbound;
+  host.setTheme = (theme) => themes.push(theme);
+  startEmbedBridge(host);
+  frames.shift()?.();
+
+  const messageType = (call: { message: unknown }) => (call.message as { type?: string }).type;
+  assert.deepEqual(
+    calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin),
+    [POS, www]
+  );
+
+  calls.length = 0;
+  host.emit?.({ origin: www, source: {}, data: { type: "wc:theme", theme: "dark" } });
+  host.emit?.({ origin: "https://www.peptideos.us.evil.com", source: host.parent, data: { type: "wc:theme", theme: "light" } });
+  host.resize?.();
+  frames.shift()?.();
+  assert.deepEqual(themes, []);
+  assert.deepEqual(
+    calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin),
+    [POS, www]
+  );
+
+  calls.length = 0;
+  host.emit?.({ origin: www, source: host.parent, data: { type: "wc:theme", theme: "dark" } });
+  assert.deepEqual(themes, ["dark"]);
+  host.resize?.();
+  frames.shift()?.();
+  assert.deepEqual(calls.filter((call) => messageType(call) === "wc:height").map((call) => call.origin), [www]);
+  assert.equal(JSON.stringify(calls).includes("*"), false);
+});
+
+test("a framed sign-out fallback and an embedded sign-out page send no postMessage", async () => {
+  const response = embedSignedOutDocumentResponse("https://peptideos.us", "https://workouts.peptideos.us", {
+    postSession: false
+  });
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(html, /postMessage/);
+  assert.doesNotMatch(html, /wc:session/);
+  assert.doesNotMatch(html, /wc:signed-out/);
+
+  for (const path of ["/auth/signout", "/fr/auth/signout", "/en/auth/signout/continue"]) {
+    const calls: Array<{ message: unknown; origin: string }> = [];
+    const frames: Array<() => void> = [];
+    const host = bridgeHost(calls, frames, { height: 400, path });
+    startEmbedBridge(host);
+    while (frames.length > 0) frames.shift()?.();
+    host.resize?.();
+    while (frames.length > 0) frames.shift()?.();
+    assert.deepEqual(calls, [], path);
+
+    assert.equal(embedReportedSession({ embed: true, sessionResolved: true, hasSession: true, pathname: path }), null);
+    assert.equal(embedReportedSession({ embed: true, sessionResolved: true, hasSession: false, pathname: path }), null);
+    const state = sessionReportToSend(null, embedReportedSession({
+      embed: true,
+      sessionResolved: true,
+      hasSession: false,
+      pathname: path
+    }));
+    assert.equal(state, null);
+    assert.equal(postEmbedSession(POS, state, { embed: true, topLevel: false, parent: port(calls) }), false);
+    assert.deepEqual(calls, [], path);
+  }
+});
+
+test("a client-side navigation into sign-out stops height and path posts", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  let path = "/en";
+  let onResize: (() => void) | null = null;
+  let onPath: (() => void) | null = null;
+  const host: EmbedBridgeHost = {
+    parentOrigin: POS,
+    parent: port(calls),
+    isEmbed: () => true,
+    isTopLevel: () => false,
+    readHeight: () => 480,
+    readPath: () => path,
+    subscribeResize: (notify) => {
+      onResize = notify;
+      return () => {
+        onResize = null;
+      };
+    },
+    subscribePath: (notify) => {
+      onPath = notify;
+      return () => {
+        onPath = null;
+      };
+    },
+    requestFrame: (callback) => {
+      frames.push(callback);
+      return frames.length;
+    },
+    setTheme: () => undefined,
+    addMessageListener: () => () => undefined
+  };
+  const resize = () => onResize?.();
+  const navigate = () => onPath?.();
+  startEmbedBridge(host);
+  while (frames.length > 0) frames.shift()?.();
+  assert.deepEqual(calls.map((call) => call.message), [
+    { type: "wc:navigate", path: "/en" },
+    { type: "wc:height", height: 480 }
+  ]);
+  path = "/auth/signout";
+  navigate();
+  resize();
+  while (frames.length > 0) frames.shift()?.();
+  assert.deepEqual(calls.map((call) => call.message), [
+    { type: "wc:navigate", path: "/en" },
+    { type: "wc:height", height: 480 }
+  ]);
 });
 
 test("outbound messages keep their exact keys and never use a wildcard origin", () => {
@@ -239,11 +408,11 @@ test("outbound messages keep their exact keys and never use a wildcard origin", 
   assert.equal(postToParent(parent, POS, navigate), true);
   assert.equal(postEmbedSession(POS, "signed-in", runtime), true);
   assert.equal(postEmbedSession(POS, "signed-out", runtime), true);
-  assert.equal(notifyEmbedSignedOut(POS, runtime), true);
+  assert.equal(postToParent(parent, POS, logout), true);
   assert.equal(postToParent(parent, "*", height), false);
   assert.equal(postToParent(parent, "*", navigate), false);
   assert.equal(postEmbedSession("*", "signed-out", runtime), false);
-  assert.equal(notifyEmbedSignedOut("*", runtime), false);
+  assert.equal(postToParent(parent, "*", logout), false);
   assert.equal(postEmbedSession(POS, null, runtime), false);
 
   assert.deepEqual(
@@ -289,6 +458,40 @@ test("session is posted when it becomes known, and signed-out follows the auth f
     { type: "wc:session", state: "signed-out" }
   ]);
   assert.equal(calls.some((call) => (call.message as { type: string }).type === "wc:signed-out"), false);
+});
+
+test("sign-out paths and an explicit logout do not send wc:session signed-out", () => {
+  const signedOut = { embed: true, sessionResolved: true, hasSession: false };
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/auth/signout" }), null);
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/fr/auth/signout/continue" }), null);
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/en/profile", explicitLogout: true }), null);
+  assert.equal(embedReportedSession({ ...signedOut, pathname: "/en/profile" }), "signed-out");
+  assert.equal(
+    embedReportedSession({ embed: true, sessionResolved: true, hasSession: true, pathname: "/auth/signout" }),
+    null
+  );
+  assert.equal(
+    embedReportedSession({ embed: true, sessionResolved: false, hasSession: false, ssoError: true, pathname: "/en/auth/signout" }),
+    null
+  );
+
+  clearExplicitEmbedLogout();
+  markExplicitEmbedLogout("/en/profile");
+  assert.equal(explicitEmbedLogoutOnPath("/en/profile"), true);
+  releaseExplicitEmbedLogout("/auth/signout/continue");
+  assert.equal(explicitEmbedLogoutOnPath("/en/profile"), true);
+  releaseExplicitEmbedLogout("/en/programs");
+  assert.equal(explicitEmbedLogoutOnPath("/en/profile"), false);
+
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const host = bridgeHost(calls, frames, { height: 400, path: "/auth/signout/continue" });
+  startEmbedBridge(host);
+  while (frames.length > 0) frames.shift()?.();
+  host.resize?.();
+  while (frames.length > 0) frames.shift()?.();
+  assert.deepEqual(calls, []);
+  clearExplicitEmbedLogout();
 });
 
 test("premium and leaderboard paths in the pane are reported", () => {
@@ -429,7 +632,11 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   }
   assert.match(fallback, /embedReportedSession\(/);
   assert.match(fallback, /sessionReportToSend\(/);
-  assert.match(fallback, /postEmbedSession\(getConfiguredPeptideOsOrigin\(\), state\)/);
+  assert.match(fallback, /postEmbedSession\(/);
+  assert.match(fallback, /resolveEmbedOutboundOrigins\(/);
+  assert.match(ui, /resolveEmbedOutboundOrigins\(/);
+  assert.match(fallback, /explicitEmbedLogoutOnPath\(pathname\)/);
+  assert.match(fallback, /releaseExplicitEmbedLogout\(pathname\)/);
   assert.doesNotMatch(bridge, /signOut|signIn|location\.assign|location\.href/);
   assert.doesNotMatch(ui, /useSession/);
   assert.match(providers, /storageKey="theme"/);
@@ -438,10 +645,14 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   assert.doesNotMatch(boot, /localStorage\.setItem\("theme"/);
   assert.doesNotMatch(bridge, /EMBED_THEME_STORAGE_KEY/);
   assert.match(providers, /<EmbedBridge/);
-  assert.match(logout, /notifyEmbedSignedOut\(getConfiguredPeptideOsOrigin\(\)\)/);
-  const notifyAt = logout.indexOf("notifyEmbedSignedOut");
-  const logoutAt = logout.indexOf("logoutThenClearSession");
-  assert.ok(logoutAt !== -1 && notifyAt > logoutAt);
+  assert.doesNotMatch(logout, /notifyEmbedSignedOut/);
+  assert.match(logout, /markExplicitEmbedLogout\(pathname\)/);
+  assert.match(logout, /\/auth\/signout\/continue/);
+  assert.match(logout, /wc:signed-out/);
+  const body = logout.slice(logout.indexOf("mutationFn"));
+  const markAt = body.indexOf("markExplicitEmbedLogout");
+  const logoutAt = body.indexOf("logoutThenClearSession");
+  assert.ok(markAt !== -1 && logoutAt !== -1 && markAt < logoutAt);
 });
 
 function port(calls: Array<{ message: unknown; origin: string }>): EmbedMessagePort {

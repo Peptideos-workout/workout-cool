@@ -46,6 +46,7 @@ export const UserDropdown = ({ children }: PropsWithChildren) => {
 
         <DropdownMenuGroup>
           <DropdownMenuItem
+            data-wc-signout=""
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();

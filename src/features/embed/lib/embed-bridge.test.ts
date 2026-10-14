@@ -333,6 +333,56 @@ test("a framed sign-out fallback and an embedded sign-out page send no postMessa
   }
 });
 
+test("a client-side navigation into sign-out stops height and path posts", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  let path = "/en";
+  let onResize: (() => void) | null = null;
+  let onPath: (() => void) | null = null;
+  const host: EmbedBridgeHost = {
+    parentOrigin: POS,
+    parent: port(calls),
+    isEmbed: () => true,
+    isTopLevel: () => false,
+    readHeight: () => 480,
+    readPath: () => path,
+    subscribeResize: (notify) => {
+      onResize = notify;
+      return () => {
+        onResize = null;
+      };
+    },
+    subscribePath: (notify) => {
+      onPath = notify;
+      return () => {
+        onPath = null;
+      };
+    },
+    requestFrame: (callback) => {
+      frames.push(callback);
+      return frames.length;
+    },
+    setTheme: () => undefined,
+    addMessageListener: () => () => undefined
+  };
+  const resize = () => onResize?.();
+  const navigate = () => onPath?.();
+  startEmbedBridge(host);
+  while (frames.length > 0) frames.shift()?.();
+  assert.deepEqual(calls.map((call) => call.message), [
+    { type: "wc:navigate", path: "/en" },
+    { type: "wc:height", height: 480 }
+  ]);
+  path = "/auth/signout";
+  navigate();
+  resize();
+  while (frames.length > 0) frames.shift()?.();
+  assert.deepEqual(calls.map((call) => call.message), [
+    { type: "wc:navigate", path: "/en" },
+    { type: "wc:height", height: 480 }
+  ]);
+});
+
 test("outbound messages keep their exact keys and never use a wildcard origin", () => {
   const height = { type: "wc:height" as const, height: 240 };
   const navigate = { type: "wc:navigate" as const, path: "/programs" };

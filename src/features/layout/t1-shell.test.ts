@@ -94,6 +94,7 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.doesNotMatch(stepper, /<h1[^>]*data-wc-title/);
   assert.doesNotMatch(stepper, /Build your workout/);
   assert.match(stepper, /data-wc-lead/);
+  assert.doesNotMatch(stepper, /className="hidden[^"]*" data-wc-intro/);
   assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h1" : "h3"/);
   assert.match(stepper, /data-wc-step-sheet/);
   assert.match(stepper, /bottom_navigation\.workouts/);
@@ -103,6 +104,7 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /data-wc-step-mark/);
   assert.match(read("src/features/embed/embed-theme.css"), /data-wc-intro/);
   assert.match(read("src/features/embed/embed-theme.css"), /data-wc-step-sheet/);
+  assert.match(read("src/features/embed/embed-theme.css"), /order:\s*-1/);
 });
 
 test("T1 public shell classes stay in place and the embed line is a separate node", () => {

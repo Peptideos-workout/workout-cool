@@ -42,7 +42,7 @@ export function WorkoutBuilderFooter({
         >
           {/* Previous button */}
           <Button
-            className={`flex-1 rounded-full !h-auto !min-h-12 !text-lg text-[var(--wc-dash-text)] disabled:pointer-events-auto ${isFinalStep ? "w-full" : ""}`}
+            className={`flex-1 rounded-full !h-auto !min-h-12 !text-lg text-[var(--wc-dash-text)] hover:!scale-100 disabled:pointer-events-auto ${isFinalStep ? "w-full" : ""}`}
             data-wc-step-previous=""
             disabled={isFirstStep}
             onClick={onPrevious}
@@ -60,7 +60,7 @@ export function WorkoutBuilderFooter({
             <RewardedAdGate onRewardGranted={onStartWorkout}>
               <Button
                 asChild
-                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)] disabled:pointer-events-auto"
+                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!scale-100 hover:[&:not(:disabled)]:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto"
                 data-wc-step-next=""
                 disabled={!canContinue}
                 size="default"
@@ -74,7 +74,7 @@ export function WorkoutBuilderFooter({
             </RewardedAdGate>
           ) : (
             <Button
-              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)] disabled:pointer-events-auto"
+              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!scale-100 hover:[&:not(:disabled)]:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto"
               data-wc-step-next=""
               disabled={!canContinue}
               onClick={onNext}

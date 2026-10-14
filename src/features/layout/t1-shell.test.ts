@@ -87,11 +87,12 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onPrevious=\{prevStep\}/);
   assert.match(stepper, /onStartWorkout=\{handleStartWorkout\}/);
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
-  assert.match(stepper, /Build your workout/);
   assert.match(stepper, /data-wc-intro/);
   assert.match(stepper, /data-wc-kicker/);
   assert.match(stepper, /data-wc-title/);
-  assert.match(stepper, /data-wc-lead/);
+  assert.match(stepper, /workout_builder\.title/);
+  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.doesNotMatch(stepper, /className="hidden[^"]*" data-wc-intro/);
   assert.match(stepper, /data-wc-step-sheet/);
   assert.match(stepper, /bottom_navigation\.workouts/);
   assert.match(footer, /data-wc-step-next/);

@@ -648,6 +648,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Build your workout",
     confirm_delete: "您确定要删除此锻炼回合吗？",
     steps: {
       equipment: {

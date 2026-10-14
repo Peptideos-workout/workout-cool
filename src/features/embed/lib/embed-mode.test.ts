@@ -926,7 +926,14 @@ test("a top-level fallback drops embed=1 and stays on the same path", async () =
     { href: "https://evil.com/x?embed=1", topLevel: true, expected: null, pageOrigin: origin },
     { href: "javascript:alert(1)", topLevel: true, expected: null, pageOrigin: origin },
     { href: "http://evil.com", topLevel: true, expected: null, pageOrigin: origin },
-    { href: "http://evil.com/x?embed=1", topLevel: true, expected: null, pageOrigin: origin }
+    { href: "http://evil.com/x?embed=1", topLevel: true, expected: null, pageOrigin: origin },
+    { href: `${APP}/%2F%2Fevil.com?embed=1`, topLevel: true, expected: "/%2F%2Fevil.com" },
+    { href: `${APP}/%252F%252Fevil.com?embed=1`, topLevel: true, expected: "/%252F%252Fevil.com" },
+    { href: "JAVASCRIPT:alert(1)", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "HtTp://evil.com", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "\t//evil.com", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "\n//evil.com", topLevel: true, expected: null, pageOrigin: origin },
+    { href: "\r//evil.com", topLevel: true, expected: null, pageOrigin: origin }
   ];
   for (const input of inputs) {
     const result = runTopLevelEmbedEscape(input.href, input.topLevel, input.pageOrigin);

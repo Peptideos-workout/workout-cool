@@ -81,7 +81,7 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   assert.match(header, /isCompleted \? <span className="text-lg font-semibold">✓<\/span>/);
   assert.equal(header.split("✓").length - 1, 2);
   assert.match(stepper, /data-wc-title="">\s*\{t\("workout_builder\.title"\)\}/);
-  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.match(stepper, /data-wc-lead/);
   assert.doesNotMatch(stepper, /hidden px-2/);
   assert.match(read("locales/en.ts"), /title:\s*"Build your workout"/);
   assert.match(read("locales/fr.ts"), /title:\s*"Construire votre entraînement"/);

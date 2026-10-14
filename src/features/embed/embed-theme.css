@@ -20,14 +20,14 @@ html[data-wc-embed="1"] {
   --dash-ink: #ffffff;
   --dash-link: #075e56;
   --dash-error: #9f1239;
-  --color-base-100: var(--dash-panel);
-  --color-base-200: var(--dash-inner);
-  --color-base-300: var(--dash-card);
-  --color-base-content: var(--dash-text);
-  --color-primary: var(--dash-accent);
-  --color-primary-content: var(--dash-ink);
-  --color-accent: var(--dash-link);
-  --color-error: var(--dash-error);
+  --color-base-100: var(--wc-dash-panel);
+  --color-base-200: var(--wc-dash-inner);
+  --color-base-300: var(--wc-dash-card);
+  --color-base-content: var(--wc-dash-text);
+  --color-primary: var(--wc-dash-accent);
+  --color-primary-content: var(--wc-dash-ink);
+  --color-accent: var(--wc-dash-link);
+  --color-error: var(--wc-dash-error);
   background-color: transparent !important;
   background-image: none !important;
   min-height: 0 !important;
@@ -60,7 +60,7 @@ html[data-wc-embed="1"] body {
   padding: 0 !important;
   overflow: hidden !important;
   display: block !important;
-  color: var(--dash-text) !important;
+  color: var(--wc-dash-text) !important;
   font-family: var(--font-inter), sans-serif;
 }
 
@@ -117,7 +117,7 @@ html[data-wc-embed="1"] [data-wc-chrome="nav"] > .pointer-events-none {
 
 html[data-wc-embed="1"] [data-wc-nav-grid] {
   display: grid !important;
-  grid-template-columns: repeat(var(--wc-nav-tabs, 5), minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   max-width: none !important;
 }
@@ -130,13 +130,13 @@ html[data-wc-embed="1"] [data-wc-chrome="nav"] a {
   gap: 4px !important;
   min-width: 0 !important;
   min-height: 56px !important;
-  padding: 8px 4px !important;
+  padding: 8px 2px !important;
   border-radius: 14px !important;
-  border: 1px solid var(--dash-border) !important;
-  background: var(--dash-card) !important;
+  border: 1px solid var(--wc-dash-border) !important;
+  background: var(--wc-dash-card) !important;
   background-image: none !important;
   box-shadow: none !important;
-  color: var(--dash-text) !important;
+  color: var(--wc-dash-text) !important;
   transform: none !important;
   text-decoration: none !important;
 }
@@ -205,27 +205,27 @@ html[data-wc-embed="1"] [data-wc-chrome="nav"] a span {
 }
 
 html[data-wc-embed="1"] [data-wc-chrome="nav"] a[data-active="true"] {
-  background: var(--dash-accent) !important;
-  border-color: var(--dash-accent) !important;
-  color: var(--dash-ink) !important;
+  background: var(--wc-dash-accent) !important;
+  border-color: var(--wc-dash-accent) !important;
+  color: var(--wc-dash-ink) !important;
 }
 
 html[data-wc-embed="1"].dark [data-wc-chrome="nav"] a[data-active="true"] {
-  box-shadow: 0 0 22px color-mix(in srgb, var(--dash-accent) 55%, transparent) !important;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--wc-dash-accent) 55%, transparent) !important;
 }
 
 html[data-wc-embed="1"] [data-wc-chrome="nav"] a[data-wc-nav-premium=""]:not([data-active="true"]) {
-  color: var(--dash-link) !important;
+  color: var(--wc-dash-link) !important;
 }
 
 html[data-wc-embed="1"] [data-wc-chrome="nav"] a:focus-visible,
 html[data-wc-embed="1"] [data-wc-embed-fallback] a:focus-visible {
-  outline: 3px solid var(--dash-accent) !important;
+  outline: 3px solid var(--wc-dash-accent) !important;
   outline-offset: 3px !important;
 }
 
 html[data-wc-embed="1"].dark [data-wc-chrome="nav"] a:focus-visible {
-  outline-color: var(--dash-link) !important;
+  outline-color: var(--wc-dash-link) !important;
 }
 
 html[data-wc-embed="1"] [data-wc-version-meta] {
@@ -234,7 +234,7 @@ html[data-wc-embed="1"] [data-wc-version-meta] {
   font-size: 18px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
-  color: var(--dash-secondary) !important;
+  color: var(--wc-dash-secondary) !important;
 }
 
 html[data-wc-embed="1"] [data-wc-embed-fallback] {
@@ -251,10 +251,10 @@ html[data-wc-embed="1"] [data-wc-embed-fallback] a {
   font-size: 18px !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
-  color: var(--dash-link) !important;
+  color: var(--wc-dash-link) !important;
 }
 
-@media (max-width: 639px) {
+@media (min-width: 448px) {
   html[data-wc-embed="1"] [data-wc-nav-grid] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

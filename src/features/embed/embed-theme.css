@@ -316,14 +316,6 @@ html[data-wc-embed="1"] [data-wc-title] {
   line-height: 1.1 !important;
 }
 
-html[data-wc-embed="1"] [data-wc-lead] {
-  margin: 8px 0 0 !important;
-  color: var(--wc-dash-secondary) !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.4 !important;
-}
-
 html[data-wc-embed="1"] [data-wc-builder] {
   max-width: none !important;
 }

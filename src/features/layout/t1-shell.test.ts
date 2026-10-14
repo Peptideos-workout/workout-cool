@@ -224,11 +224,16 @@ test("phone nav clearance matches the two-column nav", () => {
   const version = read("src/components/version.tsx");
   const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
   const globals = read("src/shared/styles/globals.css");
-  assert.match(nav, /grid grid-cols-2 min-\[431px\]:grid-cols-3/);
+  assert.match(nav, /grid grid-cols-2 min-\[448px\]:grid-cols-3/);
+  assert.match(nav, /lg:flex/);
   assert.match(nav, /whitespace-nowrap/);
   assert.match(nav, /aria-label=\{t\("bottom_navigation\.label"\)\}/);
   assert.match(globals, /--wc-nav-h:\s*195px/);
+  assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-h:\s*134px/);
   assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
+  const mainMarker = main.indexOf('data-wc-main=""');
+  assert.ok(mainMarker > 0);
+  assert.doesNotMatch(main.slice(mainMarker - 180, mainMarker), /pb-\[var\(--wc-nav-h\)\]/);
   assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(version, /\bfixed\b/);
   assert.match(footer, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
@@ -322,7 +327,7 @@ test("public Sign up, nav labels, and the version chip are at least 18px", () =>
   assert.match(nav, /text-lg/);
   assert.match(nav, /whitespace-nowrap/);
   assert.doesNotMatch(nav, /whitespace-normal/);
-  assert.match(nav, /grid grid-cols-2 min-\[431px\]:grid-cols-3/);
+  assert.match(nav, /grid grid-cols-2 min-\[448px\]:grid-cols-3/);
   assert.doesNotMatch(nav, /truncate/);
   assert.doesNotMatch(nav, /text-ellipsis/);
   assert.doesNotMatch(nav, /text-xs/);

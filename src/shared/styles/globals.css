@@ -85,8 +85,15 @@
   --wc-dash-link: #075e56;
   --wc-dash-error: #9f1239;
 
-  /* Worst-case phone nav (2 columns, 3 rows, 18px labels). */
+  /* Phone nav: 2 columns / 3 rows below 448px. */
   --wc-nav-h: 195px;
+}
+
+/* 3 columns / 2 rows from 448px. The fixed nav ends at 640px, so this is the clearance above it. */
+@media (min-width: 448px) {
+  :root {
+    --wc-nav-h: 134px;
+  }
 }
 
 :root:has(:is(.modal-open, .modal:target, .modal-toggle:checked + .modal, .modal[open])) {

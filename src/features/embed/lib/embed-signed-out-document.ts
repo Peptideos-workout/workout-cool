@@ -54,18 +54,23 @@ export interface EmbedSignedOutDocumentOptions {
 /**
  * Old browsers omit Sec-Fetch-Dest, so a top-level ?embed=1 on a gated route
  * receives this document. If this window is not framed, drop embed=1 and load
- * the same path again. The next request is the normal same-origin navigation.
+ * the same path again. The replacement stays on location.origin. A pathname of
+ * "//evil.com" or "/\\evil.com" is scheme-relative, so those paths do not navigate.
  */
 export function embedTopLevelEmbedQueryEscape(): string {
   return `(function(){
 if(!window.parent||window.parent!==window){return;}
 try{
-var url=new URL(location.href);
-if(url.searchParams.get("embed")!=="1"){return;}
-url.searchParams.delete("embed");
-var next=url.pathname+(url.search||"")+(url.hash||"");
-if(!next||next.charAt(0)!=="/"){return;}
-location.replace(next);
+var u=new URL(location.href);
+if(u.searchParams.get("embed")!=="1"){return;}
+u.searchParams.delete("embed");
+if(u.origin!==location.origin){return;}
+var path=u.pathname;
+if(path.slice(0,2)==="//"||path.slice(0,2)==="/\\\\"){return;}
+path=path.split("\\\\").join("/");
+while(path.slice(0,2)==="//"){path=path.slice(1);}
+if(!path||path.charAt(0)!=="/"||path.charAt(1)==="/"||path.indexOf("\\\\")!==-1){return;}
+location.replace(path+(u.search||"")+(u.hash||""));
 }catch(e){}
 })();`;
 }

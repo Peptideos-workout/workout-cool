@@ -214,7 +214,8 @@ test("stats handlers, hrefs, and conditionals stay put", () => {
   assert.match(overlay, /data-wc-entry="premium"/);
   assert.match(overlay, /if \(!isVisible\) return null;/);
   assert.match(overlay, /\{showTeaserModal && \(/);
-  assert.doesNotMatch(page, /feature="Statistics"/);
+  assert.match(page, /<PremiumGate/);
+  assert.match(page, /feature="Statistics"/);
   assert.match(browser, /useState<StatisticsTimeframe>\("8weeks"\)/);
   assert.match(modal, /useState<StatisticsTimeframe>\("8weeks"\)/);
   assert.match(read(ONE_RM), /data-tip=\{t\("statistics\.one_rm_formula_tooltip", \{ formula \}\)\}/);
@@ -243,7 +244,12 @@ test("stats copy keys and chart data props stay put", () => {
   );
   assert.match(page, /statistics\.page_subtitle/);
   assert.equal(page.split("statistics.title").length - 1, 1);
-  assert.doesNotMatch(page, /15\.4K\+|89%|4\.8★|active_daily_users|success_rate|user_rating/);
+  assert.match(page, /import \{ PremiumGate \} from "@\/components\/ui\/premium-gate"/);
+  assert.match(page, /feature="Statistics"/);
+  assert.match(page, /15\.4K\+/);
+  assert.match(page, /active_daily_users/);
+  assert.match(page, /success_rate/);
+  assert.match(page, /user_rating/);
   for (const key of [
     "statistics.select_exercise",
     "statistics.all_equipment",
@@ -290,6 +296,9 @@ test("stats copy keys and chart data props stay put", () => {
   assert.doesNotMatch(modal, /\|\| "Statistics"/);
   assert.doesNotMatch(modal, /t\("statistics\.one_rm_est"\)/);
   assert.doesNotMatch(modal, /85kg|2,400kg|\+12%/);
+  assert.match(modal, /relative overflow-hidden rounded-xl border border-dashed/);
+  assert.match(modal, /absolute inset-0 flex items-center justify-center/);
+  assert.match(modal, /href="\/premium"/);
   assert.match(modal, /!z-\[240\]/);
   assert.match(modal, /\[&>button\]:dark:!bg-\[var\(--wc-dash-panel\)\]/);
   assert.doesNotMatch(modal, /slate-900/);

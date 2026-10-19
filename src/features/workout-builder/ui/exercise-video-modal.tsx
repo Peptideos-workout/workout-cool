@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BarChart3, Crown, Lock, Play, Zap } from "lucide-react";
+import { BarChart3, Crown, Lock, Play, TrendingUp, Zap } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 import { ExerciseAttributeNameEnum, ExerciseAttributeValueEnum } from "@prisma/client";
 
@@ -157,28 +157,52 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
               {/* Premium teaser — Blurred advanced insights (loss aversion + Zeigarnik effect) */}
               {!isPremium && (
-                <Link
-                  className="flex min-h-12 flex-col items-center gap-2.5 rounded-2xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] px-6 py-4"
-                  data-wc-entry="premium"
-                  href="/premium"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-accent)]">
-                      <Crown className="h-5 w-5 text-[var(--wc-dash-ink)]" />
+                <div className="relative overflow-hidden rounded-xl border border-dashed border-[var(--wc-dash-border)]">
+                  <div aria-hidden="true" className="pointer-events-none select-none space-y-3 p-4 opacity-50 blur-[6px]">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-[var(--wc-dash-link)]" />
+                      <span className="text-lg font-semibold text-[var(--wc-dash-text)]">{t("exercise_modal.pr_title")}</span>
                     </div>
-                    <span className="text-lg font-bold text-[var(--wc-dash-text)]">{t("exercise_modal.unlock_insights")}</span>
+                    <div className="h-2 rounded-full bg-[var(--wc-dash-inner)]">
+                      <div className="h-2 w-3/4 rounded-full bg-[var(--wc-dash-accent)]" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.volume")}</p>
+                      </div>
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.sessions")}</p>
+                      </div>
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("exercise_modal.feature_volume")}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-lg text-[var(--wc-dash-secondary)]">
-                    <span className="flex items-center gap-1">
-                      <Zap className="h-5 w-5 text-[var(--wc-dash-accent)]" />
-                      {t("exercise_modal.feature_pr")}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Lock className="h-5 w-5 text-[var(--wc-dash-accent)]" />
-                      {t("exercise_modal.feature_volume")}
-                    </span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--wc-dash-panel)_30%,transparent)]">
+                    <Link
+                      className="flex min-h-12 flex-col items-center gap-2.5 rounded-2xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] px-6 py-4"
+                      data-wc-entry="premium"
+                      href="/premium"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-accent)]">
+                          <Crown className="h-5 w-5 text-[var(--wc-dash-ink)]" />
+                        </div>
+                        <span className="text-lg font-bold text-[var(--wc-dash-text)]">{t("exercise_modal.unlock_insights")}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-lg text-[var(--wc-dash-secondary)]">
+                        <span className="flex items-center gap-1">
+                          <Zap className="h-5 w-5 text-[var(--wc-dash-accent)]" />
+                          {t("exercise_modal.feature_pr")}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Lock className="h-5 w-5 text-[var(--wc-dash-accent)]" />
+                          {t("exercise_modal.feature_volume")}
+                        </span>
+                      </div>
+                    </Link>
                   </div>
-                </Link>
+                </div>
               )}
             </div>
           </TabsContent>

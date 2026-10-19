@@ -1890,6 +1890,9 @@ export default {
     kicker: "Statistics",
     page_subtitle: "Track your fitness journey with advanced analytics and personalized insights.",
     select_exercise: "Select Exercise",
+    active_daily_users: "Active Daily Users",
+    success_rate: "Success Rate",
+    user_rating: "User Rating",
 
     // Tabs
     tabs: {

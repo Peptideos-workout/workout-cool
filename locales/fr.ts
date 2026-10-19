@@ -1916,6 +1916,9 @@ export default {
     kicker: "Statistiques",
     page_subtitle: "Suivez votre parcours fitness avec des analyses avancées et des informations personnalisées.",
     select_exercise: "Sélectionner un exercice",
+    active_daily_users: "Utilisateurs actifs quotidiens",
+    success_rate: "Taux de réussite",
+    user_rating: "Note des utilisateurs",
 
     // Tabs
     tabs: {

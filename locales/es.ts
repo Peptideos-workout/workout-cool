@@ -45,7 +45,7 @@ export default {
     premium_session_description: "Esta sesión es parte del contenido premium. Puedes ver los detalles pero no realizar el entrenamiento.",
     workout_description: "Descripción de la sesión",
     connect_to_access: "Conecta para acceder",
-    become_premium: "Torne-se Premium",
+    become_premium: "Hazte Premium",
     back_to_program: "Voltar ao programa",
     premium_session_exercises: "Ejercicios incluidos",
     no_equipment: "Ningún equipo",
@@ -248,8 +248,8 @@ export default {
     // Buttons and Actions
     actions: {
       processing: "Procesando...",
-      go_premium: "Torne-se Premium",
-      sign_in_continue: "Torne-se Premium",
+      go_premium: "Hazte Premium",
+      sign_in_continue: "Hazte Premium",
       upgrade_now: "Actualizar ahora",
       current_plan: "Tu plan actual",
     },
@@ -461,7 +461,7 @@ export default {
     workouts: "Entrenamientos",
     workouts_tooltip: "Crear tu propio entrenamiento",
     premium: "Premium",
-    premium_tooltip: "Torne-se Premium",
+    premium_tooltip: "Hazte Premium",
     leaderboard: "Clasificación",
     leaderboard_tooltip: "Ver ranking de entrenamiento",
     tools: "Herramientas",
@@ -711,6 +711,7 @@ export default {
     addExercise: "Añadir ejercicio",
     exerciseAdded: "{name} añadido al entrenamiento",
     exercises: "ejercicios",
+    equipment_illustration_alt: "Ilustración de {name}",
     equipment: {
       bodyweight: {
         label: "Peso corporal",
@@ -883,7 +884,7 @@ export default {
     },
   },
   commons: {
-    upgrade_to_premium: "Torne-se Premium",
+    upgrade_to_premium: "Hazte Premium",
     last_activity: "Última actividad",
     registered_on: "Inscrito el",
     just_now: "ahora mismo",
@@ -995,7 +996,7 @@ export default {
     subscription: "Suscripción",
     manage_subscription: "Gestionar suscripción",
     change_password: "Cambiar contraseña",
-    become_premium: "Torne-se Premium",
+    become_premium: "Hazte Premium",
     remove_ads: "Eliminar anuncios",
     in_progress: "En progreso",
     close: "Cerrar",

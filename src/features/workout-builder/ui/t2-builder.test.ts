@@ -215,6 +215,11 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   );
   assert.match(equipment, /bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]/);
   assert.match(equipment, /aria-pressed=\{isSelected\}/);
+  assert.match(equipment, /alt=\{t\("workout_builder\.equipment_illustration_alt", \{ name: translation\.label \}\)\}/);
+  assert.doesNotMatch(equipment, /illustration`/);
+  for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
+    assert.match(read(`locales/${locale}.ts`), /equipment_illustration_alt: "[^"]*\{name\}/);
+  }
   assert.match(equipment, /type="button"/);
   assert.match(
     equipment,

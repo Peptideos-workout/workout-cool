@@ -1579,6 +1579,7 @@ export default {
     addExercise: "Добавить упражнение",
     exerciseAdded: "{name} добавлено в тренировку",
     exercises: "упражнения",
+    equipment_illustration_alt: "Иллюстрация {name}",
     equipment: {
       bodyweight: {
         label: "Собственный вес",

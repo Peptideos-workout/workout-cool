@@ -426,3 +426,13 @@ test("timer, nav, and version chip reserve space", () => {
     ),
   );
 });
+
+test("program session rows shrink the text column and keep the status icon", () => {
+  const detail = read(DETAIL);
+  assert.match(detail, /flex min-h-12 min-w-0 cursor-pointer items-center gap-4/);
+  assert.match(detail, /<div className="min-w-0 flex-1">/);
+  assert.match(detail, /mb-1 flex min-w-0 flex-wrap items-center gap-2/);
+  assert.match(detail, /min-w-0 break-words text-lg font-bold/);
+  assert.match(detail, /flex h-12 w-12 shrink-0 items-center justify-center/);
+  assert.doesNotMatch(detail, /overflow-x-hidden/);
+});

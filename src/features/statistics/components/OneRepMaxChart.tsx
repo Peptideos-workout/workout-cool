@@ -96,7 +96,7 @@ export function OneRepMaxChart({
         <h3 className="text-lg font-semibold" style={{ color: colors.text }}>
           {t("statistics.estimated_1rm")}
         </h3>
-        <div className="tooltip tooltip-left z-50" data-tip={`${formula} Formula: 1RM = Weight × (1 + (Reps ÷ 30))`}>
+        <div className="tooltip tooltip-left z-50" data-tip={t("statistics.one_rm_formula_tooltip", { formula })}>
           <button
             aria-label={t("statistics.1rm_formula_info")}
             className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-full transition-colors"

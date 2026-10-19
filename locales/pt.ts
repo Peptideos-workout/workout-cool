@@ -1893,10 +1893,6 @@ export default {
     kicker: "Estatísticas",
     page_subtitle: "Acompanhe sua jornada fitness com análises avançadas e insights personalizados.",
     select_exercise: "Selecionar Exercício",
-    active_daily_users: "Usuários Ativos Diários",
-    success_rate: "Taxa de Sucesso",
-    user_rating: "Avaliação do Usuário",
-
     // Tabs
     tabs: {
       video: "Vídeo",
@@ -1947,6 +1943,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Informações da fórmula 1RM",
+    one_rm_formula_tooltip: "Fórmula {formula}: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Volume = Peso × Reps × Séries",
     last_updated: "Última atualização: {date}",
 
@@ -1957,7 +1954,6 @@ export default {
     premium_statistics: "Estatísticas Premium",
     premium_statistics_description: "Obtenha insights detalhados sobre sua jornada fitness com análises avançadas para cada exercício.",
     upgrade_now: "Atualizar Agora",
-    rating: "Avaliação 4.8/5",
     no_ads: "Sem anúncios",
     cancel_anytime: "Cancelar a qualquer momento",
     preview_notice: "Isto é apenas uma pré-visualização! 👀",

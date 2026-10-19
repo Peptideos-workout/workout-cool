@@ -1827,10 +1827,6 @@ export default {
     kicker: "统计",
     page_subtitle: "通过高级分析和个性化洞察，追踪您的健身之旅。",
     select_exercise: "选择练习",
-    active_daily_users: "每日活跃用户",
-    success_rate: "成功率",
-    user_rating: "用户评分",
-
     // Tabs
     tabs: {
       video: "视频",
@@ -1881,6 +1877,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "1RM公式信息",
+    one_rm_formula_tooltip: "{formula} 公式：1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "训练量 = 重量 × 次数 × 组数",
     last_updated: "最后更新：{date}",
 
@@ -1891,7 +1888,6 @@ export default {
     premium_statistics: "高级统计",
     premium_statistics_description: "通过每个练习的高级分析，获得关于您健身之旅的详细见解。",
     upgrade_now: "立即升级",
-    rating: "4.8/5 评分",
     no_ads: "无广告",
     cancel_anytime: "随时取消",
     preview_notice: "这只是预览！👀",

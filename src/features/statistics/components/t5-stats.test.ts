@@ -120,15 +120,15 @@ test("stats text is 18px and tap targets are 48px", () => {
   const timeframe = read(TIMEFRAME);
   const page = read(PAGE);
   assert.match(browser, /inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-\[var\(--wc-dash-text\)\]/);
-  assert.match(browser, /mb-2 text-lg font-semibold text-\[var\(--wc-dash-text\)\]">\{t\("statistics\.select_exercise"\)\}/);
   assert.match(
     browser,
     new RegExp(
-      "inline-flex min-h-12 w-full items-center justify-between rounded-xl border " +
-        "border-\\[var\\(--wc-dash-border\\)\\] bg-\\[var\\(--wc-dash-panel\\)\\] px-4 text-lg text-\\[var\\(--wc-dash-text\\)\\]",
+      "mb-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl " +
+        "bg-\\[var\\(--wc-dash-accent\\)\\] px-4 text-lg text-\\[var\\(--wc-dash-ink\\)\\]",
     ),
   );
   assert.match(browser, /onClick=\{openExerciseSelection\}/);
+  assert.doesNotMatch(browser, /ChevronDown/);
   assert.match(browser, /min-h-12 w-full rounded-xl border border-\[var\(--wc-dash-border\)\]/);
   assert.match(page, /text-lg text-\[var\(--wc-dash-secondary\)\]/);
   assert.match(timeframe, /aria-pressed=\{isSelected\}/);
@@ -215,12 +215,14 @@ test("stats handlers, hrefs, and conditionals stay put", () => {
   assert.match(overlay, /if \(!isVisible\) return null;/);
   assert.match(overlay, /\{showTeaserModal && \(/);
   assert.doesNotMatch(page, /feature="Statistics"/);
-  assert.match(browser, /useState<StatisticsTimeframe>\("4weeks"\)/);
-  assert.match(modal, /useState<StatisticsTimeframe>\("4weeks"\)/);
-  assert.match(read(ONE_RM), /data-tip=\{`\$\{formula\} Formula: 1RM = Weight × \(1 \+ \(Reps ÷ 30\)\)`\}/);
-  assert.doesNotMatch(read(ONE_RM), /one_rm_formula_tooltip/);
+  assert.match(browser, /useState<StatisticsTimeframe>\("8weeks"\)/);
+  assert.match(modal, /useState<StatisticsTimeframe>\("8weeks"\)/);
+  assert.match(read(ONE_RM), /data-tip=\{t\("statistics\.one_rm_formula_tooltip", \{ formula \}\)\}/);
+  assert.doesNotMatch(read(ONE_RM), /Formula: 1RM = Weight/);
   for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
-    assert.doesNotMatch(read(`locales/${locale}.ts`), /one_rm_formula_tooltip:/);
+    const source = read(`locales/${locale}.ts`);
+    assert.match(source, /one_rm_formula_tooltip:/);
+    assert.match(source, /1RM = Weight × \(1 \+ \(Reps ÷ 30\)\)/);
   }
   assert.doesNotMatch(read(THEME), /const isDark = currentTheme === "dark";/);
   assert.match(read(THEME), /tooltipBorder: "var\(--wc-dash-border\)"/);
@@ -233,9 +235,13 @@ test("stats copy keys and chart data props stay put", () => {
   const modal = read(MODAL);
   const charts = read(CHARTS);
   const overlay = read(OVERLAY);
-  assert.match(page, /<h1 className="mb-2 text-lg font-bold text-\[var\(--wc-dash-text\)\]">\{t\("statistics\.title"\)\}<\/h1>/);
+  assert.match(page, /data-wc-kicker=""/);
+  assert.match(page, /\{t\("statistics\.kicker"\)\}/);
+  assert.match(
+    page,
+    /<h1 className="mb-4 text-4xl font-black text-\[var\(--wc-dash-text\)\] sm:text-6xl">\{t\("statistics\.title"\)\}<\/h1>/,
+  );
   assert.match(page, /statistics\.page_subtitle/);
-  assert.doesNotMatch(page, /statistics\.kicker/);
   assert.equal(page.split("statistics.title").length - 1, 1);
   assert.doesNotMatch(page, /15\.4K\+|89%|4\.8★|active_daily_users|success_rate|user_rating/);
   for (const key of [

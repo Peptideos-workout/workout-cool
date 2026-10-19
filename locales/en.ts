@@ -1889,9 +1889,6 @@ export default {
     kicker: "Statistics",
     page_subtitle: "Track your fitness journey with advanced analytics and personalized insights.",
     select_exercise: "Select Exercise",
-    active_daily_users: "Active Daily Users",
-    success_rate: "Success Rate",
-    user_rating: "User Rating",
 
     // Tabs
     tabs: {
@@ -1943,6 +1940,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "1RM formula information",
+    one_rm_formula_tooltip: "{formula} formula: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Volume = Weight × Reps × Sets",
     last_updated: "Last updated: {date}",
 
@@ -1953,7 +1951,6 @@ export default {
     premium_statistics: "Premium Statistics",
     premium_statistics_description: "Get detailed insights into your fitness journey with advanced analytics for each exercise.",
     upgrade_now: "Upgrade Now",
-    rating: "4.8/5 rating",
     no_ads: "No ads",
     cancel_anytime: "Cancel anytime",
     preview_notice: "This is just a preview! 👀",

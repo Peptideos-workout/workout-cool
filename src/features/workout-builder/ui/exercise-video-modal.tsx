@@ -27,7 +27,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
   const t = useI18n();
   const locale = useCurrentLocale();
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<StatisticsTimeframe>("4weeks");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<StatisticsTimeframe>("8weeks");
   const isPremium = useIsPremium();
 
   useEffect(() => {

@@ -1915,9 +1915,6 @@ export default {
     kicker: "Statistiques",
     page_subtitle: "Suivez votre parcours fitness avec des analyses avancées et des informations personnalisées.",
     select_exercise: "Sélectionner un exercice",
-    active_daily_users: "Utilisateurs actifs quotidiens",
-    success_rate: "Taux de réussite",
-    user_rating: "Note des utilisateurs",
 
     // Tabs
     tabs: {
@@ -1969,6 +1966,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Informations sur la formule 1RM",
+    one_rm_formula_tooltip: "Formule {formula} : 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Volume = Poids × Reps × Séries",
     last_updated: "Dernière mise à jour : {date}",
 
@@ -1980,7 +1978,6 @@ export default {
     premium_statistics_description:
       "Obtenez des informations détaillées sur votre parcours fitness avec des analyses avancées pour chaque exercice.",
     upgrade_now: "Mettre à Niveau Maintenant",
-    rating: "Note 4.8/5",
     no_ads: "Pas de publicités",
     cancel_anytime: "Annuler à tout moment",
     preview_notice: "Ceci n'est qu'un aperçu ! 👀",

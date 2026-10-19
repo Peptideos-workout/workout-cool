@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronDown, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import debounce from "lodash.debounce";
 import { useI18n } from "locales/client";
 import { useQuery } from "@tanstack/react-query";
@@ -235,7 +235,7 @@ export const ExercisesBrowser = () => {
   const [selectedExercise, setSelectedExercise] = useState<ExerciseWithAttributes | null>(null);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<StatisticsTimeframe>("4weeks");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<StatisticsTimeframe>("8weeks");
   const { isPremium } = useUserSubscription();
   const unlockStatsUi = SiteConfig.allPremiumFeaturesFree || isPremium;
   const t = useI18n();
@@ -319,17 +319,12 @@ export const ExercisesBrowser = () => {
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Header */}
           {unlockStatsUi && (
-            <div className="mb-6">
-              <p className="mb-2 text-lg font-semibold text-[var(--wc-dash-text)]">{t("statistics.select_exercise")}</p>
+            <div>
               <button
-                className="inline-flex min-h-12 w-full items-center justify-between rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] px-4 text-lg text-[var(--wc-dash-text)]"
+                className="mb-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--wc-dash-accent)] px-4 text-lg text-[var(--wc-dash-ink)]"
                 onClick={openExerciseSelection}
-                type="button"
               >
-                <span className="min-w-0 break-words text-left">
-                  {selectedExercise ? selectedExercise.name : t("statistics.select_exercise")}
-                </span>
-                <ChevronDown aria-hidden="true" className="h-5 w-5 shrink-0" />
+                {t("statistics.select_exercise")}
               </button>
             </div>
           )}

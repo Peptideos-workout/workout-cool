@@ -1887,10 +1887,6 @@ export default {
     kicker: "Статистика",
     page_subtitle: "Отслеживайте свой фитнес-путь с помощью расширенной аналитики и персонализированных рекомендаций.",
     select_exercise: "Выбрать Упражнение",
-    active_daily_users: "Активные Ежедневные Пользователи",
-    success_rate: "Показатель Успеха",
-    user_rating: "Рейтинг Пользователей",
-
     // Tabs
     tabs: {
       video: "Видео",
@@ -1941,6 +1937,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Информация о формуле 1RM",
+    one_rm_formula_tooltip: "Формула {formula}: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Объем = Вес × Повторы × Подходы",
     last_updated: "Последнее обновление: {date}",
 
@@ -1951,7 +1948,6 @@ export default {
     premium_statistics: "Премиум Статистика",
     premium_statistics_description: "Получите подробную информацию о вашем фитнес-пути с расширенной аналитикой для каждого упражнения.",
     upgrade_now: "Обновить Сейчас",
-    rating: "Рейтинг 4.8/5",
     no_ads: "Без рекламы",
     cancel_anytime: "Отменить в любое время",
     preview_notice: "Это всего лишь предварительный просмотр! 👀",

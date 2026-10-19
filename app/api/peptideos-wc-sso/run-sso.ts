@@ -171,10 +171,19 @@ function fieldsFromUrlEncoded(bytes: Uint8Array): { token?: string; redirect?: s
   };
 }
 
+/** Successful reads return `headers.get` unchanged. A throw is the same as a missing Referer. */
+function embedReferer(request: NextRequest): string | null {
+  try {
+    return request.headers.get("referer");
+  } catch {
+    return null;
+  }
+}
+
 function embedFromRequest(request: NextRequest, embedField?: string | null): boolean {
   return isEmbedSsoSignal({
     search: request.nextUrl.search,
-    referer: request.headers.get("referer"),
+    referer: embedReferer(request),
     embedField
   });
 }
@@ -408,7 +417,7 @@ export async function runPeptideOsSsoPost(
 ): Promise<NextResponse> {
   if (!isExactPeptideOsSsoOrigin(request.headers.get("origin"), expectedOrigin)) {
     logSsoEvent("sso_origin", undefined, "forbidden_origin");
-    logForbiddenOrigin(request.headers, request.method);
+    logForbiddenOrigin(request);
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
     const embed = await embedFromRejectedRequest(request);
     return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref, embed);

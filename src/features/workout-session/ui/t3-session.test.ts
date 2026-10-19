@@ -189,11 +189,13 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
     timer,
     new RegExp(
       "relative mx-auto mb-3 w-fit max-w-\\[calc\\(100vw-16px\\)\\] max-sm:fixed " +
-        "max-sm:bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+env\\(safe-area-inset-bottom\\)\\+33px\\)\\] " +
+        "max-sm:bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+env\\(safe-area-inset-bottom\\)\\+96px\\)\\] " +
         "max-sm:left-1\\/2 max-sm:-translate-x-1\\/2 max-sm:z-50 max-sm:mb-0 " +
-        "sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0",
+        "sm:fixed sm:right-6 sm:bottom-\\[320px\\] sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0",
     ),
   );
+  assert.doesNotMatch(timer, /sm:bottom-28/);
+  assert.doesNotMatch(timer, /\+33px/);
   assert.doesNotMatch(read(SETS), /Exercice terminé/);
   assert.doesNotMatch(read(SETS), /Exercice en cours/);
   assert.match(read("locales/en.ts"), /exercise_complete: "Exercise complete"/);

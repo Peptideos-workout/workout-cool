@@ -23,7 +23,7 @@ export function WorkoutSessionTimer() {
   }
 
   return (
-    <div className="relative mx-auto mb-3 w-fit max-w-[calc(100vw-16px)] max-sm:fixed max-sm:bottom-[calc(var(--wc-nav-h)+env(safe-area-inset-bottom)+33px)] max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0">
+    <div className="relative mx-auto mb-3 w-fit max-w-[calc(100vw-16px)] max-sm:fixed max-sm:bottom-[calc(var(--wc-nav-h)+env(safe-area-inset-bottom)+96px)] max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-[320px] sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0">
       <div className="rounded-full border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] px-4 py-2 shadow-lg">
         <div className="flex items-center justify-between gap-4">
           {/* Timer display */}

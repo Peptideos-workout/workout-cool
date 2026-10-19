@@ -121,7 +121,9 @@ test("T1 public shell classes stay in place and the embed line is a separate nod
   assert.match(layout, /<Footer/);
   assert.match(layout, /<BottomNavigation/);
   assert.match(layout, /<Version variant="meta"/);
-  assert.match(root, /<Version \/>/);
+  assert.match(layout, /<Version \/>/);
+  assert.ok(layout.indexOf("<Version />") < layout.indexOf("{children}"));
+  assert.doesNotMatch(root, /<Version \/>/);
   assert.match(root, /bg-hero-light/);
   assert.match(version, /data-wc-chrome="version"/);
   assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
@@ -245,9 +247,12 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(version, /pointer-events-none/);
   assert.match(version, /z-20/);
   assert.doesNotMatch(version, /z-50/);
-  assert.match(version, /sm:left-4 sm:right-auto/);
-  assert.doesNotMatch(version, /sm:bottom-\[168px\]/);
-  assert.match(version, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(version, /relative z-20 w-fit self-start/);
+  assert.doesNotMatch(version, /w-full/);
+  assert.doesNotMatch(version, /sm:left-4/);
+  assert.doesNotMatch(version, /sm:bottom-/);
+  assert.doesNotMatch(version, /max-sm:bottom-/);
+  assert.doesNotMatch(version, /\babsolute\b/);
   assert.match(main, /sm:pb-12/);
   assert.doesNotMatch(version, /\bfixed\b/);
   assert.match(footer, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
@@ -259,7 +264,7 @@ test("phone nav clearance matches the two-column nav", () => {
   );
   assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-20/);
   assert.doesNotMatch(main, /max-sm:pb-36/);
-  assert.doesNotMatch(version, /max-sm:bottom-36/);
+  assert.doesNotMatch(version, /bottom-36/);
   for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
     assert.match(read(`locales/${locale}.ts`), /label:\s*"/);
   }

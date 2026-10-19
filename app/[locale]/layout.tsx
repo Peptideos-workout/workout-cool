@@ -11,6 +11,7 @@ import { generateStructuredData, StructuredDataScript } from "@/shared/lib/struc
 import { getServerUrl } from "@/shared/lib/server-url";
 import { SiteConfig } from "@/shared/config/site-config";
 import { getLocalizedMetadata } from "@/shared/config/localized-metadata";
+import { getLayoutSocialMetadata } from "@/shared/config/home-metadata";
 import { WorkoutSessionsSynchronizer } from "@/features/workout-session/ui/workout-sessions-synchronizer";
 import { FavoriteExercisesSynchronizer } from "@/features/workout-builder/model/favorite-exercises-synchronizer";
 import { ThemeSynchronizer } from "@/features/theme/ui/ThemeSynchronizer";
@@ -28,6 +29,7 @@ import "@/shared/styles/globals.css";
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const localizedData = getLocalizedMetadata(locale);
+  const social = getLayoutSocialMetadata(locale);
 
   return {
     title: {
@@ -58,56 +60,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       title: localizedData.title,
       description: localizedData.description,
-      url: getServerUrl(),
-      siteName: SiteConfig.title,
-      locale:
-        locale === "en"
-          ? "en_US"
-          : locale === "es"
-            ? "es_ES"
-            : locale === "pt"
-              ? "pt_PT"
-              : locale === "ru"
-                ? "ru_RU"
-                : locale === "zh-CN"
-                  ? "zh_CN"
-                  : "fr_FR",
-      alternateLocale: [
-        "fr_FR",
-        "fr_CA",
-        "fr_CH",
-        "fr_BE",
-        "en_US",
-        "en_GB",
-        "en_CA",
-        "en_AU",
-        "es_ES",
-        "es_MX",
-        "es_AR",
-        "es_CL",
-        "pt_PT",
-        "pt_BR",
-        "ru_RU",
-        "ru_BY",
-        "ru_KZ",
-        "zh_CN",
-        "zh_TW",
-        "zh_HK",
-      ].filter(
-        (alt) =>
-          alt !==
-          (locale === "en"
-            ? "en_US"
-            : locale === "es"
-              ? "es_ES"
-              : locale === "pt"
-                ? "pt_PT"
-                : locale === "ru"
-                  ? "ru_RU"
-                  : locale === "zh-CN"
-                    ? "zh_CN"
-                    : "fr_FR"),
-      ),
+      url: social.openGraph.url,
+      siteName: social.openGraph.siteName,
+      locale: social.openGraph.locale,
+      alternateLocale: social.openGraph.alternateLocale,
       images: [
         {
           url: `${getServerUrl()}/images/default-og-image_fr.jpg`,
@@ -146,12 +102,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
           alt: `${SiteConfig.title} - 现代健身平台`,
         },
       ],
-      type: "website",
+      type: social.openGraph.type,
     },
     twitter: {
-      card: "summary_large_image",
-      site: SiteConfig.seo.twitterHandle,
-      creator: SiteConfig.seo.twitterHandle,
+      card: social.twitter.card,
+      site: social.twitter.site,
+      creator: social.twitter.creator,
       title: localizedData.title,
       description: localizedData.description,
       images: [

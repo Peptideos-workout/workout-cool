@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 
 import { stripLocalePrefix } from "./locale-path";
 
+import type { Metadata } from "next";
+
+import { getServerUrl } from "@/shared/lib/server-url";
 import { SiteConfig } from "@/shared/config/site-config";
 import { LocalizedMetadata } from "@/shared/config/localized-metadata";
-import { getHomeMetadata, getOgImageName, getOgLocale, getProgramsMetadata, getProgramsOpenGraphTitle } from "@/shared/config/home-metadata";
+import { getHomeMetadata, getHomePageMetadata, getOgImageName, getOgLocale, getProgramsMetadata, getProgramsOpenGraphTitle, getProgramsPageMetadata } from "@/shared/config/home-metadata";
 
 const prototypeKeys = ["constructor", "__proto__", "toString", "hasOwnProperty"];
 
@@ -166,4 +169,76 @@ test("programs titles are localized, English is not Programmes, and unknown loca
   }
   assert.ok(getHomeMetadata("ru").keywords.includes("фитнес-программа"));
   assert.ok(getHomeMetadata("zh-CN").keywords.includes("健身计划"));
+});
+
+const layoutOgAlternateLocales = [
+  "fr_FR",
+  "fr_CA",
+  "fr_CH",
+  "fr_BE",
+  "en_US",
+  "en_GB",
+  "en_CA",
+  "en_AU",
+  "es_ES",
+  "es_MX",
+  "es_AR",
+  "es_CL",
+  "pt_PT",
+  "pt_BR",
+  "ru_RU",
+  "ru_BY",
+  "ru_KZ",
+  "zh_CN",
+  "zh_TW",
+  "zh_HK",
+];
+
+function layoutOgLocale(locale: string): string {
+  return locale === "en"
+    ? "en_US"
+    : locale === "es"
+      ? "es_ES"
+      : locale === "pt"
+        ? "pt_PT"
+        : locale === "ru"
+          ? "ru_RU"
+          : locale === "zh-CN"
+            ? "zh_CN"
+            : "fr_FR";
+}
+
+function assertLayoutSocialBase(metadata: Metadata, locale: string) {
+  const openGraph = metadata.openGraph as {
+    type?: string;
+    siteName?: string;
+    url?: string;
+    alternateLocale?: string[];
+  } | null;
+  const twitter = metadata.twitter;
+  assert.ok(openGraph);
+  assert.ok(twitter);
+  assert.equal(openGraph.type, "website");
+  assert.equal(openGraph.siteName, SiteConfig.title);
+  assert.equal(openGraph.url, getServerUrl());
+  assert.deepEqual(
+    openGraph.alternateLocale,
+    layoutOgAlternateLocales.filter((alt) => alt !== layoutOgLocale(locale))
+  );
+  assert.equal(Array.isArray(openGraph.alternateLocale) ? openGraph.alternateLocale.length : 0, 19);
+  assert.equal("card" in twitter ? twitter.card : undefined, "summary_large_image");
+  assert.equal("site" in twitter ? twitter.site : undefined, SiteConfig.seo.twitterHandle);
+  assert.equal("creator" in twitter ? twitter.creator : undefined, SiteConfig.seo.twitterHandle);
+}
+
+test("home and programs spread the layout open graph and twitter base", async () => {
+  for (const locale of supportedLocales) {
+    assertLayoutSocialBase(getHomePageMetadata(locale), locale);
+    assertLayoutSocialBase(getProgramsPageMetadata(locale), locale);
+  }
+
+  for (const locale of ["en", "fr", "zh-CN"]) {
+    assertLayoutSocialBase(getHomePageMetadata(locale), locale);
+    assertLayoutSocialBase(getProgramsPageMetadata(locale), locale);
+  }
 });

@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import type { SupportedLocale } from "@/shared/config/localized-metadata";
 
+import { getServerUrl } from "@/shared/lib/server-url";
 import { SiteConfig } from "@/shared/config/site-config";
 
 interface HomeMetadataCopy {
@@ -140,4 +142,142 @@ export function getOgImageName(locale: string): string {
 
 export function getProgramsOpenGraphTitle(locale: string): string {
   return `${getProgramsMetadata(locale).title} | ${SiteConfig.title}`;
+}
+
+const layoutOgAlternateLocales = [
+  "fr_FR",
+  "fr_CA",
+  "fr_CH",
+  "fr_BE",
+  "en_US",
+  "en_GB",
+  "en_CA",
+  "en_AU",
+  "es_ES",
+  "es_MX",
+  "es_AR",
+  "es_CL",
+  "pt_PT",
+  "pt_BR",
+  "ru_RU",
+  "ru_BY",
+  "ru_KZ",
+  "zh_CN",
+  "zh_TW",
+  "zh_HK",
+] as const;
+
+export function getLayoutOgLocale(locale: string): string {
+  return locale === "en"
+    ? "en_US"
+    : locale === "es"
+      ? "es_ES"
+      : locale === "pt"
+        ? "pt_PT"
+        : locale === "ru"
+          ? "ru_RU"
+          : locale === "zh-CN"
+            ? "zh_CN"
+            : "fr_FR";
+}
+
+export function getLayoutOgAlternateLocales(locale: string): string[] {
+  const current = getLayoutOgLocale(locale);
+  return layoutOgAlternateLocales.filter((alt) => alt !== current);
+}
+
+export function getLayoutSocialMetadata(locale: string): {
+  openGraph: {
+    type: "website";
+    siteName: string;
+    url: string;
+    locale: string;
+    alternateLocale: string[];
+  };
+  twitter: {
+    card: "summary_large_image";
+    site: string;
+    creator: string;
+  };
+} {
+  return {
+    openGraph: {
+      type: "website",
+      siteName: SiteConfig.title,
+      url: getServerUrl(),
+      locale: getLayoutOgLocale(locale),
+      alternateLocale: getLayoutOgAlternateLocales(locale),
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: SiteConfig.seo.twitterHandle,
+      creator: SiteConfig.seo.twitterHandle,
+    },
+  };
+}
+
+export function getHomePageMetadata(locale: string): Metadata {
+  const { title, description, keywords } = getHomeMetadata(locale);
+  const social = getLayoutSocialMetadata(locale);
+  const ogImageName = getOgImageName(locale);
+  const imageUrl = `${getServerUrl()}/images/${ogImageName}`;
+
+  return {
+    title,
+    description,
+    keywords,
+    openGraph: {
+      ...social.openGraph,
+      title: `${title} | ${SiteConfig.title}`,
+      description,
+      locale: getOgLocale(locale),
+      images: [
+        {
+          url: imageUrl,
+          width: SiteConfig.seo.ogImage.width,
+          height: SiteConfig.seo.ogImage.height,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      ...social.twitter,
+      title: `${title} | ${SiteConfig.title}`,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
+export function getProgramsPageMetadata(locale: string): Metadata {
+  const { title, description } = getProgramsMetadata(locale);
+  const social = getLayoutSocialMetadata(locale);
+  const socialTitle = getProgramsOpenGraphTitle(locale);
+  const ogImageName = getOgImageName(locale);
+  const imageUrl = `${getServerUrl()}/images/${ogImageName}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      ...social.openGraph,
+      title: socialTitle,
+      description,
+      locale: getOgLocale(locale),
+      images: [
+        {
+          url: imageUrl,
+          width: SiteConfig.seo.ogImage.width,
+          height: SiteConfig.seo.ogImage.height,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      ...social.twitter,
+      title: socialTitle,
+      description,
+      images: [imageUrl],
+    },
+  };
 }

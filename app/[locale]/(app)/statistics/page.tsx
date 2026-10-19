@@ -1,4 +1,3 @@
-import React from "react";
 import { getI18n } from "locales/server";
 
 import { ExercisesBrowser } from "@/features/statistics/components/ExercisesBrowser";
@@ -15,7 +14,14 @@ export default async function StatisticsPage() {
         <h1 className="mb-4 text-4xl font-black text-[var(--wc-dash-text)] sm:text-6xl">{t("statistics.title")}</h1>
         <p className="mx-auto mb-8 max-w-2xl text-lg text-[var(--wc-dash-secondary)]">{t("statistics.page_subtitle")}</p>
 
-        <PremiumGate feature="Statistics">
+        {/* Stats hero social proof */}
+        <PremiumGate
+          fallback={
+            <div className="mb-8 flex flex-wrap justify-center gap-8">
+            </div>
+          }
+          feature="Statistics"
+        >
           {/* this is the premium content ↓ */}
           <div />
         </PremiumGate>

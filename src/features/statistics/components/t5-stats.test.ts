@@ -245,7 +245,10 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(page, /statistics\.page_subtitle/);
   assert.equal(page.split("statistics.title").length - 1, 1);
   assert.match(page, /import \{ PremiumGate \} from "@\/components\/ui\/premium-gate"/);
-  assert.match(page, /<PremiumGate feature="Statistics">/);
+  assert.doesNotMatch(page, /import React from "react"/);
+  assert.match(page, /fallback=\{/);
+  assert.match(page, /feature="Statistics"/);
+  assert.match(page, /<div className="mb-8 flex flex-wrap justify-center gap-8">/);
   assert.doesNotMatch(page, /15\.4K\+|89%|4\.8|active_daily_users|success_rate|user_rating/);
   for (const key of [
     "statistics.select_exercise",

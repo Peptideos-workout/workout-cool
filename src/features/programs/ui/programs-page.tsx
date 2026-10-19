@@ -25,7 +25,7 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
         <div className="flex flex-1 flex-col items-center justify-center p-6">
           <div className="mb-6">
             <Image
-              alt="Mascotte WorkoutCool triste"
+              alt=""
               className="object-contain w-20 h-20"
               height={80}
               priority
@@ -55,12 +55,12 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
       )}
       <header className="border-b border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)]">
         <div className="p-6 sm:p-8">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-y-2">
+            <div className="min-w-0 flex-1">
               <p className="mb-2 text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
                 {t("programs.kicker")}
               </p>
-              <h1 className="mb-3 text-2xl font-bold tracking-tight text-[var(--wc-dash-text)] sm:text-3xl">
+              <h1 className="mb-3 min-w-0 break-words text-2xl font-bold tracking-tight text-[var(--wc-dash-text)] sm:text-3xl">
                 {t("programs.workout_programs")}
               </h1>
               <p className="max-w-lg text-lg leading-relaxed text-[var(--wc-dash-secondary)]">
@@ -71,7 +71,7 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
             <div className="relative ml-4">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20">
                 <Image
-                  alt="Mascotte WorkoutCool"
+                  alt=""
                   className="object-contain w-full h-full"
                   height={80}
                   priority

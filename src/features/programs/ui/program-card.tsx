@@ -91,7 +91,7 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
     <div className="group">
       <div className={`${cardShell} relative`} itemScope itemType="https://schema.org/Course">
         <Link
-          aria-label={`${title} - ${t(`levels.${program.level}` as keyof typeof t)} program`}
+          aria-label={`${title} - ${t(`levels.${program.level}` as keyof typeof t)} ${t("programs.program")}`}
           className="absolute inset-0 z-0"
           href={`/programs/${programSlug}`}
         />
@@ -99,7 +99,7 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
         <div className="h-1 bg-[var(--wc-dash-accent)]" />
 
         <div className="relative h-32 sm:h-36 overflow-hidden">
-          <Image alt={title} className="w-full h-full object-cover" fill loading="lazy" src={program.image} />
+          <Image alt={t("programs.cover_alt", { title })} className="w-full h-full object-cover" fill loading="lazy" src={program.image} />
           <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-page)_40%,transparent)]" />
 
           <div className="absolute top-3 left-3 right-3 flex items-start justify-end gap-2">
@@ -120,7 +120,7 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
                   <Lock className="h-5 w-5 text-[var(--wc-dash-text)]" size={size === "large" ? 16 : 14} />
                 ) : (
                   <Image
-                    alt="Emoji"
+                    alt=""
                     className={"object-contain h-6 w-6"}
                     height={size === "large" ? 24 : 20}
                     loading="lazy"
@@ -148,9 +148,9 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
           </div>
 
           <p className="text-lg break-words text-[var(--wc-dash-secondary)]">
-            {program.durationWeeks} {t("programs.weeks")}
+            {program.durationWeeks} {t("programs.weeks", { count: program.durationWeeks })}
             {" · "}
-            {program.sessionsPerWeek} {t("programs.sessions_per_week")}
+            {program.sessionsPerWeek} {t("programs.sessions_per_week", { count: program.sessionsPerWeek })}
             {" · "}
             {program.sessionDurationMin} {t("programs.session_duration")}
           </p>

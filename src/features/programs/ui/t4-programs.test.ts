@@ -178,8 +178,8 @@ test("program handlers, hrefs, disabled expressions, and conditionals stay byte-
   assert.match(card, /program\.isPremium \? premiumKicker : levelKicker\.text/);
   assert.match(card, /program\.isPremium \? t\("programs\.premium"\) : t\("programs\.free"\)/);
   assert.doesNotMatch(card, />Premium</);
-  assert.match(card, /t\("programs\.weeks"\)/);
-  assert.match(card, /t\("programs\.sessions_per_week"\)/);
+  assert.match(card, /t\("programs\.weeks", \{ count: program\.durationWeeks \}\)/);
+  assert.match(card, /t\("programs\.sessions_per_week", \{ count: program\.sessionsPerWeek \}\)/);
   assert.match(card, /t\("programs\.session_duration"\)/);
   assert.match(
     card,
@@ -259,6 +259,8 @@ test("program copy stays on the existing translation keys", () => {
     [CARD]: {
       "`levels.${program.level}`": 2,
       "\"programs.weeks\"": 1,
+      "\"programs.cover_alt\"": 1,
+      "\"programs.program\"": 1,
       "\"programs.sessions_per_week\"": 1,
       "\"programs.session_duration\"": 1,
       "\"programs.premium\"": 1,
@@ -280,6 +282,7 @@ test("program copy stays on the existing translation keys", () => {
       "\"commons.share\"": 1,
       "\"programs.characteristics\"": 1,
       "\"programs.weeks\"": 2,
+      "\"programs.cover_alt\"": 1,
       "\"programs.sessions_per_week\"": 2,
       "\"programs.session_duration\"": 1,
       "\"programs.your_coach\"": 1,
@@ -319,6 +322,7 @@ test("program copy stays on the existing translation keys", () => {
       "\"programs.welcome_modal.frequency_label\"": 1,
       "\"programs.welcome_modal.later_button\"": 1,
       "\"programs.welcome_modal.start_button\"": 1,
+      "\"programs.welcome_modal.close\"": 1,
     },
   };
 
@@ -377,7 +381,36 @@ test("program tabs, washes, confetti, progress, and visibility stay locked", () 
 
 test("breadcrumb Home is 18px with a 48px target", () => {
   const crumbs = read("src/components/seo/breadcrumbs.tsx");
+  const detail = read(DETAIL);
+  const list = read(LIST);
   assert.match(crumbs, /href=\{item\.href\}/);
-  assert.match(crumbs, /index === 0 \? " inline-flex min-h-12 items-center text-lg" : ""/);
+  assert.match(crumbs, /inline-flex min-h-12 items-center text-lg/);
+  assert.match(crumbs, /index === 0 \? " text-\[var\(--wc-dash-secondary\)\]" : " text-\[var\(--wc-dash-text\)\]"/);
+  assert.match(crumbs, /aria-current="page" className="text-lg font-medium text-\[var\(--wc-dash-text\)\]"/);
+  assert.doesNotMatch(crumbs, /text-gray-600|text-gray-900|dark:text-white/);
   assert.doesNotMatch(crumbs, /Home aria-hidden="true" className="h-3/);
+  assert.match(detail, /relative min-h-40 bg-\[var\(--wc-dash-accent\)\] pr-24 sm:min-h-64/);
+  assert.doesNotMatch(detail, /relative h-40 bg-\[var\(--wc-dash-accent\)\] sm:h-64/);
+  assert.match(list, /flex flex-wrap items-start justify-between gap-y-2/);
+  assert.match(list, /mb-3 min-w-0 break-words text-2xl font-bold tracking-tight/);
+  assert.doesNotMatch(list, /WorkoutCoolWooow/);
+  assert.doesNotMatch(list, /Mascotte/);
+  assert.doesNotMatch(detail, /Mascotte|Communauté|Coachs|Rejoindre/);
+  assert.doesNotMatch(read(WELCOME), /WorkoutCool Mascot/);
+  assert.match(read(WELCOME), /aria-label=\{t\("programs\.welcome_modal\.close"\)\}/);
+  assert.match(read(CARD), /t\("programs\.weeks", \{ count: program\.durationWeeks \}\)/);
+  assert.match(read(CARD), /t\("programs\.sessions_per_week", \{ count: program\.sessionsPerWeek \}\)/);
+  assert.match(read("locales/ru.ts"), /"weeks#one": "неделя"/);
+  assert.match(read("locales/ru.ts"), /"weeks#few": "недели"/);
+  assert.match(read("locales/ru.ts"), /"weeks#many": "недель"/);
+  assert.match(read("locales/ru.ts"), /"sessions_per_week#one": "сессия\/неделя"/);
+  assert.match(read("locales/ru.ts"), /"sessions_per_week#few": "сессии\/неделя"/);
+  assert.match(read("locales/ru.ts"), /"sessions_per_week#many": "сессий\/неделя"/);
+  assert.match(read("locales/zh-CN.ts"), /program: "计划"/);
+  assert.match(read("locales/zh-CN.ts"), /workout_programs: "锻炼计划"/);
+  assert.match(read("locales/zh-CN.ts"), /more_programs_coming_title: "更多计划即将推出！"/);
+  for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
+    assert.match(read(`locales/${locale}.ts`), /cover_alt:/);
+    assert.match(read(`locales/${locale}.ts`), /close:/);
+  }
 });

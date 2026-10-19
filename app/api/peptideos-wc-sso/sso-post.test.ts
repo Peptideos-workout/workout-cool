@@ -76,6 +76,57 @@ function postRequest(options: {
   return new NextRequest(url, { method: options.method ?? "POST", headers, body });
 }
 
+function bindRequestProp(target: object, prop: string | symbol): unknown {
+  const value = Reflect.get(target, prop, target);
+  return typeof value === "function" ? value.bind(target) : value;
+}
+
+/** Shadows `method` so the diagnostic read throws. Other request fields stay the real NextRequest. */
+function requestWhoseMethodThrows(): NextRequest {
+  const request = postRequest({
+    token: rawToken,
+    origin: "https://evil.example",
+    accept: "application/json"
+  });
+  return new Proxy(request, {
+    get(target, prop) {
+      if (prop === "method") throw new Error("method read failed");
+      return bindRequestProp(target, prop);
+    }
+  }) as NextRequest;
+}
+
+/** `get` throws only for `headerName`. Every other header, including Origin, is the real value. */
+function requestWhoseDiagnosticHeaderThrows(headerName: string): NextRequest {
+  const request = postRequest({
+    token: rawToken,
+    origin: "https://evil.example",
+    accept: "application/json"
+  });
+  const headers = new Proxy(request.headers, {
+    get(target, prop) {
+      if (prop === "get") {
+        return (name: string) => {
+          if (name.toLowerCase() === headerName) throw new Error(`header read failed: ${headerName}`);
+          return target.get(name);
+        };
+      }
+      return bindRequestProp(target, prop);
+    }
+  });
+  return new Proxy(request, {
+    get(target, prop) {
+      if (prop === "headers") return headers;
+      return bindRequestProp(target, prop);
+    }
+  }) as NextRequest;
+}
+
+/** Referer throws for every read, including the pre-existing embed check. */
+function requestWhoseRefererThrows(): NextRequest {
+  return requestWhoseDiagnosticHeaderThrows("referer");
+}
+
 function fakeWorld(overrides: {
   expiresAt?: Date;
   snapshot?: SsoAccountSnapshot;
@@ -459,12 +510,46 @@ test("a throwing console.warn still returns the same forbidden_origin 403", asyn
     );
     assert.equal(response.status, 403);
     assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+    assert.equal(response.headers.get("set-cookie"), null);
     assertSsoResponseHeaders(response);
     assert.equal(handoff.consumed_at, null);
     assert.equal(claimCount(), 0);
   } finally {
     console.warn = original;
   }
+});
+
+test("a throwing diagnostic header read still returns the same forbidden_origin 403", async () => {
+  const { deps, handoff, claimCount } = fakeWorld();
+  const response = await runPeptideOsSsoPost(requestWhoseDiagnosticHeaderThrows("sec-fetch-site"), deps, POS);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+  assert.equal(response.headers.get("set-cookie"), null);
+  assertSsoResponseHeaders(response);
+  assert.equal(handoff.consumed_at, null);
+  assert.equal(claimCount(), 0);
+});
+
+test("a throwing method getter still returns the same forbidden_origin 403", async () => {
+  const { deps, handoff, claimCount } = fakeWorld();
+  const response = await runPeptideOsSsoPost(requestWhoseMethodThrows(), deps, POS);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+  assert.equal(response.headers.get("set-cookie"), null);
+  assertSsoResponseHeaders(response);
+  assert.equal(handoff.consumed_at, null);
+  assert.equal(claimCount(), 0);
+});
+
+test("a throwing embed referer read still returns the same forbidden_origin 403", async () => {
+  const { deps, handoff, claimCount } = fakeWorld();
+  const response = await runPeptideOsSsoPost(requestWhoseRefererThrows(), deps, POS);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+  assert.equal(response.headers.get("set-cookie"), null);
+  assertSsoResponseHeaders(response);
+  assert.equal(handoff.consumed_at, null);
+  assert.equal(claimCount(), 0);
 });
 
 test("embed forbidden_origin and SSO errors show top-level Log in and Sign up", async () => {

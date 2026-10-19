@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Lock, Eye, Zap, Crown, ArrowRight, RotateCcw } from "lucide-react";
-import { useI18n, useCurrentLocale } from "locales/client";
+import { useI18n } from "locales/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { cn } from "@/shared/lib/utils";
@@ -12,127 +12,6 @@ interface StatisticsPreviewOverlayProps {
   onUpgrade?: () => void;
   isVisible?: boolean;
 }
-
-// Composant pour simuler les données qui bougent
-const AnimatedChart: React.FC = () => {
-  const [data, setData] = useState([
-    { x: 0, y: 30 },
-    { x: 1, y: 45 },
-    { x: 2, y: 35 },
-    { x: 3, y: 60 },
-    { x: 4, y: 50 },
-    { x: 5, y: 75 },
-    { x: 6, y: 85 },
-  ]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setData((prev) =>
-        prev.map((point) => ({
-          ...point,
-          y: Math.max(20, Math.min(90, point.y + (Math.random() - 0.5) * 10)),
-        })),
-      );
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const pathData = data.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x * 40} ${100 - point.y}`).join(" ");
-
-  return (
-    <div className="relative h-32 w-full overflow-hidden rounded-xl bg-[var(--wc-dash-inner)]">
-      <svg className="w-full h-full" viewBox="0 0 240 100">
-        {/* Grid */}
-        <defs>
-          <pattern height="20" id="grid" patternUnits="userSpaceOnUse" width="40">
-            <path d="M 40 0 L 0 0 0 20" fill="none" stroke="var(--wc-dash-border)" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect fill="url(#grid)" height="100%" width="100%" />
-
-        {/* Animated line */}
-        <motion.path
-          animate={{ pathLength: 1 }}
-          d={pathData}
-          fill="none"
-          initial={{ pathLength: 0 }}
-          stroke="url(#gradient)"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="3"
-          transition={{ duration: 1.5, ease: "easeInOut" }}
-        />
-
-        {/* Gradient definition */}
-        <defs>
-          <linearGradient id="gradient" x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" stopColor="var(--wc-dash-accent)" />
-            <stop offset="100%" stopColor="var(--wc-dash-link)" />
-          </linearGradient>
-        </defs>
-
-        {/* Animated dots */}
-        {data.map((point, index) => (
-          <motion.circle
-            animate={{ scale: 1 }}
-            cx={point.x * 40}
-            cy={100 - point.y}
-            fill="var(--wc-dash-accent)"
-            initial={{ scale: 0 }}
-            key={index}
-            r="4"
-            transition={{ delay: index * 0.1 }}
-          />
-        ))}
-      </svg>
-
-    </div>
-  );
-};
-
-// Composant pour les métriques qui s'animent
-const AnimatedMetrics: React.FC = () => {
-  const t = useI18n();
-  const locale = useCurrentLocale();
-
-  const [metrics, setMetrics] = useState({
-    totalVolume: 2450,
-    prIncrease: 15,
-    weightProgression: 78,
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics((prev) => ({
-        totalVolume: prev.totalVolume + Math.floor(Math.random() * 50) - 25,
-        prIncrease: Math.max(0, prev.prIncrease + Math.floor(Math.random() * 6) - 3),
-        weightProgression: Math.max(0, Math.min(100, prev.weightProgression + Math.floor(Math.random() * 10) - 5)),
-      }));
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      <motion.div className="rounded-xl bg-[var(--wc-dash-panel)] p-3 text-center" whileHover={{ scale: 1.05 }}>
-        <p className="text-2xl font-bold text-[var(--wc-dash-accent)]">{metrics.totalVolume.toLocaleString(locale)}</p>
-        <p className="text-lg text-[var(--wc-dash-text)]">{t("statistics.total_volume")}</p>
-      </motion.div>
-
-      <motion.div className="rounded-xl bg-[var(--wc-dash-panel)] p-3 text-center" whileHover={{ scale: 1.05 }}>
-        <p className="text-2xl font-bold text-[var(--wc-dash-link)]">+{metrics.prIncrease}%</p>
-        <p className="text-lg text-[var(--wc-dash-text)]">{t("statistics.pr_increase")}</p>
-      </motion.div>
-
-      <motion.div className="rounded-xl bg-[var(--wc-dash-panel)] p-3 text-center" whileHover={{ scale: 1.05 }}>
-        <p className="text-2xl font-bold text-[var(--wc-dash-accent)]">{metrics.weightProgression}%</p>
-        <p className="text-lg text-[var(--wc-dash-text)]">{t("statistics.weight_progress")}</p>
-      </motion.div>
-    </div>
-  );
-};
 
 export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> = ({ className, onUpgrade, isVisible = true }) => {
   const t = useI18n();
@@ -192,26 +71,6 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
       >
         {t("statistics.premium_statistics_description")}
       </motion.p>
-
-      {/* Aperçu des données animées */}
-      <motion.div
-        animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-md mb-6"
-        initial={{ scale: 0.9, opacity: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <AnimatedChart />
-      </motion.div>
-
-      {/* Métriques animées */}
-      <motion.div
-        animate={{ y: 0, opacity: 1 }}
-        className="w-full max-w-md mb-8"
-        initial={{ y: 20, opacity: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <AnimatedMetrics />
-      </motion.div>
 
       {/* Boutons d'action */}
       <div className="flex items-center gap-4">

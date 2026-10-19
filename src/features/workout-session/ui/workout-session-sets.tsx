@@ -168,7 +168,7 @@ export function WorkoutSessionSets({
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-3 pb-16 sm:px-6 sm:pb-40">
+    <div className="mx-auto w-full max-w-3xl px-3 max-sm:pb-[calc(var(--wc-nav-h)+168px)] sm:px-6 sm:pb-40">
       <div className="mb-6">
         <PremiumUpsellAlert />
       </div>

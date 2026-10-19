@@ -1931,7 +1931,6 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Информация о формуле 1RM",
-    one_rm_formula_tooltip: "Формула {formula}: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Объем = Вес × Повторы × Подходы",
     last_updated: "Последнее обновление: {date}",
 
@@ -1941,9 +1940,6 @@ export default {
     // StatisticsPreviewOverlay
     premium_statistics: "Премиум Статистика",
     premium_statistics_description: "Получите подробную информацию о вашем фитнес-пути с расширенной аналитикой для каждого упражнения.",
-    total_volume: "Общий Объем",
-    pr_increase: "Увеличение ПР",
-    weight_progress: "Прогресс Веса",
     upgrade_now: "Обновить Сейчас",
     rating: "Рейтинг 4.8/5",
     no_ads: "Без рекламы",

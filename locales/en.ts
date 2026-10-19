@@ -1937,7 +1937,6 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "1RM formula information",
-    one_rm_formula_tooltip: "{formula} formula: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Volume = Weight × Reps × Sets",
     last_updated: "Last updated: {date}",
 
@@ -1947,9 +1946,6 @@ export default {
     // StatisticsPreviewOverlay
     premium_statistics: "Premium Statistics",
     premium_statistics_description: "Get detailed insights into your fitness journey with advanced analytics for each exercise.",
-    total_volume: "Total Volume",
-    pr_increase: "PR Increase",
-    weight_progress: "Weight Progress",
     upgrade_now: "Upgrade Now",
     rating: "4.8/5 rating",
     no_ads: "No ads",

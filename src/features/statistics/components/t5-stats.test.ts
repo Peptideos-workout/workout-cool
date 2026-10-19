@@ -108,7 +108,10 @@ test("stats screens use dash tokens and no raw hex", () => {
   }
   const theme = read(THEME);
   assert.doesNotMatch(theme, /#[0-9a-fA-F]{3,8}/);
-  assert.equal(theme.split("isDark ? \"var(--wc-dash-").length - 1, 9);
+  assert.equal(theme.split("isDark ?").length - 1, 0);
+  assert.match(theme, /background: "var\(--wc-dash-panel\)"/);
+  assert.match(theme, /text: "var\(--wc-dash-text\)"/);
+  assert.doesNotMatch(theme, /useTheme/);
 });
 
 test("stats text is 18px and tap targets are 48px", () => {
@@ -117,13 +120,15 @@ test("stats text is 18px and tap targets are 48px", () => {
   const timeframe = read(TIMEFRAME);
   const page = read(PAGE);
   assert.match(browser, /inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-\[var\(--wc-dash-text\)\]/);
+  assert.match(browser, /mb-2 text-lg font-semibold text-\[var\(--wc-dash-text\)\]">\{t\("statistics\.select_exercise"\)\}/);
   assert.match(
     browser,
     new RegExp(
-      "mb-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl " +
-        "bg-\\[var\\(--wc-dash-accent\\)\\] px-4 text-lg text-\\[var\\(--wc-dash-ink\\)\\]",
+      "inline-flex min-h-12 w-full items-center justify-between rounded-xl border " +
+        "border-\\[var\\(--wc-dash-border\\)\\] bg-\\[var\\(--wc-dash-panel\\)\\] px-4 text-lg text-\\[var\\(--wc-dash-text\\)\\]",
     ),
   );
+  assert.match(browser, /onClick=\{openExerciseSelection\}/);
   assert.match(browser, /min-h-12 w-full rounded-xl border border-\[var\(--wc-dash-border\)\]/);
   assert.match(page, /text-lg text-\[var\(--wc-dash-secondary\)\]/);
   assert.match(timeframe, /aria-pressed=\{isSelected\}/);
@@ -210,14 +215,15 @@ test("stats handlers, hrefs, and conditionals stay put", () => {
   assert.match(overlay, /if \(!isVisible\) return null;/);
   assert.match(overlay, /\{showTeaserModal && \(/);
   assert.doesNotMatch(page, /feature="Statistics"/);
-  assert.match(browser, /useState<StatisticsTimeframe>\("8weeks"\)/);
-  assert.match(modal, /useState<StatisticsTimeframe>\("8weeks"\)/);
-  assert.match(read(ONE_RM), /t\("statistics\.one_rm_formula_tooltip", \{ formula \}\)/);
+  assert.match(browser, /useState<StatisticsTimeframe>\("4weeks"\)/);
+  assert.match(modal, /useState<StatisticsTimeframe>\("4weeks"\)/);
+  assert.match(read(ONE_RM), /data-tip=\{`\$\{formula\} Formula: 1RM = Weight × \(1 \+ \(Reps ÷ 30\)\)`\}/);
+  assert.doesNotMatch(read(ONE_RM), /one_rm_formula_tooltip/);
   for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
-    assert.match(read(`locales/${locale}.ts`), /one_rm_formula_tooltip:/);
-    assert.match(read(`locales/${locale}.ts`), /1RM = Weight × \(1 \+ \(Reps ÷ 30\)\)/);
+    assert.doesNotMatch(read(`locales/${locale}.ts`), /one_rm_formula_tooltip:/);
   }
-  assert.match(read(THEME), /const isDark = currentTheme === "dark";/);
+  assert.doesNotMatch(read(THEME), /const isDark = currentTheme === "dark";/);
+  assert.match(read(THEME), /tooltipBorder: "var\(--wc-dash-border\)"/);
   assert.match(read(WEIGHT), /style=\{\{ opacity: hasData \? 1 : 0\.2 \}\}/);
 });
 
@@ -227,10 +233,10 @@ test("stats copy keys and chart data props stay put", () => {
   const modal = read(MODAL);
   const charts = read(CHARTS);
   const overlay = read(OVERLAY);
-  assert.match(page, /statistics\.kicker/);
+  assert.match(page, /<h1 className="mb-2 text-lg font-bold text-\[var\(--wc-dash-text\)\]">\{t\("statistics\.title"\)\}<\/h1>/);
   assert.match(page, /statistics\.page_subtitle/);
-  assert.doesNotMatch(page, /<h1/);
-  assert.doesNotMatch(page, /statistics\.title/);
+  assert.doesNotMatch(page, /statistics\.kicker/);
+  assert.equal(page.split("statistics.title").length - 1, 1);
   assert.doesNotMatch(page, /15\.4K\+|89%|4\.8★|active_daily_users|success_rate|user_rating/);
   for (const key of [
     "statistics.select_exercise",
@@ -270,7 +276,7 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(read(VOLUME), /t\("statistics\.set_count", \{ count: data\.setCount \}\)/);
   assert.match(read(ONE_RM), /fontSize: 18/);
   assert.match(read(WEIGHT), /fontSize: 18/);
-  assert.match(page, /t\("statistics\.kicker"\)/);
+  assert.match(page, /t\("statistics\.title"\)/);
   assert.match(read("src/components/ui/dialog.tsx"), /z-\[1000\]/);
   assert.match(read("src/components/ui/select.tsx"), /z-\[1001\]/);
   assert.match(read("app/[locale]/(app)/layout.tsx"), /max-sm:min-h-screen/);
@@ -282,9 +288,6 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(modal, /\[&>button\]:dark:!bg-\[var\(--wc-dash-panel\)\]/);
   assert.doesNotMatch(modal, /slate-900/);
   for (const key of [
-    "statistics.total_volume",
-    "statistics.pr_increase",
-    "statistics.weight_progress",
     "statistics.premium_statistics",
     "statistics.premium_statistics_description",
     "statistics.upgrade_now",
@@ -296,9 +299,11 @@ test("stats copy keys and chart data props stay put", () => {
   ]) {
     assert.match(overlay, new RegExp(key.replace(/\./g, "\\.")));
   }
-  assert.doesNotMatch(overlay, /\+12\.5%|statistics\.rating|4\.8/);
+  assert.doesNotMatch(overlay, /\+12\.5%|statistics\.rating|4\.8|2450|AnimatedMetrics|AnimatedChart/);
   assert.match(read("src/components/ui/simple-select.tsx"), /!z-\[250\]/);
+  assert.doesNotMatch(read("src/components/ui/select.tsx"), /!z-\[250\]/);
   assert.match(browser, /modal !z-\[245\]/);
+  assert.doesNotMatch(browser, /z-\[27/);
 });
 
 test("timer, nav, and version chip reserve space", () => {
@@ -351,6 +356,7 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(main, /<Version \/>/);
   assert.ok(main.indexOf("<Version />") < main.indexOf("{children}"));
   assert.doesNotMatch(root, /<Version \/>/);
+  assert.match(read(SETS), /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+168px\)\]/);
   assert.match(read(SETS), /sm:pb-40/);
   assert.match(read(STEPPER), /w-full max-w-6xl mx-auto sm:pr-64 xl:pr-0/);
   assert.match(root, /<div className="relative flex min-h-screen w-full items-center justify-center" data-wc-frame="">/);

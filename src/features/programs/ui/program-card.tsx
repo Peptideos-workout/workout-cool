@@ -102,9 +102,8 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
           <Image alt={title} className="w-full h-full object-cover" fill loading="lazy" src={program.image} />
           <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--wc-dash-page)_40%,transparent)]" />
 
-          <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-            <div className="flex flex-wrap gap-2">
-              <span className={levelConfig.kicker}>{t(`levels.${program.level}` as keyof typeof t)}</span>
+          <div className="absolute top-3 left-3 right-3 flex items-start justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <span className={program.isPremium ? premiumKicker : levelKicker.text}>
                 {program.isPremium ? t("programs.premium") : t("programs.free")}
               </span>
@@ -137,9 +136,12 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
 
         <div className={`${paddingClass} space-y-3`}>
           <div>
-            <h4 className={`${titleClass} mb-1 leading-tight text-[var(--wc-dash-text)]`} itemProp="name">
-              {title}
-            </h4>
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <h4 className={`${titleClass} leading-tight text-[var(--wc-dash-text)]`} itemProp="name">
+                {title}
+              </h4>
+              <span className={levelConfig.kicker}>{t(`levels.${program.level}` as keyof typeof t)}</span>
+            </div>
             <p className={`${subtitleClass} leading-relaxed text-[var(--wc-dash-secondary)] line-clamp-2`} itemProp="description">
               {description}
             </p>
@@ -169,7 +171,7 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
           )}
 
           <Link
-            className="pointer-events-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--wc-dash-accent)] px-4 text-lg font-semibold text-[var(--wc-dash-ink)]"
+            className="pointer-events-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-[var(--wc-dash-text)] bg-[var(--wc-dash-card)] px-4 text-lg font-semibold text-[var(--wc-dash-text)]"
             href={`/programs/${programSlug}`}
           >
             {t("programs.about")}

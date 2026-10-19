@@ -142,6 +142,7 @@ test("T1 public shell classes stay in place and the embed line is a separate nod
 test("T1 embed presentation is scoped, 18px, and does not letter-wrap", () => {
   const css = read("src/features/embed/embed-theme.css");
   assert.doesNotMatch(css, /overflow-wrap:\s*anywhere/);
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\][\s\S]*display:\s*none !important/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\][\s\S]*font-size:\s*18px/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a[\s\S]*min-height:\s*56px/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a span[\s\S]*font-size:\s*18px/);

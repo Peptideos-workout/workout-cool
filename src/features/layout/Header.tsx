@@ -43,7 +43,7 @@ export const Header = () => {
   };
 
   const publicSignupClass =
-    "inline-flex !h-auto !min-h-12 !min-w-12 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 " +
+    "!inline-flex !h-auto !min-h-12 !min-w-12 !shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 " +
     "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
     "shadow-none hover:bg-[var(--wc-dash-accent)] " +
     "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]";
@@ -55,9 +55,9 @@ export const Header = () => {
         data-wc-chrome="header"
       >
         {/* Logo and Title */}
-        <div className="navbar-start !w-auto shrink-0 flex items-center gap-2">
+        <div className="navbar-start order-1 !w-auto shrink-0 flex items-center gap-1">
           <Link
-            className="group flex items-center space-x-3 rounded-xl bg-gradient-to-r px-2 sm:px-4 py-2 transition-all duration-200 dark:text-gray-200 dark:bg-gray-800"
+            className="group flex items-center gap-2 rounded-xl bg-gradient-to-r px-1 sm:px-4 py-2 transition-all duration-200 dark:text-gray-200 dark:bg-gray-800"
             href="/"
           >
             <div className="relative flex-none">
@@ -77,9 +77,12 @@ export const Header = () => {
           </Link>
         </div>
 
-        {/* User Menu */}
-        <div className="navbar-end !h-auto !w-auto min-w-0 flex-1 flex-wrap justify-end gap-y-1">
+        <div className="order-3 flex min-w-0 max-w-full justify-end max-[447px]:basis-full min-[448px]:order-2 min-[448px]:w-auto">
           {allFeaturesFree || isPremium || !showAds || !hasAdProvider ? <WorkoutStreakHeader /> : <RemoveAdsText />}
+        </div>
+
+        {/* User Menu */}
+        <div className="navbar-end order-2 !h-auto !w-auto min-w-0 flex-1 flex-wrap justify-end gap-y-1 min-[448px]:order-3">
           <div className="inline-flex !min-h-12 !min-w-12 items-center justify-center">
             <ThemeToggle />
           </div>
@@ -90,7 +93,7 @@ export const Header = () => {
           {!session.data ? (
             <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
               <Link
-                className="!no-underline !text-lg !min-h-12 !min-w-12 shrink-0 inline-flex items-center justify-center"
+                className="!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center"
                 href={getConfiguredPeptideOsLoginUrl()}
                 prefetch={false}
                 size="sm"

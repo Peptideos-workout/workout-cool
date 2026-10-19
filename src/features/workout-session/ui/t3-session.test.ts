@@ -260,6 +260,7 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(sets, /\{t\("workout_builder\.session\.next_exercise"\)\}\n\s+<ArrowRight className="h-5 w-5" \/>/);
   assert.doesNotMatch(sets, /<ArrowRight className="h-5 w-5" \/>\n\s+\{t\("workout_builder\.session\.next_exercise"\)\}/);
   assert.match(row, /\+ \{t\("workout_builder\.session\.add_row"\)\}/);
+  assert.match(row, /secondaryButton\} mt-2 w-full min-w-0 !whitespace-normal px-4 md:w-auto/);
   assert.doesNotMatch(row, /add_column/);
   assert.doesNotMatch(row, /<Plus/);
   assert.match(header, /flex flex-col items-start gap-1 sm:flex-row sm:items-center/);

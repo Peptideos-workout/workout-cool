@@ -230,7 +230,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
       {types.length < MAX_WORKOUT_SET_COLUMNS && !set.completed && (
         <div className="flex w-full justify-start mt-1">
           <Button
-            className={`${secondaryButton} mt-2 w-full px-4 md:w-auto`}
+            className={`${secondaryButton} mt-2 w-full min-w-0 !whitespace-normal px-4 md:w-auto`}
             disabled={set.completed}
             onClick={addColumn}
             variant="outline"

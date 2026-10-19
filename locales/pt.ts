@@ -454,6 +454,7 @@ export default {
   },
   breadcrumbs: {
     home: "Início",
+    label: "Trilha de navegação",
   },
   bottom_navigation: {
     statistics: "Estatísticas",

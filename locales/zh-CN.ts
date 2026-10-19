@@ -454,6 +454,7 @@ export default {
   },
   breadcrumbs: {
     home: "首页",
+    label: "面包屑",
   },
   bottom_navigation: {
     statistics: "统计",

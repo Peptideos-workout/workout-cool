@@ -69,7 +69,7 @@ export function LanguageSelector() {
         {languages.map((language) => (
           <li className="" key={language}>
             <button
-              className="flex items-center gap-2 text-base hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors whitespace-nowrap min-w-fit"
+              className="flex h-12 min-h-12 items-center gap-2 text-base hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors whitespace-nowrap min-w-fit"
               onClick={() => handleLanguageChange(language)}
             >
               <span className="text-lg">{languageFlags[language]}</span>

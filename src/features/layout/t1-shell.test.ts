@@ -396,6 +396,7 @@ test("header controls and streak day cells are 48px tap targets", () => {
   assert.match(trigger, /!h-12 !w-12 !min-h-12 !min-w-12 !p-0/);
   assert.doesNotMatch(trigger, /h-8 w-8/);
   assert.match(language, /onClick=\{\(\) => handleLanguageChange\(language\)\}/);
+  assert.match(language, /flex h-12 min-h-12 items-center gap-2/);
 
   const cellAt = streak.indexOf("role=\"button\"");
   const cell = streak.slice(Math.max(0, cellAt - 800), cellAt + 80);

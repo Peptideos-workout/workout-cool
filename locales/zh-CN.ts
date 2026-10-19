@@ -699,6 +699,7 @@ export default {
     addExercise: "添加练习",
     exerciseAdded: "{name} 已添加到锻炼",
     exercises: "练习",
+    equipment_illustration_alt: "{name}插图",
     equipment: {
       bodyweight: {
         label: "自重",

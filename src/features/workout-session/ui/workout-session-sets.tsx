@@ -80,7 +80,11 @@ export function WorkoutSessionSets({
   if (showCongrats) {
     return (
       <div className="flex h-full flex-col items-center justify-center py-16">
-        <Image alt={t("workout_builder.session.complete") + " trophy"} className="h-56 w-56" src={TrophyImg} />
+        <Image
+          alt={`${t("workout_builder.session.complete")} ${t("workout_builder.session.trophy")}`}
+          className="h-56 w-56"
+          src={TrophyImg}
+        />
         <h2 className="mb-2 text-2xl font-bold text-[var(--wc-dash-text)]">{t("workout_builder.session.complete") + " ! 🎉"}</h2>
         <p className="mb-6 text-lg text-[var(--wc-dash-secondary)]">{t("workout_builder.session.workout_in_progress")}</p>
         <Button
@@ -192,7 +196,7 @@ export function WorkoutSessionSets({
               </span>
               {/* Image + nom de l'exercice */}
               <div className="ml-2 flex flex-col gap-3 hover:opacity-80 sm:flex-row sm:items-start">
-                {details?.fullVideoImageUrl && (
+                {details?.fullVideoUrl ? (
                   <div
                     className="flex w-full max-w-full shrink-0 flex-col gap-2 sm:max-w-60"
                     onClick={(e) => {
@@ -200,6 +204,29 @@ export function WorkoutSessionSets({
                       setVideoModal({ open: true, exerciseId: ex.id });
                     }}
                   >
+                    {details.fullVideoImageUrl && (
+                      <div
+                        className={
+                          "relative aspect-video overflow-hidden rounded-lg " +
+                          "border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)]"
+                        }
+                      >
+                        <Image
+                          alt={exerciseName || t("workout_builder.session.exercise_image")}
+                          className="h-full w-full object-cover"
+                          height={48}
+                          src={details.fullVideoImageUrl}
+                          width={48}
+                        />
+                      </div>
+                    )}
+                    <Button className={`${secondaryButton} w-full`} type="button" variant="ghost">
+                      <Play className="h-5 w-5" />
+                      {t("workout_builder.exercise.watch_video")}
+                    </Button>
+                  </div>
+                ) : details?.fullVideoImageUrl ? (
+                  <div className="flex w-full max-w-full shrink-0 flex-col gap-2 sm:max-w-60">
                     <div
                       className={
                         "relative aspect-video overflow-hidden rounded-lg " +
@@ -207,19 +234,15 @@ export function WorkoutSessionSets({
                       }
                     >
                       <Image
-                        alt={exerciseName || "Exercise image"}
+                        alt={exerciseName || t("workout_builder.session.exercise_image")}
                         className="h-full w-full object-cover"
                         height={48}
                         src={details.fullVideoImageUrl}
                         width={48}
                       />
                     </div>
-                    <Button className={`${secondaryButton} w-full`} type="button" variant="ghost">
-                      <Play className="h-5 w-5" />
-                      {t("workout_builder.exercise.watch_video")}
-                    </Button>
                   </div>
-                )}
+                ) : null}
                 <div
                   className={cn(
                     "flex-1 text-lg leading-[1.3]",
@@ -253,7 +276,7 @@ export function WorkoutSessionSets({
                 <div className="mb-10 mt-6 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]">
                   {/* Liste des sets */}
                   <div className="flex justify-start items-center gap-2">
-                    <FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId={ex.id} />
+                    <FavoriteExerciseButton className="!h-auto !min-h-12 !min-w-12 !whitespace-normal" exerciseId={ex.id} />
                   </div>
                   <div className="space-y-10 mb-8">
                     {ex.sets.map((set, setIdx) => (
@@ -271,10 +294,10 @@ export function WorkoutSessionSets({
                     ))}
                   </div>
                   {/* Actions bas de page */}
-                  <div className="flex flex-col md:flex-row gap-3 w-full mt-2 px-2">
+                  <div className="mt-2 flex w-full min-w-0 flex-col gap-3 px-2 md:flex-row">
                     <Button
                       aria-label={t("workout_builder.session.add_set")}
-                      className={`${secondaryButton} flex-1 font-bold`}
+                      className={`${secondaryButton} min-w-0 flex-1 !whitespace-normal font-bold`}
                       onClick={handleAddSet}
                     >
                       <Plus className="h-5 w-5" />
@@ -282,7 +305,7 @@ export function WorkoutSessionSets({
                     </Button>
                     <Button
                       aria-label={t("workout_builder.session.next_exercise")}
-                      className={`${secondaryButton} flex-1 font-bold`}
+                      className={`${secondaryButton} min-w-0 flex-1 !whitespace-normal font-bold`}
                       onClick={handleNextExercise}
                     >
                       {t("workout_builder.session.next_exercise")}

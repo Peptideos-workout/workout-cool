@@ -89,16 +89,19 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
   assert.match(stepper, /data-wc-intro/);
   assert.match(stepper, /data-wc-kicker/);
-  assert.match(stepper, /<h2 className="mt-2 text-3xl font-bold text-\[var\(--wc-dash-text\)\]" data-wc-title="">/);
+  assert.match(stepper, /<h1 className="mt-2 text-3xl font-bold text-\[var\(--wc-dash-text\)\]" data-wc-title="">/);
   assert.match(stepper, /\{t\("workout_builder\.title"\)\}/);
-  assert.doesNotMatch(stepper, /<h1[^>]*data-wc-title/);
+  assert.doesNotMatch(stepper, /<h2[^>]*data-wc-title/);
+  assert.doesNotMatch(stepper, /alt="Trophée"/);
   assert.doesNotMatch(stepper, /Build your workout/);
-  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.match(stepper, /data-wc-lead/);
+  assert.match(stepper, /workout_builder\.selection\.select_equipment_description/);
   assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-lead/);
   assert.doesNotMatch(stepper, /className="hidden[^"]*" data-wc-intro/);
-  assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h1" : "h3"/);
+  assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h2" : "h3"/);
   assert.match(stepper, /data-wc-step-sheet/);
-  assert.match(stepper, /bottom_navigation\.workouts/);
+  assert.match(stepper, /data-wc-kicker="">\s*\{steps\.find\(\(step\) => step\.stepNumber === currentStep\)\?\.title\}/);
+  assert.match(stepper, /workout_builder\.steps\.equipment\.title/);
   assert.match(footer, /data-wc-step-next/);
   assert.match(footer, /data-wc-step-previous/);
   assert.match(footer, /disabled=\{isFirstStep\}/);
@@ -139,6 +142,7 @@ test("T1 public shell classes stay in place and the embed line is a separate nod
 test("T1 embed presentation is scoped, 18px, and does not letter-wrap", () => {
   const css = read("src/features/embed/embed-theme.css");
   assert.doesNotMatch(css, /overflow-wrap:\s*anywhere/);
+  assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\][\s\S]*display:\s*none !important/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-version-meta\][\s\S]*font-size:\s*18px/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a[\s\S]*min-height:\s*56px/);
   assert.match(css, /html\[data-wc-embed="1"\] \[data-wc-chrome="nav"\] a span[\s\S]*font-size:\s*18px/);

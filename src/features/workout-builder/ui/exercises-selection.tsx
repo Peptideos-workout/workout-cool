@@ -181,13 +181,12 @@ export const ExercisesSelection = ({
           </DndContext>
           <div className="border border-t-0 border-slate-200 dark:border-slate-800 rounded-b-lg bg-white dark:bg-slate-900">
             <button
-              className="w-full flex items-center gap-3 py-4 px-4 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+              className="flex min-h-12 w-full items-center gap-3 bg-[var(--wc-dash-accent)] px-4 text-lg font-bold text-[var(--wc-dash-ink)]"
               onClick={onAdd}
+              type="button"
             >
-              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
-                <Plus className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-medium">{t("commons.add")}</span>
+              <Plus className="h-5 w-5" />
+              <span>+ {t("workout_builder.addExercise")}</span>
             </button>
           </div>
         </div>

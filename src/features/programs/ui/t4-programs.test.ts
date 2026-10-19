@@ -117,8 +117,8 @@ test("program text is 18px and tap targets are 48px", () => {
   const welcome = read(WELCOME);
   const share = read(SHARE);
   const card = read(CARD);
-  assert.match(list, /inline-flex min-h-12 items-center rounded-full border border-\[var\(--wc-dash-border\)\]/);
-  assert.match(list, /bg-\[var\(--wc-dash-card\)\] px-4 text-lg font-medium text-\[var\(--wc-dash-accent\)\]/);
+  assert.match(list, /text-lg text-\[var\(--wc-dash-text\)\]">\{t\("programs\.more_programs_coming_title"\)\}/);
+  assert.doesNotMatch(list, /coming_strength|coming_cardio|coming_yoga|commons\.new|available_programs/);
   assert.match(detail, /bg-\[var\(--wc-dash-accent\)\] px-6 py-4 text-lg font-bold text-\[var\(--wc-dash-ink\)\]/);
   assert.match(detail, /bg-\[var\(--wc-dash-panel\)\] px-3 text-lg font-medium text-\[var\(--wc-dash-text\)\]/);
   assert.match(card, /text-\[var\(--wc-dash-secondary\)\]">•/);
@@ -183,7 +183,7 @@ test("program handlers, hrefs, disabled expressions, and conditionals stay byte-
   assert.match(card, /t\("programs\.session_duration"\)/);
   assert.match(
     card,
-    /inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-\[var\(--wc-dash-accent\)\] px-4 text-lg font-semibold text-\[var\(--wc-dash-ink\)\]/,
+    /inline-flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-\[var\(--wc-dash-text\)\] bg-\[var\(--wc-dash-card\)\] px-4 text-lg font-semibold text-\[var\(--wc-dash-text\)\]/,
   );
   assert.match(card, /\{isLocked \? \(/);
   assert.match(card, /\{!isLocked && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-\[var\(--wc-dash-accent\)\]" \/>\}/);
@@ -308,14 +308,8 @@ test("program copy stays on the existing translation keys", () => {
       "\"programs.no_programs_available\"": 1,
       "\"programs.no_programs_available_description\"": 1,
       "\"programs.workout_programs\"": 2,
-      "\"commons.new\"": 1,
       "\"programs.workout_programs_description\"": 1,
-      "\"programs.available_programs\"": 1,
       "\"programs.more_programs_coming_title\"": 1,
-      "\"programs.more_programs_coming_description\"": 1,
-      "\"programs.coming_strength\"": 1,
-      "\"programs.coming_cardio\"": 1,
-      "\"programs.coming_yoga\"": 1,
     },
     [WELCOME]: {
       "\"programs.welcome_modal.welcome_title\"": 1,
@@ -375,9 +369,10 @@ test("program tabs, washes, confetti, progress, and visibility stay locked", () 
     const source = read(path);
     assert.equal(classCount(source, "hidden"), 0, path);
     assert.equal(classCount(source, "invisible"), 0, path);
-    assert.equal(classCount(source, "sr-only"), path === LIST ? 1 : 0, path);
+    assert.equal(classCount(source, "sr-only"), 0, path);
   }
-  assert.match(read(LIST), /<h2 className="sr-only">\{t\("programs\.available_programs"\)\}<\/h2>/);
+  assert.match(read(CARD), /line-clamp-2/);
+  assert.match(read(CARD), /className=\{levelConfig\.kicker\}/);
 });
 
 test("breadcrumb Home is 18px with a 48px target", () => {

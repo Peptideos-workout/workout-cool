@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Crown, TrendingUp } from "lucide-react";
+import { Crown } from "lucide-react";
 import { Locale } from "locales/types";
 import { getI18n } from "locales/server";
 
@@ -14,9 +14,6 @@ interface ProgramsPageProps {
 }
 
 const pageShell = "flex flex-col bg-[var(--wc-dash-page)] text-[var(--wc-dash-text)]";
-const chip =
-  "inline-flex min-h-12 items-center rounded-full border border-[var(--wc-dash-border)] " +
-  "bg-[var(--wc-dash-card)] px-4 text-lg font-medium text-[var(--wc-dash-accent)]";
 
 export async function ProgramsPage({ locale }: ProgramsPageProps) {
   const programs = await getPublicPrograms();
@@ -63,21 +60,9 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
               <p className="mb-2 text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
                 {t("programs.kicker")}
               </p>
-              <div className="mb-3 flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight text-[var(--wc-dash-text)] sm:text-3xl">
-                  {t("programs.workout_programs")}
-                </h1>
-                <div className="relative">
-                  <span
-                    className={
-                      "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
-                      "text-lg font-bold text-[var(--wc-dash-ink)]"
-                    }
-                  >
-                    {t("commons.new")}
-                  </span>
-                </div>
-              </div>
+              <h1 className="mb-3 text-2xl font-bold tracking-tight text-[var(--wc-dash-text)] sm:text-3xl">
+                {t("programs.workout_programs")}
+              </h1>
               <p className="max-w-lg text-lg leading-relaxed text-[var(--wc-dash-secondary)]">
                 {t("programs.workout_programs_description")}
               </p>
@@ -105,8 +90,6 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
       <section className="flex-1 space-y-8 p-4 sm:p-6">
         {programs.length > 0 && (
           <div>
-            <h2 className="sr-only">{t("programs.available_programs")}</h2>
-
             <div aria-label={t("programs.workout_programs")} className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6" role="list">
               {programs.map((program, index) => (
                 <article
@@ -123,45 +106,14 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
               ))}
             </div>
 
-            <aside className="relative mt-12">
-              <div
-                className={
-                  "relative rounded-2xl border-2 border-dashed border-[var(--wc-dash-border)] " +
-                  "bg-[var(--wc-dash-card)] p-3 text-center sm:p-8"
-                }
-              >
-                <div className="absolute -right-2 -top-2 sm:right-4 sm:top-4">
-                  <Image
-                    alt="Mascotte WorkoutCool excitée"
-                    className="h-12 w-12 object-contain opacity-60 sm:h-12 sm:w-12"
-                    height={48}
-                    src="/images/emojis/WorkoutCoolWooow.png"
-                    width={48}
-                  />
-                </div>
-
-                {(env.NEXT_PUBLIC_BOTTOM_PROGRAMS_BANNER_AD_SLOT || env.NEXT_PUBLIC_EZOIC_BOTTOM_PROGRAMS_PLACEMENT_ID) && (
-                  <HorizontalBottomBanner
-                    adSlot={env.NEXT_PUBLIC_BOTTOM_PROGRAMS_BANNER_AD_SLOT}
-                    ezoicPlacementId={env.NEXT_PUBLIC_EZOIC_BOTTOM_PROGRAMS_PLACEMENT_ID}
-                  />
-                )}
-
-                <div className="mb-4 flex items-center justify-center gap-3">
-                  <TrendingUp className="h-6 w-6 text-[var(--wc-dash-accent)]" />
-                  <h3 className="text-xl font-bold text-[var(--wc-dash-text)]">{t("programs.more_programs_coming_title")}</h3>
-                </div>
-
-                <p className="mx-auto mb-6 max-w-md text-lg leading-relaxed text-[var(--wc-dash-secondary)]">
-                  {t("programs.more_programs_coming_description")}
-                </p>
-
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <span className={chip}>{t("programs.coming_strength")}</span>
-                  <span className={chip}>{t("programs.coming_cardio")}</span>
-                  <span className={chip}>{t("programs.coming_yoga")}</span>
-                </div>
-              </div>
+            <aside className="mt-6 space-y-4">
+              {(env.NEXT_PUBLIC_BOTTOM_PROGRAMS_BANNER_AD_SLOT || env.NEXT_PUBLIC_EZOIC_BOTTOM_PROGRAMS_PLACEMENT_ID) && (
+                <HorizontalBottomBanner
+                  adSlot={env.NEXT_PUBLIC_BOTTOM_PROGRAMS_BANNER_AD_SLOT}
+                  ezoicPlacementId={env.NEXT_PUBLIC_EZOIC_BOTTOM_PROGRAMS_PLACEMENT_ID}
+                />
+              )}
+              <p className="text-lg text-[var(--wc-dash-text)]">{t("programs.more_programs_coming_title")}</p>
             </aside>
           </div>
         )}

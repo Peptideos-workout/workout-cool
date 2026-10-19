@@ -104,6 +104,9 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
           >
             {translation.label}
           </h3>
+          {isSelected ? (
+            <p className="mt-1 break-words text-lg text-[var(--wc-dash-text)]">✓ {translation.description}</p>
+          ) : null}
         </div>
 
         {/* Progress bar subtile en bas */}
@@ -125,6 +128,19 @@ export function EquipmentSelection({ onClearEquipment, onToggleEquipment, select
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3" data-wc-equipment-bar="">
+        <p className="text-lg text-[var(--wc-dash-text)]">
+          {t("workout_builder.stats.equipment_selected", { count: selectedEquipment.length })}
+        </p>
+        <button
+          aria-disabled={selectedEquipment.length === 0}
+          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)] aria-disabled:pointer-events-none aria-disabled:border aria-disabled:border-[var(--wc-dash-border)] aria-disabled:bg-[var(--wc-dash-inner)] aria-disabled:text-[var(--wc-dash-secondary)] aria-disabled:opacity-100"
+          onClick={onClearEquipment}
+          type="button"
+        >
+          {t("workout_builder.selection.clear_all")}
+        </button>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {EQUIPMENT_CONFIG.map((equipment, index) => (
           <div
@@ -154,18 +170,6 @@ export function EquipmentSelection({ onClearEquipment, onToggleEquipment, select
           />
         )
       )} */}
-      <div className="flex flex-wrap items-center justify-between gap-3" data-wc-equipment-bar="">
-        <p className="text-lg text-[var(--wc-dash-text)]">
-          {t("workout_builder.stats.equipment_selected", { count: selectedEquipment.length })}
-        </p>
-        <button
-          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)]"
-          onClick={onClearEquipment}
-          type="button"
-        >
-          {t("workout_builder.selection.clear_all")}
-        </button>
-      </div>
     </div>
   );
 }

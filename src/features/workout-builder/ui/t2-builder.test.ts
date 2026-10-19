@@ -81,7 +81,9 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   assert.match(header, /isCompleted \? <span className="text-lg font-semibold">✓<\/span>/);
   assert.equal(header.split("✓").length - 1, 2);
   assert.match(stepper, /data-wc-title="">\s*\{t\("workout_builder\.title"\)\}/);
-  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.match(stepper, /data-wc-kicker="">\s*\{steps\.find\(\(step\) => step\.stepNumber === currentStep\)\?\.title\}/);
+  assert.match(stepper, /currentStep === 1 \?/);
+  assert.match(stepper, /data-wc-lead="">\s*\{t\("workout_builder\.selection\.select_equipment_description"\)\}/);
   assert.doesNotMatch(stepper, /hidden px-2/);
   assert.match(read("locales/en.ts"), /title:\s*"Build your workout"/);
   assert.match(read("locales/fr.ts"), /title:\s*"Construire votre entraînement"/);
@@ -157,7 +159,7 @@ test("builder contrast pairs meet AA", () => {
   assert.ok(contrast(dark.error, dark.card) >= 4.5);
 });
 
-test("builder handlers and conditionals stay byte-identical", () => {
+test("builder handlers and conditionals stay in place", () => {
   const header = read("src/features/workout-builder/ui/stepper-header.tsx");
   const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
   const stepper = read("src/features/workout-builder/ui/workout-stepper.tsx");
@@ -189,7 +191,7 @@ test("builder handlers and conditionals stay byte-identical", () => {
   assert.match(footer, /disabled=\{!canContinue\}\n\s+onClick=\{onNext\}/);
   assert.equal(footer.split("disabled={!canContinue}").length - 1, 2);
   assert.equal(card.split("h-12 w-12 min-h-12 min-w-12").length - 1, 2);
-  assert.match(listItem, /className="!min-h-12 !text-lg touch-manipulation"/);
+  assert.match(listItem, /!min-h-12 !border-\[var\(--wc-dash-border\)\] !text-lg !text-\[var\(--wc-dash-text\)\] hover:!scale-100/);
   assert.match(listItem, /className="inline-flex min-h-12 min-w-12 items-center justify-center/);
 });
 
@@ -198,6 +200,8 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   const listItem = read("src/features/workout-builder/ui/exercise-list-item.tsx");
   const card = read("src/features/workout-builder/ui/exercise-card.tsx");
   assert.match(equipment, /data-wc-equipment-bar/);
+  assert.ok(equipment.indexOf("data-wc-equipment-bar") < equipment.indexOf("grid grid-cols-2"));
+  assert.match(equipment, /✓ \{translation\.description\}/);
   assert.match(equipment, /workout_builder\.stats\.equipment_selected/);
   assert.match(equipment, /workout_builder\.selection\.clear_all/);
   assert.match(equipment, /onClick=\{onClearEquipment\}/);
@@ -215,6 +219,28 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(listItem, /workout_builder\.exercise\.remove/);
   assert.match(listItem, /text-lg text-\[var\(--wc-dash-error\)\]/);
   assert.match(card, /className="min-h-12 text-lg" onClick=\{\(\) => onShuffle\(exercise\.id, muscle\)\}/);
+  assert.match(listItem, /data-wc-exercise-name=""/);
+  assert.match(listItem, /min-w-\[120px\] flex-1/);
+  assert.match(listItem, /flex w-full min-w-0 flex-wrap items-center gap-2/);
+  assert.match(listItem, /min-h-12 min-w-12 shrink-0 cursor-grab/);
+  assert.match(listItem, /h-12 w-12 min-h-12 min-w-12/);
+  assert.match(listItem, /text-lg font-bold text-\[var\(--wc-dash-text\)\]/);
+  assert.match(listItem, /aria-label=\{t\("statistics\.title"\)\}/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /\+ \{t\("workout_builder\.addExercise"\)\}/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /min-h-12 w-full/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /bg-\[var\(--wc-dash-accent\)\]/);
+  assert.match(equipment, /aria-disabled=\{selectedEquipment\.length === 0\}/);
+  assert.match(equipment, /aria-disabled:text-\[var\(--wc-dash-secondary\)\]/);
+  assert.doesNotMatch(equipment, /selectedEquipment\.length > 0 &&/);
+  assert.match(card, /workout_builder\.exercise\.type/);
+  assert.doesNotMatch(card, /<strong>Type:<\/strong>/);
+  assert.match(read("src/features/embed/embed-theme.css"), /\[data-wc-step-actions\] > :has\(\[data-wc-step-next\]\)/);
+  assert.match(read("locales/en.ts"), /type: "Type:"/);
+  assert.match(read("locales/fr.ts"), /type: "Type :"/);
+  assert.match(read("locales/es.ts"), /type: "Tipo:"/);
+  assert.match(read("locales/pt.ts"), /type: "Tipo:"/);
+  assert.match(read("locales/ru.ts"), /type: "Тип:"/);
+  assert.match(read("locales/zh-CN.ts"), /type: "类型："/);
   assert.match(card, /break-words text-lg font-semibold leading-tight/);
   assert.doesNotMatch(card, /line-clamp-2/);
   assert.doesNotMatch(card, /text-sm leading-tight line-clamp-2/);

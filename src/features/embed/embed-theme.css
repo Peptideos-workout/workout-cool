@@ -229,7 +229,7 @@ html[data-wc-embed="1"].dark [data-wc-chrome="nav"] a:focus-visible {
 }
 
 html[data-wc-embed="1"] [data-wc-version-meta] {
-  display: block !important;
+  display: none !important;
   margin: 16px 0 0 !important;
   font-size: 18px !important;
   font-weight: 400 !important;
@@ -437,6 +437,11 @@ html[data-wc-embed="1"] [data-wc-step-previous] {
   white-space: nowrap !important;
   opacity: 1 !important;
   transform: none !important;
+}
+
+html[data-wc-embed="1"] [data-wc-step-actions] > :has([data-wc-step-next]) {
+  order: -1;
+  width: 100%;
 }
 
 html[data-wc-embed="1"] [data-wc-step-next] {

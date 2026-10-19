@@ -157,7 +157,7 @@ test("builder contrast pairs meet AA", () => {
   assert.ok(contrast(dark.error, dark.card) >= 4.5);
 });
 
-test("builder handlers and conditionals stay byte-identical", () => {
+test("builder handlers and conditionals stay in place", () => {
   const header = read("src/features/workout-builder/ui/stepper-header.tsx");
   const footer = read("src/features/workout-builder/ui/workout-stepper-footer.tsx");
   const stepper = read("src/features/workout-builder/ui/workout-stepper.tsx");

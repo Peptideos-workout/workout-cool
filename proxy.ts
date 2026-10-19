@@ -48,6 +48,14 @@ function detectUserLocale(request: NextRequest): string {
   return "en"; // fallback
 }
 
+/** Locale redirect target. Pathname gains the locale; search and hash stay as received. */
+export function buildLocaleRedirectUrl(request: NextRequest, locale: string): URL {
+  const url = request.nextUrl.clone();
+  const suffix = url.pathname === "/" ? "" : url.pathname;
+  url.pathname = `/${locale}${suffix}`;
+  return url;
+}
+
 const I18nMiddleware = createI18nMiddleware({
   locales: ["en", "fr", "es", "zh-CN", "ru", "pt"],
   defaultLocale: "en",
@@ -96,7 +104,7 @@ export async function proxy(request: NextRequest) {
 
   // If on root path and no locale detected yet, redirect to detected locale
   if (pathname === "/" && !request.cookies.get("detected-locale")) {
-    const url = new URL(`/${detectedLocale}`, request.url);
+    const url = buildLocaleRedirectUrl(request, detectedLocale);
     const response = NextResponse.redirect(url);
 
     response.cookies.set("detected-locale", detectedLocale, {

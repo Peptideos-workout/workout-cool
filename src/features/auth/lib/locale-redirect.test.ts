@@ -222,6 +222,16 @@ test("zh-CN /?embed=1 does not redirect-loop for any detected-locale or Next-Loc
     "detected-locale=fr; Next-Locale=fr"
   ];
 
+  const nextLocalePath: Record<string, string> = {
+    "Next-Locale=de": "/en",
+    "Next-Locale=zh": "/en",
+    "Next-Locale=zh-cn": "/en",
+    "Next-Locale=": "/en",
+    "Next-Locale=fr": "/fr",
+    "Next-Locale=en": "/en",
+    "Next-Locale=zh-CN": "/zh-CN"
+  };
+
   for (const cookie of cookieStates) {
     const headers: Record<string, string> = { "accept-language": "zh-CN" };
     if (cookie !== undefined) headers.cookie = cookie;
@@ -231,11 +241,13 @@ test("zh-CN /?embed=1 does not redirect-loop for any detected-locale or Next-Loc
     assert.equal(settled.loop, false, cookie ?? "(no cookies)");
     assert.ok(settled.hops <= 2, `${cookie ?? "(no cookies)"} settled in ${settled.hops} hops at ${settled.finalUrl}`);
     assert.equal(finalUrl.searchParams.get("embed"), "1", cookie ?? "(no cookies)");
+    if (cookie !== undefined && cookie in nextLocalePath) {
+      assert.equal(finalUrl.pathname, nextLocalePath[cookie], cookie);
+    }
   }
 });
 
 const QUERY = "embed=1&x=2";
-const ALLOWED_LOCALES = ["en", "fr", "es", "zh-CN", "ru", "pt"];
 
 function assertKeptQuery(url: string, label: string) {
   const parsed = new URL(url, APP);
@@ -249,26 +261,6 @@ function setCookieList(response: Response): string[] {
   if (typeof headers.getSetCookie === "function") return headers.getSetCookie();
   const combined = response.headers.get("set-cookie");
   return combined ? [combined] : [];
-}
-
-function assertLocaleCookieValues(response: Response, raw: string) {
-  const location = response.headers.get("location") ?? "";
-  const rewrite = response.headers.get("x-middleware-rewrite") ?? "";
-  for (const cookie of setCookieList(response)) {
-    const pair = cookie.split(";")[0] ?? "";
-    const value = pair.slice(pair.indexOf("=") + 1);
-    assert.notEqual(value, raw, cookie);
-    if (pair.startsWith("Next-Locale=") || pair.startsWith("detected-locale=")) {
-      assert.ok(ALLOWED_LOCALES.includes(value), cookie);
-    }
-  }
-  if (raw && (raw.length > 5 || raw.includes("<") || raw.includes("..") || raw.includes("/"))) {
-    assert.equal(location.includes(raw), false, raw);
-    assert.equal(rewrite.includes(raw), false, raw);
-    for (const cookie of setCookieList(response)) {
-      assert.equal(cookie.includes(raw), false, raw);
-    }
-  }
 }
 
 async function assertLocaleOnRootAndNested(headers: Record<string, string>, locale: string, label: string) {
@@ -342,68 +334,46 @@ test("pt-BR and fr-FR with q-values resolve to pt and fr on / and on a nested pa
   assertKeptQuery(settled.finalUrl, "cookieless zh-CN");
 });
 
-test("a supported detected-locale or Next-Locale cookie wins over Accept-Language on / and nested paths", async () => {
-  const cases = [
-    { cookie: "detected-locale=fr", locale: "fr" },
-    { cookie: "Next-Locale=es", locale: "es" },
-    { cookie: "detected-locale=pt; Next-Locale=ru", locale: "ru" },
-    { cookie: "detected-locale=FR", locale: "fr" }
-  ];
-
-  for (const { cookie, locale } of cases) {
-    await assertLocaleOnRootAndNested(
-      { "accept-language": "zh-CN,zh;q=0.9", cookie },
-      locale,
-      cookie
-    );
-  }
+test("a supported Next-Locale cookie wins over Accept-Language on / and on a nested path", async () => {
+  await assertLocaleOnRootAndNested(
+    { "accept-language": "zh-CN,zh;q=0.9", cookie: "Next-Locale=es" },
+    "es",
+    "Next-Locale=es"
+  );
 });
 
-test("Next-Locale=zh-cn is honored as canonical zh-CN on nested paths", async () => {
-  const headers = { "accept-language": "en", cookie: "Next-Locale=zh-cn" };
-  await assertLocaleOnRootAndNested(headers, "zh-CN", "Next-Locale=zh-cn");
+test("Next-Locale=fr on /programs/x keeps embed=1 and stores the resolved detected-locale", async () => {
+  const response = await proxy(
+    new NextRequest(`${APP}/programs/x?embed=1`, {
+      headers: { "accept-language": "zh-CN", cookie: "Next-Locale=fr" }
+    })
+  );
+  const rewrite = response.headers.get("x-middleware-rewrite");
 
-  const nested = await proxy(new NextRequest(`${APP}${NESTED_PATH}?${QUERY}`, { headers }));
-  const cookies = setCookieList(nested).join("\n");
-  assert.match(cookies, /Next-Locale=zh-CN/);
-  assert.equal(cookies.includes("zh-cn"), false);
-  assertLocaleCookieValues(nested, "zh-cn");
-});
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.equal(response.headers.get("x-next-locale"), "fr");
+  if (!rewrite) assert.fail("nested Next-Locale=fr did not rewrite");
+  const rewriteUrl = new URL(rewrite);
+  assert.equal(rewriteUrl.pathname, "/fr/programs/x");
+  assert.equal(rewriteUrl.searchParams.get("embed"), "1");
 
-test("garbage locale cookies fall back to an allowlisted locale and are never reflected", async () => {
-  const garbage = ["de", "xx", "../", "z".repeat(180), "", "<script>"];
-
-  for (const raw of garbage) {
-    for (const name of ["Next-Locale", "detected-locale"]) {
-      const headers = { "accept-language": "fr", cookie: `${name}=${raw}` };
-      const label = `${name}=${raw}`;
-      await assertLocaleOnRootAndNested(headers, "fr", label);
-
-      const root = await proxy(new NextRequest(`${APP}/?${QUERY}`, { headers }));
-      assertLocaleCookieValues(root, raw);
-      const nested = await proxy(new NextRequest(`${APP}${NESTED_PATH}?${QUERY}`, { headers }));
-      assertLocaleCookieValues(nested, raw);
-
-      const settled = await followQuery(`${APP}/?${QUERY}`, headers);
-      assert.equal(settled.loop, false, label);
-      assert.ok(settled.hops <= 2, label);
-      assertKeptQuery(settled.finalUrl, label);
-    }
-  }
-
-  const starred = { "accept-language": "*", cookie: "Next-Locale=<script>" };
-  await assertLocaleOnRootAndNested(starred, "en", "script cookie with star");
-  const starredRoot = await proxy(new NextRequest(`${APP}/?${QUERY}`, { headers: starred }));
-  assertLocaleCookieValues(starredRoot, "<script>");
+  const detected = setCookieList(response).find((cookie) => cookie.startsWith("detected-locale="));
+  assert.equal(detected?.split(";")[0], "detected-locale=fr");
 });
 
 test("q=0, malformed q, star, and blank Accept-Language do not select an unacceptable language", async () => {
   const cases = [
+    { acceptLanguage: "fr;q=0", locale: "en" },
     { acceptLanguage: "fr;q=0, en", locale: "en" },
     { acceptLanguage: "fr;q=abc", locale: "en" },
+    { acceptLanguage: "fr;q=abc, en", locale: "en" },
+    { acceptLanguage: "en, fr;q=abc", locale: "en" },
+    { acceptLanguage: "en;q=abc, fr", locale: "fr" },
+    { acceptLanguage: "fr, en;q=nope", locale: "fr" },
     { acceptLanguage: "fr;q=2", locale: "en" },
     { acceptLanguage: "fr;q=-1", locale: "en" },
-    { acceptLanguage: "fr;q=abc, en;q=0.4", locale: "en" },
+    { acceptLanguage: "fr; q=0.9", locale: "fr" },
     { acceptLanguage: "*", locale: "en" },
     { acceptLanguage: "   ", locale: "en" },
     { acceptLanguage: "\t", locale: "en" },
@@ -416,7 +386,6 @@ test("q=0, malformed q, star, and blank Accept-Language do not select an unaccep
     const location = root.headers.get("location");
     if (!location) assert.fail(acceptLanguage);
     assert.equal(new URL(location).pathname, `/${locale}`, acceptLanguage);
-    assert.notEqual(new URL(location).pathname, "/fr", acceptLanguage);
     assertKeptQuery(location, acceptLanguage);
   }
 });

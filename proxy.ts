@@ -22,55 +22,40 @@ const LOCALE_COOKIE_OPTIONS = {
   sameSite: "lax" as const
 };
 
-/** RFC 9110 qvalue: 0-1 with at most three decimal places. q=0 means not acceptable. */
-const ACCEPT_Q_VALUE = /^(?:0(?:\.\d{1,3})?|1(?:\.0{1,3})?)$/;
-
-function canonicalLocale(value: string | undefined): SupportedLocale | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  // Longer than any supported tag (zh-CN). Rejects overlong and non-tags before the allowlist compare.
-  if (!trimmed || trimmed.length > 16) return null;
-  return SUPPORTED_LOCALES.find((locale) => locale.toLowerCase() === trimmed.toLowerCase()) ?? null;
+function isSupportedLocale(locale: string): locale is SupportedLocale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(locale);
 }
 
-function acceptableLanguageTags(header: string): string[] {
-  const ranked: Array<{ tag: string; quality: number; index: number }> = [];
-  const parts = header.split(",");
-
-  for (let index = 0; index < parts.length; index++) {
-    const [rawTag, ...params] = parts[index].split(";");
-    const tag = rawTag.trim().toLowerCase();
-    if (!tag || tag === "*") continue;
-
-    let quality = 1;
-    let invalid = false;
-    for (const param of params) {
-      const trimmed = param.trim();
-      const separator = trimmed.indexOf("=");
-      if (separator === -1) continue;
-      const key = trimmed.slice(0, separator).trim().toLowerCase();
-      if (key !== "q") continue;
-      const rawQuality = trimmed.slice(separator + 1).trim();
-      if (!ACCEPT_Q_VALUE.test(rawQuality)) {
-        invalid = true;
-        break;
-      }
-      quality = Number(rawQuality);
-      if (quality <= 0) invalid = true;
-    }
-    if (invalid) continue;
-    ranked.push({ tag, quality, index });
-  }
-
-  ranked.sort((left, right) => right.quality - left.quality || left.index - right.index);
-  return ranked.map((entry) => entry.tag);
+function qualityFromAcceptParam(param: string): number | undefined {
+  const trimmed = param.trim();
+  const match = trimmed.match(/^q\s*=\s*(.*)$/i);
+  if (!match) return undefined;
+  const parsed = Number(match[1].trim());
+  // q=0 is not acceptable. NaN and out-of-range values count as 0 so header order cannot revive them.
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) return 0;
+  return parsed;
 }
 
 function detectUserLocale(request: NextRequest): SupportedLocale {
   const acceptLanguage = request.headers.get("accept-language");
   if (!acceptLanguage || !acceptLanguage.trim()) return DEFAULT_LOCALE;
 
-  for (const locale of acceptableLanguageTags(acceptLanguage)) {
+  const languages = acceptLanguage
+    .split(",")
+    .map((part, index) => {
+      const [rawLocale, ...params] = part.split(";");
+      const locale = rawLocale.trim().toLowerCase();
+      let quality = 1;
+      for (const param of params) {
+        const parsed = qualityFromAcceptParam(param);
+        if (parsed !== undefined) quality = parsed;
+      }
+      return { locale, quality, index };
+    })
+    .filter((entry) => entry.locale && entry.locale !== "*" && entry.quality > 0)
+    .sort((left, right) => right.quality - left.quality || left.index - right.index);
+
+  for (const { locale } of languages) {
     const exact = SUPPORTED_LOCALES.find((supported) => supported.toLowerCase() === locale);
     if (exact) return exact;
 
@@ -87,48 +72,15 @@ function detectUserLocale(request: NextRequest): SupportedLocale {
 }
 
 /**
- * Next-Locale, then detected-locale, then Accept-Language, then en.
- * Cookie values must match the allowlist case-insensitively. Anything else is ignored, never copied into a URL.
- * The root redirect must use this same value. A mismatch sends /zh-CN back to / and loops when cookies are dropped.
+ * Supported Next-Locale cookie, else Accept-Language, else en.
+ * Match is exact: zh-cn is not zh-CN. next-international rejects zh-cn on nested paths, so folding it
+ * only on / would redirect to /zh-CN and bounce back to /. Unsupported cookies fall back to en.
  */
 function resolveRequestLocale(request: NextRequest): SupportedLocale {
-  const fromNextLocale = canonicalLocale(request.cookies.get(NEXT_LOCALE_COOKIE)?.value);
-  if (fromNextLocale) return fromNextLocale;
-  const fromDetected = canonicalLocale(request.cookies.get("detected-locale")?.value);
-  if (fromDetected) return fromDetected;
-  return detectUserLocale(request);
-}
-
-/**
- * next-international reads Next-Locale before resolveLocaleFromRequest. A value that is not an exact
- * locales.includes match returns null and never calls the resolver, so zh-cn and garbage both become en.
- * Rewrite a case variant to its canonical tag, and drop anything outside the allowlist, before that read.
- */
-function alignNextLocaleCookie(request: NextRequest): { raw: string | undefined; canonical: SupportedLocale | null } {
-  const raw = request.cookies.get(NEXT_LOCALE_COOKIE)?.value;
-  const canonical = canonicalLocale(raw);
-  if (raw !== undefined && raw !== canonical) {
-    if (canonical) request.cookies.set(NEXT_LOCALE_COOKIE, canonical);
-    else request.cookies.delete(NEXT_LOCALE_COOKIE);
-  }
-  return { raw, canonical };
-}
-
-function setDetectedLocaleCookie(response: NextResponse, request: NextRequest, resolved: SupportedLocale) {
-  const raw = request.cookies.get("detected-locale")?.value;
-  const canonical = canonicalLocale(raw);
-  if (canonical && raw === canonical) return;
-  response.cookies.set("detected-locale", canonical ?? resolved, LOCALE_COOKIE_OPTIONS);
-}
-
-function setNextLocaleCookie(
-  response: NextResponse,
-  raw: string | undefined,
-  canonical: SupportedLocale | null,
-  resolved: SupportedLocale
-) {
-  if (raw === undefined) return;
-  response.cookies.set(NEXT_LOCALE_COOKIE, canonical ?? resolved, { sameSite: "strict" });
+  const cookieLocale = request.cookies.get(NEXT_LOCALE_COOKIE)?.value;
+  const candidate = cookieLocale ?? detectUserLocale(request);
+  if (!candidate || !isSupportedLocale(candidate)) return DEFAULT_LOCALE;
+  return candidate;
 }
 
 /** Locale redirect target. Pathname gains the locale; search and hash stay as received. */
@@ -144,7 +96,7 @@ const I18nMiddleware = createI18nMiddleware({
   defaultLocale: DEFAULT_LOCALE,
   urlMappingStrategy: "rewrite",
   // The default resolver keeps only the primary tag, so zh-CN becomes "zh" and falls back to English.
-  resolveLocaleFromRequest: resolveRequestLocale,
+  resolveLocaleFromRequest: detectUserLocale,
 });
 
 export async function proxy(request: NextRequest) {
@@ -188,23 +140,17 @@ export async function proxy(request: NextRequest) {
   }
 
   const resolvedLocale = resolveRequestLocale(request);
-  const detectedCanonical = canonicalLocale(request.cookies.get("detected-locale")?.value);
 
-  // Root only auto-redirects until a supported detected-locale is stored. The target matches the middleware.
-  if (pathname === "/" && !detectedCanonical) {
+  // Root only auto-redirects until detected-locale is stored. The target matches resolveRequestLocale.
+  if (pathname === "/" && !request.cookies.get("detected-locale")) {
     const url = buildLocaleRedirectUrl(request, resolvedLocale);
     const response = NextResponse.redirect(url);
-    const rawNextLocale = request.cookies.get(NEXT_LOCALE_COOKIE)?.value;
-    setDetectedLocaleCookie(response, request, resolvedLocale);
-    setNextLocaleCookie(response, rawNextLocale, canonicalLocale(rawNextLocale), resolvedLocale);
+    response.cookies.set("detected-locale", resolvedLocale, LOCALE_COOKIE_OPTIONS);
     return response;
   }
 
-  // Normal i18n middleware processing. Normalize Next-Locale first so the library's exact-match read sees the allowlist.
-  const nextLocale = alignNextLocaleCookie(request);
+  // Normal i18n middleware processing. The library reads Next-Locale before detectUserLocale.
   const response = I18nMiddleware(request);
-  setNextLocaleCookie(response, nextLocale.raw, nextLocale.canonical, resolvedLocale);
-  setDetectedLocaleCookie(response, request, resolvedLocale);
 
   // Extract current locale from pathname
   const localeMatch = pathname.match(/^\/([a-z]{2}(?:-[A-Z]{2})?)/);
@@ -212,6 +158,10 @@ export async function proxy(request: NextRequest) {
 
   // Set Content-Language header for SEO
   response.headers.set("Content-Language", currentLocale);
+
+  if (!request.cookies.get("detected-locale")) {
+    response.cookies.set("detected-locale", resolvedLocale, LOCALE_COOKIE_OPTIONS);
+  }
 
   const searchParams = request.nextUrl.searchParams.toString();
   response.headers.set("searchParams", searchParams);

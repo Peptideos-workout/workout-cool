@@ -1585,6 +1585,7 @@ export default {
     addExercise: "Adicionar exercício",
     exerciseAdded: "{name} adicionado ao treino",
     exercises: "exercícios",
+    equipment_illustration_alt: "Ilustração de {name}",
     equipment: {
       bodyweight: {
         label: "Peso corporal",

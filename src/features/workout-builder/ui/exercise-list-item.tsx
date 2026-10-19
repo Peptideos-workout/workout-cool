@@ -132,7 +132,7 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
       ) : (
         <>
           <div
-            className="flex min-h-12 min-w-12 shrink-0 cursor-grab items-center justify-center rounded-md p-1.5 hover:bg-slate-100 active:cursor-grabbing active:bg-blue-100 dark:hover:bg-slate-800 dark:active:bg-blue-900/30 touch-none select-none transition-colors"
+            className="flex h-12 w-12 min-h-12 min-w-12 shrink-0 cursor-grab items-center justify-center rounded-md hover:bg-slate-100 active:cursor-grabbing active:bg-blue-100 dark:hover:bg-slate-800 dark:active:bg-blue-900/30 touch-none select-none transition-colors"
             style={{ touchAction: "none" }}
             {...attributes}
             {...listeners}

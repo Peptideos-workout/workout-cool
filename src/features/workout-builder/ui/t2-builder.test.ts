@@ -197,14 +197,28 @@ test("builder handlers and conditionals stay in place", () => {
 
 test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   const equipment = read("src/features/workout-builder/ui/equipment-selection.tsx");
+  const exercises = read("src/features/workout-builder/ui/exercises-selection.tsx");
   const listItem = read("src/features/workout-builder/ui/exercise-list-item.tsx");
   const card = read("src/features/workout-builder/ui/exercise-card.tsx");
   assert.match(equipment, /data-wc-equipment-bar/);
   assert.ok(equipment.indexOf("data-wc-equipment-bar") < equipment.indexOf("grid grid-cols-2"));
-  assert.match(equipment, /✓ \{translation\.description\}/);
+  assert.match(equipment, /aria-describedby=\{descriptionId\}/);
+  assert.match(equipment, /<span className="sr-only" id=\{descriptionId\}>\s*\{translation\.description\}/);
+  assert.doesNotMatch(equipment, /✓/);
+  assert.match(equipment, /<Check className="h-3\.5 w-3\.5" strokeWidth=\{3\} \/>/);
+  assert.match(
+    equipment,
+    new RegExp(
+      "absolute right-2 top-2 inline-flex h-6 w-6 min-h-6 min-w-6 items-center justify-center rounded-full",
+    ),
+  );
+  assert.match(equipment, /bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]/);
   assert.match(equipment, /aria-pressed=\{isSelected\}/);
   assert.match(equipment, /type="button"/);
-  assert.match(equipment, /border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-inner\)\]/);
+  assert.match(
+    equipment,
+    /border-\[var\(--wc-dash-accent\)\] bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_35%,var\(--wc-dash-card\)\)\]/,
+  );
   assert.match(equipment, /focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-\[var\(--wc-dash-text\)\]/);
   assert.match(equipment, /onTap\(\);\n\s+onToggle\(\);/);
   assert.doesNotMatch(equipment, /w-2 h-2 rounded-full/);
@@ -235,11 +249,14 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(listItem, /h-12 w-12 min-h-12 min-w-12/);
   assert.match(listItem, /text-lg font-bold text-\[var\(--wc-dash-text\)\]/);
   assert.match(listItem, /aria-label=\{t\("statistics\.title"\)\}/);
-  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /\+ \{t\("workout_builder\.addExercise"\)\}/);
-  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /min-h-12 w-full/);
-  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /bg-\[var\(--wc-dash-accent\)\]/);
-  assert.match(equipment, /aria-disabled=\{selectedEquipment\.length === 0\}/);
-  assert.match(equipment, /aria-disabled:text-\[var\(--wc-dash-secondary\)\]/);
+  assert.match(exercises, /<Plus className="h-5 w-5" \/>/);
+  assert.match(exercises, /<span>\{t\("workout_builder\.addExercise"\)\}<\/span>/);
+  assert.doesNotMatch(exercises, /\+ \{t\("workout_builder\.addExercise"\)\}/);
+  assert.match(exercises, /min-h-12 w-full/);
+  assert.match(exercises, /bg-\[var\(--wc-dash-accent\)\]/);
+  assert.match(equipment, /disabled=\{selectedEquipment\.length === 0\}/);
+  assert.match(equipment, /disabled:text-\[var\(--wc-dash-secondary\)\]/);
+  assert.doesNotMatch(equipment, /aria-disabled/);
   assert.doesNotMatch(equipment, /selectedEquipment\.length > 0 &&/);
   assert.match(card, /workout_builder\.exercise\.type/);
   assert.doesNotMatch(card, /<strong>Type:<\/strong>/);

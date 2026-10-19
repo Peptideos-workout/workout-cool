@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { Check } from "lucide-react";
 import { useI18n } from "locales/client";
 import { ExerciseAttributeValueEnum } from "@prisma/client";
 
@@ -26,15 +27,17 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
   const { onTap } = useWorkoutFeedback();
 
   const translation = getEquipmentTranslation(equipment.value, t);
+  const descriptionId = `equipment-desc-${equipment.value}`;
 
   return (
     <button
+      aria-describedby={descriptionId}
       aria-pressed={isSelected}
       className={cn(
-        "group flex min-h-12 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center",
+        "group relative flex min-h-12 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--wc-dash-text)]",
         isSelected
-          ? "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-inner)]"
+          ? "border-[var(--wc-dash-accent)] bg-[color-mix(in_srgb,var(--wc-dash-accent)_35%,var(--wc-dash-card))]"
           : "border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]",
       )}
       onClick={() => {
@@ -43,6 +46,17 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
       }}
       type="button"
     >
+      {isSelected ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute right-2 top-2 inline-flex h-6 w-6 min-h-6 min-w-6 items-center justify-center rounded-full",
+            "bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]",
+          )}
+        >
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        </span>
+      ) : null}
       <Image
         alt={`${translation.label} illustration`}
         className="object-contain"
@@ -54,16 +68,14 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
       <h3
         className={cn(
           "font-semibold text-lg leading-tight tracking-wide",
-          isSelected
-            ? "text-[var(--wc-dash-accent)]"
-            : "text-[var(--wc-dash-text)] group-hover:text-[var(--wc-dash-accent)]",
+          isSelected ? "text-[var(--wc-dash-text)]" : "text-[var(--wc-dash-text)] group-hover:text-[var(--wc-dash-accent)]",
         )}
       >
         {translation.label}
       </h3>
-      {isSelected ? (
-        <p className="break-words text-lg text-[var(--wc-dash-text)]">✓ {translation.description}</p>
-      ) : null}
+      <span className="sr-only" id={descriptionId}>
+        {translation.description}
+      </span>
     </button>
   );
 }
@@ -78,8 +90,8 @@ export function EquipmentSelection({ onClearEquipment, onToggleEquipment, select
           {t("workout_builder.stats.equipment_selected", { count: selectedEquipment.length })}
         </p>
         <button
-          aria-disabled={selectedEquipment.length === 0}
-          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)] aria-disabled:pointer-events-none aria-disabled:border aria-disabled:border-[var(--wc-dash-border)] aria-disabled:bg-[var(--wc-dash-inner)] aria-disabled:text-[var(--wc-dash-secondary)] aria-disabled:opacity-100"
+          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)] disabled:pointer-events-none disabled:border disabled:border-[var(--wc-dash-border)] disabled:bg-[var(--wc-dash-inner)] disabled:text-[var(--wc-dash-secondary)] disabled:opacity-100"
+          disabled={selectedEquipment.length === 0}
           onClick={onClearEquipment}
           type="button"
         >

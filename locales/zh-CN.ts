@@ -684,6 +684,7 @@ export default {
     exercise: {
       watch_video: "观看视频",
       shuffle: "随机",
+      type: "类型：",
       pick: "选择",
       remove: "移除",
       no_video_available: "无可用视频。",

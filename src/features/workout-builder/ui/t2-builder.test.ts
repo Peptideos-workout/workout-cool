@@ -189,7 +189,7 @@ test("builder handlers and conditionals stay in place", () => {
   assert.match(footer, /disabled=\{!canContinue\}\n\s+onClick=\{onNext\}/);
   assert.equal(footer.split("disabled={!canContinue}").length - 1, 2);
   assert.equal(card.split("h-12 w-12 min-h-12 min-w-12").length - 1, 2);
-  assert.match(listItem, /className="!min-h-12 !text-lg touch-manipulation"/);
+  assert.match(listItem, /!min-h-12 !border-\[var\(--wc-dash-border\)\] !text-lg !text-\[var\(--wc-dash-text\)\] hover:!scale-100/);
   assert.match(listItem, /className="inline-flex min-h-12 min-w-12 items-center justify-center/);
 });
 
@@ -215,6 +215,28 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(listItem, /workout_builder\.exercise\.remove/);
   assert.match(listItem, /text-lg text-\[var\(--wc-dash-error\)\]/);
   assert.match(card, /className="min-h-12 text-lg" onClick=\{\(\) => onShuffle\(exercise\.id, muscle\)\}/);
+  assert.match(listItem, /data-wc-exercise-name=""/);
+  assert.match(listItem, /min-w-\[120px\] flex-1/);
+  assert.match(listItem, /flex w-full min-w-0 flex-wrap items-center gap-2/);
+  assert.match(listItem, /min-h-12 min-w-12 shrink-0 cursor-grab/);
+  assert.match(listItem, /h-12 w-12 min-h-12 min-w-12/);
+  assert.match(listItem, /text-lg font-bold text-\[var\(--wc-dash-text\)\]/);
+  assert.match(listItem, /aria-label=\{t\("statistics\.title"\)\}/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /workout_builder\.addExercise/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /min-h-12 w-full/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /bg-\[var\(--wc-dash-accent\)\]/);
+  assert.match(equipment, /aria-disabled=\{selectedEquipment\.length === 0\}/);
+  assert.match(equipment, /aria-disabled:text-\[var\(--wc-dash-secondary\)\]/);
+  assert.doesNotMatch(equipment, /selectedEquipment\.length > 0 &&/);
+  assert.match(card, /workout_builder\.exercise\.type/);
+  assert.doesNotMatch(card, /<strong>Type:<\/strong>/);
+  assert.match(read("src/features/embed/embed-theme.css"), /\[data-wc-step-actions\] > :has\(\[data-wc-step-next\]\)/);
+  assert.match(read("locales/en.ts"), /type: "Type:"/);
+  assert.match(read("locales/fr.ts"), /type: "Type :"/);
+  assert.match(read("locales/es.ts"), /type: "Tipo:"/);
+  assert.match(read("locales/pt.ts"), /type: "Tipo:"/);
+  assert.match(read("locales/ru.ts"), /type: "Тип:"/);
+  assert.match(read("locales/zh-CN.ts"), /type: "类型："/);
   assert.match(card, /break-words text-lg font-semibold leading-tight/);
   assert.doesNotMatch(card, /line-clamp-2/);
   assert.doesNotMatch(card, /text-sm leading-tight line-clamp-2/);

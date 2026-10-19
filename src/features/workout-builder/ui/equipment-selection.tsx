@@ -159,7 +159,8 @@ export function EquipmentSelection({ onClearEquipment, onToggleEquipment, select
           {t("workout_builder.stats.equipment_selected", { count: selectedEquipment.length })}
         </p>
         <button
-          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)]"
+          aria-disabled={selectedEquipment.length === 0}
+          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)] aria-disabled:pointer-events-none aria-disabled:border aria-disabled:border-[var(--wc-dash-border)] aria-disabled:bg-[var(--wc-dash-inner)] aria-disabled:text-[var(--wc-dash-secondary)] aria-disabled:opacity-100"
           onClick={onClearEquipment}
           type="button"
         >

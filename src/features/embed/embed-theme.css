@@ -432,6 +432,11 @@ html[data-wc-embed="1"] [data-wc-step-previous] {
   transform: none !important;
 }
 
+html[data-wc-embed="1"] [data-wc-step-actions] > :has([data-wc-step-next]) {
+  order: -1;
+  width: 100%;
+}
+
 html[data-wc-embed="1"] [data-wc-step-next] {
   order: -1;
   min-height: 56px !important;

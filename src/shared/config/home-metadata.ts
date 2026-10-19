@@ -225,6 +225,12 @@ export function getHomePageMetadata(locale: string): Metadata {
   const social = getLayoutSocialMetadata(locale);
   const ogImageName = getOgImageName(locale);
   const imageUrl = `${getServerUrl()}/images/${ogImageName}`;
+  const image = {
+    url: imageUrl,
+    width: SiteConfig.seo.ogImage.width,
+    height: SiteConfig.seo.ogImage.height,
+    alt: title,
+  };
 
   return {
     title,
@@ -236,20 +242,13 @@ export function getHomePageMetadata(locale: string): Metadata {
       description,
       locale: getOgLocale(locale),
       alternateLocale: getPageOgAlternateLocales(locale),
-      images: [
-        {
-          url: imageUrl,
-          width: SiteConfig.seo.ogImage.width,
-          height: SiteConfig.seo.ogImage.height,
-          alt: title,
-        },
-      ],
+      images: [image],
     },
     twitter: {
       ...social.twitter,
       title: `${title} | ${SiteConfig.title}`,
       description,
-      images: [imageUrl],
+      images: [image],
     },
   };
 }
@@ -260,6 +259,12 @@ export function getProgramsPageMetadata(locale: string): Metadata {
   const socialTitle = getProgramsOpenGraphTitle(locale);
   const ogImageName = getOgImageName(locale);
   const imageUrl = `${getServerUrl()}/images/${ogImageName}`;
+  const image = {
+    url: imageUrl,
+    width: SiteConfig.seo.ogImage.width,
+    height: SiteConfig.seo.ogImage.height,
+    alt: title,
+  };
 
   return {
     title,
@@ -270,20 +275,13 @@ export function getProgramsPageMetadata(locale: string): Metadata {
       description,
       locale: getOgLocale(locale),
       alternateLocale: getPageOgAlternateLocales(locale),
-      images: [
-        {
-          url: imageUrl,
-          width: SiteConfig.seo.ogImage.width,
-          height: SiteConfig.seo.ogImage.height,
-          alt: title,
-        },
-      ],
+      images: [image],
     },
     twitter: {
       ...social.twitter,
       title: socialTitle,
       description,
-      images: [imageUrl],
+      images: [image],
     },
   };
 }

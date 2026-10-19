@@ -294,6 +294,39 @@ test("home and programs spread the layout open graph and twitter base", async ()
   }
 });
 
+function firstSocialImage(images: unknown) {
+  const first = Array.isArray(images) ? images[0] : images;
+  if (typeof first === "string" || first instanceof URL) {
+    return { url: String(first), width: undefined, height: undefined, alt: undefined };
+  }
+  const image = first as { url?: string | URL; width?: number; height?: number; alt?: string } | undefined;
+  return {
+    url: image?.url === undefined ? "" : String(image.url),
+    width: image?.width,
+    height: image?.height,
+    alt: image?.alt,
+  };
+}
+
+test("home and programs twitter images match the open graph image", () => {
+  for (const locale of supportedLocales) {
+    for (const metadata of [getHomePageMetadata(locale), getProgramsPageMetadata(locale)]) {
+      const openGraph = metadata.openGraph as { images?: unknown } | null;
+      const twitter = metadata.twitter as { images?: unknown } | null;
+      const ogImage = firstSocialImage(openGraph?.images);
+      const twitterImage = firstSocialImage(twitter?.images);
+      assert.equal(twitterImage.url, ogImage.url, locale);
+      assert.equal(twitterImage.width, ogImage.width, locale);
+      assert.equal(twitterImage.height, ogImage.height, locale);
+      assert.equal(twitterImage.alt, ogImage.alt, locale);
+      assert.equal(twitterImage.width, SiteConfig.seo.ogImage.width, locale);
+      assert.equal(twitterImage.height, SiteConfig.seo.ogImage.height, locale);
+      assert.equal(typeof twitterImage.alt, "string", locale);
+      assert.ok((twitterImage.alt ?? "").length > 0, locale);
+    }
+  }
+});
+
 test("unknown and prototype locales omit the page og locale from alternates", () => {
   for (const locale of ["not-a-locale", ...prototypeKeys]) {
     for (const metadata of [getHomePageMetadata(locale), getProgramsPageMetadata(locale)]) {

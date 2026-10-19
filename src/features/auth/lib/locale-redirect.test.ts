@@ -235,14 +235,24 @@ test("zh-CN /?embed=1 does not redirect-loop for any detected-locale or Next-Loc
   for (const cookie of cookieStates) {
     const headers: Record<string, string> = { "accept-language": "zh-CN" };
     if (cookie !== undefined) headers.cookie = cookie;
+    const label = cookie ?? "(no cookies)";
+
+    if (cookie !== undefined && cookie in nextLocalePath) {
+      const first = await proxy(new NextRequest(`${APP}/?embed=1`, { headers }));
+      const firstLocation = first.headers.get("location");
+      assert.equal(first.status, 307, label);
+      if (!firstLocation) assert.fail(label);
+      assert.equal(new URL(firstLocation).pathname, nextLocalePath[cookie], label);
+      assert.equal(new URL(firstLocation).search, "?embed=1", label);
+    }
 
     const settled = await followRedirects(`${APP}/?embed=1`, headers);
     const finalUrl = new URL(settled.finalUrl);
-    assert.equal(settled.loop, false, cookie ?? "(no cookies)");
-    assert.ok(settled.hops <= 2, `${cookie ?? "(no cookies)"} settled in ${settled.hops} hops at ${settled.finalUrl}`);
-    assert.equal(finalUrl.searchParams.get("embed"), "1", cookie ?? "(no cookies)");
+    assert.equal(settled.loop, false, label);
+    assert.ok(settled.hops <= 2, `${label} settled in ${settled.hops} hops at ${settled.finalUrl}`);
+    assert.equal(finalUrl.searchParams.get("embed"), "1", label);
     if (cookie !== undefined && cookie in nextLocalePath) {
-      assert.equal(finalUrl.pathname, nextLocalePath[cookie], cookie);
+      assert.equal(finalUrl.pathname, nextLocalePath[cookie], label);
     }
   }
 });
@@ -314,6 +324,35 @@ async function followQuery(startUrl: string, headers: Record<string, string>) {
 
   return { loop: true, hops: 6, finalUrl: current, locations };
 }
+
+test("Accept-Language pt-BR and fr-FR on /programs/x?embed=1 rewrite to /pt and /fr", async () => {
+  const cases = [
+    { acceptLanguage: "pt-BR,pt;q=0.9,en;q=0.8", locale: "pt" },
+    { acceptLanguage: "fr-FR,fr;q=0.9", locale: "fr" }
+  ];
+
+  for (const { acceptLanguage, locale } of cases) {
+    const headers = { "accept-language": acceptLanguage };
+
+    const root = await proxy(new NextRequest(`${APP}/?embed=1`, { headers }));
+    const rootLocation = root.headers.get("location");
+    assert.equal(root.status, 307, acceptLanguage);
+    if (!rootLocation) assert.fail(acceptLanguage);
+    const rootUrl = new URL(rootLocation);
+    assert.equal(rootUrl.pathname, `/${locale}`, acceptLanguage);
+    assert.equal(rootUrl.search, "?embed=1", acceptLanguage);
+
+    const nested = await proxy(new NextRequest(`${APP}/programs/x?embed=1`, { headers }));
+    const rewrite = nested.headers.get("x-middleware-rewrite");
+    assert.equal(nested.status, 200, acceptLanguage);
+    assert.equal(nested.headers.get("location"), null, acceptLanguage);
+    assert.equal(nested.headers.get("x-next-locale"), locale, acceptLanguage);
+    if (!rewrite) assert.fail(acceptLanguage);
+    const rewriteUrl = new URL(rewrite);
+    assert.equal(rewriteUrl.pathname, `/${locale}/programs/x`, acceptLanguage);
+    assert.equal(rewriteUrl.search, "?embed=1", acceptLanguage);
+  }
+});
 
 test("pt-BR and fr-FR with q-values resolve to pt and fr on / and on a nested path", async () => {
   const cases = [

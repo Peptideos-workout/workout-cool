@@ -72,9 +72,10 @@ function detectUserLocale(request: NextRequest): SupportedLocale {
 }
 
 /**
- * Supported Next-Locale cookie, else Accept-Language, else en.
- * Match is exact: zh-cn is not zh-CN. next-international rejects zh-cn on nested paths, so folding it
- * only on / would redirect to /zh-CN and bounce back to /. Unsupported cookies fall back to en.
+ * Missing Next-Locale uses Accept-Language. A present cookie is kept only on an exact match;
+ * zh-cn is not zh-CN. Unsupported and empty cookies fall back to en and do not use Accept-Language.
+ * next-international rejects zh-cn on nested paths, so folding it only on / would redirect to /zh-CN
+ * and bounce back to /.
  */
 function resolveRequestLocale(request: NextRequest): SupportedLocale {
   const cookieLocale = request.cookies.get(NEXT_LOCALE_COOKIE)?.value;

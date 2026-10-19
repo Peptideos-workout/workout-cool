@@ -55,7 +55,7 @@ export function LanguageSelector() {
     <div className="dropdown dropdown-end">
       <div className="tooltip tooltip-bottom" data-tip={t("commons.change_language")}>
         <div
-          className="btn btn-ghost btn-circle h-8 w-8 p-0 text-xl flex items-center justify-center hover:bg-slate-200 border-none dark:hover:bg-gray-800 rounded-full"
+          className="btn btn-ghost btn-circle !h-12 !w-12 !min-h-12 !min-w-12 !p-0 text-xl flex items-center justify-center hover:bg-slate-200 border-none dark:hover:bg-gray-800 rounded-full"
           role="button"
           tabIndex={0}
         >

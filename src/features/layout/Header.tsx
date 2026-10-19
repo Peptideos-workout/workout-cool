@@ -66,7 +66,7 @@ export const Header = () => {
               <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100"></div>
             </div>
             <div className="flex-col hidden sm:flex">
-              <span className="font-bold transition-colors duration-200 group-hover:text-blue-400">WorkoutOS</span>
+              <span className="text-lg font-bold transition-colors duration-200 group-hover:text-blue-400">WorkoutOS</span>
             </div>
           </Link>
         </div>
@@ -74,8 +74,12 @@ export const Header = () => {
         {/* User Menu */}
         <div className="navbar-end !h-auto !w-auto min-w-0 flex-1 flex-wrap justify-end gap-y-1">
           {allFeaturesFree || isPremium || !showAds || !hasAdProvider ? <WorkoutStreakHeader /> : <RemoveAdsText />}
-          <ThemeToggle />
-          <LanguageSelector />
+          <div className="inline-flex !min-h-12 !min-w-12 items-center justify-center">
+            <ThemeToggle />
+          </div>
+          <div className="inline-flex !min-h-12 !min-w-12 items-center justify-center">
+            <LanguageSelector />
+          </div>
 
           {!session.data ? (
             <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
@@ -106,7 +110,7 @@ export const Header = () => {
           ) : (
             <div className="dropdown dropdown-end ml-1">
               <div className="tooltip tooltip-bottom" data-tip={t("commons.profile")}>
-                <div className="btn btn-ghost btn-circle avatar relative" role="button" tabIndex={0}>
+                <div className="btn btn-ghost btn-circle avatar relative !min-h-12 !min-w-12" role="button" tabIndex={0}>
                   <div className="w-8 rounded-full bg-primary text-primary-content !flex items-center justify-center text-sm font-medium">
                     {userAvatar || <User className="w-4 h-4" />}
                   </div>

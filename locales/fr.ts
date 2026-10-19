@@ -1584,6 +1584,7 @@ export default {
     exercise: {
       watch_video: "Voir la vidéo",
       shuffle: "Mélanger",
+      type: "Type :",
       pick: "Choisir",
       remove: "Supprimer",
       no_video_available: "Aucune vidéo disponible.",

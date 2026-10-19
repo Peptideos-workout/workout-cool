@@ -1559,6 +1559,7 @@ export default {
     exercise: {
       watch_video: "Watch video",
       shuffle: "Shuffle",
+      type: "Type:",
       pick: "Pick",
       remove: "Remove",
       no_video_available: "No video available.",

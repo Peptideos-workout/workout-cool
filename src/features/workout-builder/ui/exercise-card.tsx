@@ -117,7 +117,7 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
                   <p className="text-sm">{exercise.introduction}</p>
                   {mechanicsTypeValue && (
                     <p className="text-xs text-slate-500">
-                      <strong>Type:</strong> {mechanicsTypeValue.map((mt) => mt.replace("_", " ")).join(", ")}
+                      <strong>{t("workout_builder.exercise.type")}</strong> {mechanicsTypeValue.map((mt) => mt.replace("_", " ")).join(", ")}
                     </p>
                   )}
                 </div>

@@ -60,29 +60,56 @@ function safeHttpMethod(method: string | null | undefined): string {
   return method;
 }
 
+/**
+ * Invisible characters that must not count as a Referer. Regular whitespace is whatever
+ * `trim()` removes. These are stripped, then the remainder is measured.
+ */
+const INVISIBLE_REFERER_CODE_POINTS = new Set<number>([0x200b, 0x200c, 0x200d, 0x2060, 0xfeff]);
+
+function isRefererPadding(codePoint: number): boolean {
+  if (INVISIBLE_REFERER_CODE_POINTS.has(codePoint)) return true;
+  return String.fromCodePoint(codePoint).trim().length === 0;
+}
+
+/** Presence only. A Referer made entirely of whitespace or those invisible characters is absent. */
+function hasReferer(referer: string | null | undefined): boolean {
+  if (typeof referer !== "string") return false;
+  for (const char of referer) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint === undefined || !isRefererPadding(codePoint)) return true;
+  }
+  return false;
+}
+
 /** The only object that may be logged. Callers pass raw headers in and get categories out. */
 export function forbiddenOriginLogRecord(signals: ForbiddenOriginSignals): ForbiddenOriginLogRecord {
   return {
     origin_category: forbiddenOriginCategory(signals.origin),
     sec_fetch_site: classifySecFetchSite(signals.secFetchSite),
-    has_referer: typeof signals.referer === "string" && signals.referer.trim().length > 0,
+    has_referer: hasReferer(signals.referer),
     method: safeHttpMethod(signals.method)
   };
 }
 
+/** Method and headers are both read inside `logForbiddenOrigin`'s try. */
+interface ForbiddenOriginLogRequest {
+  headers: Headers;
+  readonly method: string;
+}
+
 /**
- * Server-side only. Header reads and console.warn stay inside the try, so a throwing
- * read or a throwing warn cannot change the 403.
+ * Server-side only. The method read, header reads, and console.warn stay inside the try,
+ * so a throwing read or a throwing warn cannot change the 403.
  */
-export function logForbiddenOrigin(headers: Headers, method: string): void {
+export function logForbiddenOrigin(request: ForbiddenOriginLogRequest): void {
   try {
     console.warn(
       "[sso] forbidden_origin",
       forbiddenOriginLogRecord({
-        origin: headers.get("origin"),
-        secFetchSite: headers.get("sec-fetch-site"),
-        referer: headers.get("referer"),
-        method
+        origin: request.headers.get("origin"),
+        secFetchSite: request.headers.get("sec-fetch-site"),
+        referer: request.headers.get("referer"),
+        method: request.method
       })
     );
   } catch {

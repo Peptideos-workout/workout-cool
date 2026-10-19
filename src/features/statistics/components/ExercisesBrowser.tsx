@@ -148,7 +148,7 @@ const ExerciseSelectionModal: React.FC<{
           {/* Equipment Filter */}
           <SimpleSelect
             aria-label="Filter by equipment"
-            className="w-full"
+            className="w-full !z-[250]"
             onValueChange={setSelectedEquipment}
             options={equipmentOptions}
             value={selectedEquipment}
@@ -157,7 +157,7 @@ const ExerciseSelectionModal: React.FC<{
           {/* Muscle Filter */}
           <SimpleSelect
             aria-label="Filter by muscle group"
-            className="w-full"
+            className="w-full !z-[250]"
             onValueChange={setSelectedMuscle}
             options={muscleOptions}
             value={selectedMuscle}

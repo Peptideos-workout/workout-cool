@@ -306,8 +306,15 @@ test("stats copy keys and chart data props stay put", () => {
     assert.match(overlay, new RegExp(key.replace(/\./g, "\\.")));
   }
   assert.doesNotMatch(overlay, /\+12\.5%|statistics\.rating|4\.8|2450|AnimatedMetrics|AnimatedChart/);
-  assert.doesNotMatch(read("src/components/ui/simple-select.tsx"), /!z-\[250\]/);
-  assert.equal(browser.split("className=\"w-full !z-[250]\"").length - 1, 2);
+  assert.match(
+    read("src/components/ui/simple-select.tsx"),
+    new RegExp(
+      "<SelectContent className=\"!z-\\[250\\] border border-\\[var\\(--wc-dash-border\\)\\] " +
+        "bg-\\[var\\(--wc-dash-panel\\)\\] text-\\[var\\(--wc-dash-text\\)\\]\">",
+    ),
+  );
+  assert.equal(browser.split("className=\"w-full\"").length - 1, 2);
+  assert.doesNotMatch(browser, /w-full !z-\[250\]/);
   assert.doesNotMatch(read("src/components/ui/select.tsx"), /!z-\[250\]/);
   assert.match(browser, /modal !z-\[245\]/);
   assert.doesNotMatch(browser, /z-\[27/);

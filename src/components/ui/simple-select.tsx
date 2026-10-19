@@ -59,7 +59,7 @@ export function SimpleSelect<T extends string = string>({
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]">
+      <SelectContent className="!z-[250] border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]">
         {options.map((option) => (
           <SelectItem className="!min-h-12 !text-lg text-[var(--wc-dash-text)]" key={option.value} value={option.value}>
             {option.label}

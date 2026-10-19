@@ -272,11 +272,19 @@ export function WorkoutSessionSets({
                   </div>
                   {/* Actions bas de page */}
                   <div className="flex flex-col md:flex-row gap-3 w-full mt-2 px-2">
-                    <Button aria-label="Ajouter une série" className={`${secondaryButton} flex-1 font-bold`} onClick={handleAddSet}>
+                    <Button
+                      aria-label={t("workout_builder.session.add_set")}
+                      className={`${secondaryButton} flex-1 font-bold`}
+                      onClick={handleAddSet}
+                    >
                       <Plus className="h-5 w-5" />
                       {t("workout_builder.session.add_set")}
                     </Button>
-                    <Button aria-label="Exercice suivant" className={`${secondaryButton} flex-1 font-bold`} onClick={handleNextExercise}>
+                    <Button
+                      aria-label={t("workout_builder.session.next_exercise")}
+                      className={`${secondaryButton} flex-1 font-bold`}
+                      onClick={handleNextExercise}
+                    >
                       {t("workout_builder.session.next_exercise")}
                       <ArrowRight className="h-5 w-5" />
                     </Button>

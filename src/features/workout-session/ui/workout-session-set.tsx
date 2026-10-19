@@ -1,4 +1,4 @@
-import { Plus, Minus, Trash2 } from "lucide-react";
+import { Minus, Trash2 } from "lucide-react";
 import { useI18n } from "locales/client";
 
 import { AVAILABLE_WORKOUT_SET_TYPES, MAX_WORKOUT_SET_COLUMNS } from "@/shared/constants/workout-set-types";
@@ -234,7 +234,6 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
             onClick={addColumn}
             variant="outline"
           >
-            <Plus className="h-4 w-4" />
             <span className="block md:hidden">+ {t("workout_builder.session.add_row")}</span>
             <span className="hidden md:block">{t("workout_builder.session.add_column")}</span>
           </Button>

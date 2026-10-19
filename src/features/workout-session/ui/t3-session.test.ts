@@ -232,6 +232,11 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(sets, /\{t\("workout_builder\.session\.next_exercise"\)\}\n\s+<ArrowRight className="h-5 w-5" \/>/);
   assert.doesNotMatch(sets, /<ArrowRight className="h-5 w-5" \/>\n\s+\{t\("workout_builder\.session\.next_exercise"\)\}/);
   assert.match(row, /\+ \{t\("workout_builder\.session\.add_row"\)\}/);
+  assert.doesNotMatch(row, /<Plus/);
+  assert.match(sets, /aria-label=\{t\("workout_builder\.session\.add_set"\)\}/);
+  assert.match(sets, /aria-label=\{t\("workout_builder\.session\.next_exercise"\)\}/);
+  assert.doesNotMatch(sets, /aria-label="Ajouter une série"/);
+  assert.doesNotMatch(sets, /aria-label="Exercice suivant"/);
   assert.match(row, /mt-2 flex w-full flex-col gap-2 sm:flex-row/);
   assert.match(row, /!whitespace-normal/);
   assert.match(sets, /<FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId=\{ex\.id\} \/>/);

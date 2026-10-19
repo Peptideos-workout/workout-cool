@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { useI18n } from "locales/client";
 
 import { StructuredDataScript } from "@/shared/lib/structured-data";
 import { SiteConfig } from "@/shared/config/site-config";
@@ -16,6 +17,7 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
+  const t = useI18n();
   const siteOrigin = SiteConfig.prodUrl.replace(/\/$/, "");
   // Generate BreadcrumbList structured data
   const breadcrumbStructuredData = {
@@ -32,7 +34,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
     <>
       <StructuredDataScript data={breadcrumbStructuredData} />
-      <nav aria-label="Breadcrumb" className="m-2 flex min-h-12 items-center">
+      <nav aria-label={t("breadcrumbs.label")} className="m-2 flex min-h-12 items-center">
         <ol className="flex flex-wrap items-center gap-x-1 gap-y-1 sm:gap-x-2">
           {items.map((item, index) => (
             <li className="flex items-center" key={index}>

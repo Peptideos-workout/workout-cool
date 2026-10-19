@@ -1524,6 +1524,7 @@ export default {
 
   breadcrumbs: {
     home: "Главная",
+    label: "Хлебные крошки",
   },
 
   // Workout Builder

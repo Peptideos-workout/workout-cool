@@ -433,6 +433,7 @@ export default {
   },
   breadcrumbs: {
     home: "Accueil",
+    label: "Fil d'Ariane",
   },
   bottom_navigation: {
     statistics: "Statistiques",

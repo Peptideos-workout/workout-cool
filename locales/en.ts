@@ -431,6 +431,7 @@ export default {
   },
   breadcrumbs: {
     home: "Home",
+    label: "Breadcrumb",
   },
   bottom_navigation: {
     statistics: "Statistics",

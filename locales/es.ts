@@ -452,6 +452,7 @@ export default {
   },
   breadcrumbs: {
     home: "Inicio",
+    label: "Migas de pan",
   },
   bottom_navigation: {
     statistics: "Estadísticas",

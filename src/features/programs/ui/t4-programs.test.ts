@@ -387,7 +387,20 @@ test("breadcrumbs, program cover, list title, and plural copy stay locked", () =
   const crumbs = read("src/components/seo/breadcrumbs.tsx");
   const detail = read(DETAIL);
   const list = read(LIST);
+  assert.match(crumbs, /aria-label=\{t\("breadcrumbs\.label"\)\}/);
+  assert.doesNotMatch(crumbs, /aria-label="Breadcrumb"/);
   assert.match(crumbs, /href=\{item\.href\}/);
+  const breadcrumbLabels = {
+    en: "Breadcrumb",
+    fr: "Fil d'Ariane",
+    es: "Migas de pan",
+    pt: "Trilha de navegação",
+    ru: "Хлебные крошки",
+    "zh-CN": "面包屑",
+  };
+  for (const [locale, label] of Object.entries(breadcrumbLabels)) {
+    assert.ok(read(`locales/${locale}.ts`).includes(`label: "${label}"`), locale);
+  }
   assert.match(crumbs, /inline-flex min-h-12 items-center text-lg/);
   assert.match(crumbs, /index === 0 \? " text-\[var\(--wc-dash-secondary\)\]" : " text-\[var\(--wc-dash-text\)\]"/);
   assert.match(crumbs, /aria-current="page" className="text-lg font-medium text-\[var\(--wc-dash-text\)\]"/);

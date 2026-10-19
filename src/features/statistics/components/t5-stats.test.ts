@@ -248,7 +248,9 @@ test("stats copy keys and chart data props stay put", () => {
   assert.doesNotMatch(page, /import React from "react"/);
   assert.match(page, /fallback=\{/);
   assert.match(page, /feature="Statistics"/);
-  assert.match(page, /<div className="mb-8 flex flex-wrap justify-center gap-8">/);
+  assert.match(page, /<div className="flex flex-wrap justify-center">/);
+  const fallbackBlock = page.slice(page.indexOf("fallback={"), page.indexOf("</PremiumGate>"));
+  assert.doesNotMatch(fallbackBlock, /\b(?:m[trblxy]?-|p[trblxy]?-|gap-|space-[xy]-)/);
   assert.doesNotMatch(page, /15\.4K\+|89%|4\.8|active_daily_users|success_rate|user_rating/);
   for (const key of [
     "statistics.select_exercise",

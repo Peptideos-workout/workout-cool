@@ -19,7 +19,7 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
 
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
-      <DialogContent className="max-w-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)]">
+      <DialogContent className="max-w-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] [&>button]:!h-12 [&>button]:!w-12">
         <DialogHeader className="pb-6">
           <DialogTitle className="flex items-center gap-3 text-lg font-bold text-[var(--wc-dash-text)]">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-inner)]">

@@ -102,10 +102,12 @@ test("finished steps and finish actions are teal with a check", () => {
   );
   assert.match(sets, /border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]/);
   assert.equal(sets.split("border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]").length - 1, 2);
-  assert.match(sets, /<span aria-hidden="true">✓<\/span>\n\s+\{t\("workout_builder\.session\.finish_session"\)\}/);
+  assert.doesNotMatch(sets, /<span aria-hidden="true">✓<\/span>\n\s+\{t\("workout_builder\.session\.finish_session"\)\}/);
+  assert.match(sets, /<TrophyIcon className="h-6 w-6" \/>\n\s+\{t\("workout_builder\.session\.finish_session"\)\}/);
   assert.match(row, /!bg-\[var\(--wc-dash-accent\)\] !text-lg font-bold !text-\[var\(--wc-dash-ink\)\]/);
   assert.match(row, /<span aria-hidden="true">✓<\/span>\n\s+\{t\("workout_builder\.session\.finish_set"\)\}/);
-  assert.match(row, /\{set\.completed \? "✓" : ""\} SET \{setIndex \+ 1\}/);
+  assert.match(row, /t\("workout_builder\.session\.set_number", \{ number: setIndex \+ 1 \}\)/);
+  assert.doesNotMatch(row, /SET \{setIndex \+ 1\}/);
   assert.match(row, /set\.completed\n\s+\? "bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]"/);
 });
 
@@ -154,7 +156,7 @@ test("session contrast pairs meet AA", () => {
   }
 });
 
-test("session handlers, disabled expressions, conditionals, and copy stay byte-identical", () => {
+test("session handlers, disabled expressions, conditionals, and copy stay locked with regex matches", () => {
   const header = read(HEADER);
   const timer = read(TIMER);
   const sets = read(SETS);
@@ -210,9 +212,32 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
   assert.match(read("locales/ru.ts"), /exercise_in_progress: "Упражнение в процессе"/);
   assert.match(read("locales/zh-CN.ts"), /exercise_complete: "练习已完成"/);
   assert.match(read("locales/zh-CN.ts"), /exercise_in_progress: "练习进行中"/);
+  assert.match(read("locales/en.ts"), /workout_in_progress: "Workout in Progress"/);
+  assert.match(read("locales/fr.ts"), /workout_in_progress: "Entraînement en cours"/);
+  assert.match(read("locales/es.ts"), /workout_in_progress: "Entrenamiento en progreso"/);
+  assert.match(read("locales/pt.ts"), /workout_in_progress: "Treino em curso"/);
+  assert.match(read("locales/ru.ts"), /workout_in_progress: "Тренировка в процессе"/);
+  assert.match(read("locales/zh-CN.ts"), /workout_in_progress: "锻炼进行中"/);
+  assert.match(read("locales/en.ts"), /set_number: "Set \{number\}"/);
+  assert.match(read("locales/fr.ts"), /set_number: "Série \{number\}"/);
+  assert.match(read("locales/es.ts"), /set_number: "Serie \{number\}"/);
+  assert.match(read("locales/pt.ts"), /set_number: "Série \{number\}"/);
+  assert.match(read("locales/ru.ts"), /set_number: "Подход \{number\}"/);
+  assert.match(read("locales/zh-CN.ts"), /set_number: "第 \{number\} 组"/);
   assert.match(timer, /rounded-full border border-\[var\(--wc-dash-border\)\] bg-\[var\(--wc-dash-card\)\] px-4 py-2 shadow-lg/);
   assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
-  assert.match(sets, /px-3 pb-16 sm:px-6 sm:pb-40 \[html\[data-wc-embed='1'\]_&\]:pb-8/);
+  assert.match(sets, /px-3 pb-16 sm:px-6 sm:pb-40/);
+  assert.doesNotMatch(sets, /\[html\[data-wc-embed='1'\]_&\]:pb-8/);
+  assert.match(header, /<h2 className="mb-3 text-2xl font-bold text-\[var\(--wc-dash-text\)\]">\{t\("workout_builder\.session\.workout_in_progress"\)\}<\/h2>/);
+  assert.match(sets, /\{t\("workout_builder\.session\.next_exercise"\)\}\n\s+<ArrowRight className="h-5 w-5" \/>/);
+  assert.doesNotMatch(sets, /<ArrowRight className="h-5 w-5" \/>\n\s+\{t\("workout_builder\.session\.next_exercise"\)\}/);
+  assert.match(row, /\+ \{t\("workout_builder\.session\.add_row"\)\}/);
+  assert.match(row, /mt-2 flex w-full flex-col gap-2 sm:flex-row/);
+  assert.match(row, /!whitespace-normal/);
+  assert.match(sets, /<FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId=\{ex\.id\} \/>/);
+  assert.match(quit, /\[&>button\]:!h-12 \[&>button\]:!w-12/);
+  assert.match(read("src/features/workout-builder/ui/exercise-video-modal.tsx"), /\[&>button\]:min-h-12 \[&>button\]:min-w-12/);
+  assert.doesNotMatch(header, /elapsed_time/);
   assert.match(header, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(quit, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(timer, /onClick=\{toggleTimer\}/);

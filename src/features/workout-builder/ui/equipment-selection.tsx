@@ -34,7 +34,7 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
       aria-describedby={descriptionId}
       aria-pressed={isSelected}
       className={cn(
-        "group relative flex min-h-12 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center",
+        "group relative flex h-full min-h-12 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--wc-dash-text)]",
         isSelected
           ? "border-[var(--wc-dash-accent)] bg-[color-mix(in_srgb,var(--wc-dash-accent)_35%,var(--wc-dash-card))]"
@@ -98,10 +98,10 @@ export function EquipmentSelection({ onClearEquipment, onToggleEquipment, select
           {t("workout_builder.selection.clear_all")}
         </button>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {EQUIPMENT_CONFIG.map((equipment, index) => (
           <div
-            className="animate-fade-in-up"
+            className="h-full animate-fade-in-up"
             key={equipment.value}
             style={{
               animationDelay: `${index * 50}ms`,

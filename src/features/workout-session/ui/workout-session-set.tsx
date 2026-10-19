@@ -198,7 +198,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
             <div className="flex w-full min-w-0 flex-col md:w-auto md:min-w-60 md:flex-1" key={columnIndex}>
               <div className="mb-1 flex w-full min-w-0 flex-col gap-1 sm:flex-row sm:items-center">
                 <select
-                  className={`${sessionField} w-full sm:min-w-60`}
+                  className={`${sessionField} w-full !px-2 sm:min-w-60 sm:!px-3`}
                   disabled={set.completed}
                   onChange={handleTypeChange(columnIndex)}
                   value={type}

@@ -276,7 +276,7 @@ export function WorkoutSessionSets({
                 <div className="mb-10 mt-6 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]">
                   {/* Liste des sets */}
                   <div className="flex justify-start items-center gap-2">
-                    <FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId={ex.id} />
+                    <FavoriteExerciseButton className="!h-auto !min-h-12 !min-w-12 !whitespace-normal" exerciseId={ex.id} />
                   </div>
                   <div className="space-y-10 mb-8">
                     {ex.sets.map((set, setIdx) => (

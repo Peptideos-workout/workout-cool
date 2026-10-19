@@ -120,7 +120,7 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   assert.match(sets, /!min-h-12 !border !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
   assert.match(sets, /!text-lg !text-\[var\(--wc-dash-text\)\]/);
   const quitClass =
-    "className=\"border-0 bg-transparent px-3 !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
+    "className=\"max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(header, new RegExp(quitClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const dialogQuit =
     "className=\"w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
@@ -272,7 +272,7 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.doesNotMatch(sets, /aria-label="Exercice suivant"/);
   assert.match(row, /mt-2 flex w-full flex-col gap-2 sm:flex-row/);
   assert.match(row, /!whitespace-normal/);
-  assert.match(sets, /<FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId=\{ex\.id\} \/>/);
+  assert.match(sets, /<FavoriteExerciseButton className="!h-auto !min-h-12 !min-w-12 !whitespace-normal" exerciseId=\{ex\.id\} \/>/);
   assert.match(quit, /\[&>button\]:!h-12 \[&>button\]:!w-12/);
   assert.match(read("src/features/workout-builder/ui/exercise-video-modal.tsx"), /\[&>button\]:!h-12 \[&>button\]:!w-12/);
   assert.match(read("src/features/workout-builder/ui/exercise-video-modal.tsx"), /min-h-12 items-center gap-2 text-lg/);

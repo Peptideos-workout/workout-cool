@@ -121,7 +121,9 @@ test("T1 public shell classes stay in place and the embed line is a separate nod
   assert.match(layout, /<Footer/);
   assert.match(layout, /<BottomNavigation/);
   assert.match(layout, /<Version variant="meta"/);
-  assert.match(root, /<Version \/>/);
+  assert.match(layout, /<Version \/>/);
+  assert.ok(layout.indexOf("<Version />") < layout.indexOf("{children}"));
+  assert.doesNotMatch(root, /<Version \/>/);
   assert.match(root, /bg-hero-light/);
   assert.match(version, /data-wc-chrome="version"/);
   assert.match(version, /text-lg leading-snug text-\[var\(--wc-dash-secondary\)\]/);
@@ -246,11 +248,12 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(version, /pointer-events-none/);
   assert.match(version, /z-20/);
   assert.doesNotMatch(version, /z-50/);
-  assert.match(version, /left-1\/2 z-20 w-full max-w-3xl -translate-x-1\/2/);
+  assert.match(version, /relative z-20 w-fit self-start/);
+  assert.doesNotMatch(version, /w-full/);
+  assert.doesNotMatch(version, /left-1\/2/);
   assert.doesNotMatch(version, /sm:left-4/);
-  assert.doesNotMatch(version, /sm:bottom-\[168px\]/);
-  assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\+168px\)\]/);
-  assert.match(version, /sm:bottom-36/);
+  assert.doesNotMatch(version, /sm:bottom-/);
+  assert.doesNotMatch(version, /max-sm:bottom-/);
   assert.match(main, /sm:pb-12/);
   assert.doesNotMatch(version, /\bfixed\b/);
   assert.match(footer, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
@@ -264,7 +267,7 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /\+33px/);
   assert.doesNotMatch(main, /max-sm:pb-36/);
   assert.doesNotMatch(main, /134px/);
-  assert.doesNotMatch(version, /max-sm:bottom-36/);
+  assert.doesNotMatch(version, /\babsolute\b/);
   assert.doesNotMatch(version, /136px/);
   for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
     assert.match(read(`locales/${locale}.ts`), /label:\s*"/);

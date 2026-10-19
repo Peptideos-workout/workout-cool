@@ -17,7 +17,6 @@ import { ThemeSynchronizer } from "@/features/theme/ui/ThemeSynchronizer";
 import { embedBootScript } from "@/features/embed/lib/embed-boot-script";
 import { getConfiguredPeptideOsOrigin } from "@/features/auth/lib/configured-peptideos-signup";
 import { env } from "@/env";
-import { Version } from "@/components/version";
 import { TailwindIndicator } from "@/components/utils/TailwindIndicator";
 import { NextTopLoader } from "@/components/ui/next-top-loader";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
@@ -384,7 +383,6 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
                   <VerticalRightBanner />
                 </div>
               </div>
-              <Version />
             </div>
 
             <TailwindIndicator />

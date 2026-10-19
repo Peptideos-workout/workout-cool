@@ -48,6 +48,7 @@ function postRequest(options: {
   accept?: string;
   cookie?: string;
   referer?: string;
+  secFetchSite?: string;
   queryToken?: string;
   queryReturn?: string;
   rawBody?: string;
@@ -68,6 +69,7 @@ function postRequest(options: {
   headers.set("accept", options.accept ?? "application/json");
   if (options.cookie) headers.set("cookie", options.cookie);
   if (options.referer) headers.set("referer", options.referer);
+  if (options.secFetchSite) headers.set("sec-fetch-site", options.secFetchSite);
   if (options.contentLength !== undefined) headers.set("content-length", options.contentLength);
   const body = options.rawBody ?? params.toString();
   return new NextRequest(url, { method: "POST", headers, body });
@@ -353,6 +355,53 @@ test("a wrong or missing Origin is 403, redacted, and does not consume the token
   } finally {
     console.error = original;
   }
+});
+
+test("forbidden_origin warn line is categories only and does not change the 403", async () => {
+  const lines: string[] = [];
+  const original = console.warn;
+  console.warn = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  const origin = `https://evil.example/?token=${rawToken}`;
+  const referer = `https://www.peptideos.us/dashboard?token=${rawToken}`;
+  try {
+    const { deps, handoff, claimCount } = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      postRequest({
+        token: rawToken,
+        origin,
+        referer,
+        secFetchSite: "cross-site",
+        accept: "application/json"
+      }),
+      deps,
+      POS
+    );
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+    assertSsoResponseHeaders(response);
+    assert.equal(handoff.consumed_at, null);
+    assert.equal(claimCount(), 0);
+  } finally {
+    console.warn = original;
+  }
+
+  const logged = lines.join("\n");
+  assert.equal(lines.length, 1);
+  assert.match(lines[0] ?? "", /^\[sso\] forbidden_origin /);
+  assert.doesNotMatch(logged, /plaintext-handoff-from-form-body/);
+  assert.doesNotMatch(logged, /evil\.example/);
+  assert.doesNotMatch(logged, /peptideos\.us/);
+  assert.doesNotMatch(logged, /dashboard/);
+  assert.doesNotMatch(logged, /https?:/);
+  assert.doesNotMatch(logged, /token=/);
+  assert.deepEqual(JSON.parse((lines[0] ?? "").slice("[sso] forbidden_origin ".length)), {
+    origin_category: "other_host",
+    sec_fetch_site: "cross-site",
+    has_referer: true,
+    method: "POST"
+  });
 });
 
 test("embed forbidden_origin and SSO errors show top-level Log in and Sign up", async () => {

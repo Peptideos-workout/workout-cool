@@ -108,7 +108,7 @@ export function WorkoutSessionSets({
   const renderStepIcon = (idx: number, allSetsCompleted: boolean) => {
     if (allSetsCompleted) {
       return (
-        <span aria-label="Exercice terminé" className="text-lg font-semibold text-[var(--wc-dash-ink)]" role="img">
+        <span aria-label={t("workout_builder.session.exercise_complete")} className="text-lg font-semibold text-[var(--wc-dash-ink)]" role="img">
           ✓
         </span>
       );
@@ -116,7 +116,7 @@ export function WorkoutSessionSets({
     if (idx === currentExerciseIndex) {
       return (
         <svg
-          aria-label="Exercice en cours"
+          aria-label={t("workout_builder.session.exercise_in_progress")}
           className="h-6 w-6 animate-ping text-[var(--wc-dash-ink)]"
           fill="currentColor"
           viewBox="0 0 24 24"
@@ -126,7 +126,7 @@ export function WorkoutSessionSets({
       );
     }
 
-    return <Hourglass aria-label="Exercice en cours" className="h-6 w-6 text-[var(--wc-dash-secondary)]" />;
+    return <Hourglass aria-label={t("workout_builder.session.exercise_in_progress")} className="h-6 w-6 text-[var(--wc-dash-secondary)]" />;
   };
 
   const renderStepBackground = (idx: number, allSetsCompleted: boolean) => {

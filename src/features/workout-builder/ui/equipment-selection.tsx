@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Check } from "lucide-react";
-import { useI18n, useCurrentLocale } from "locales/client";
+import { useI18n } from "locales/client";
 import { ExerciseAttributeValueEnum } from "@prisma/client";
 
 import { EQUIPMENT_CONFIG } from "../model/equipment-config";
@@ -9,7 +9,6 @@ import { EQUIPMENT_CONFIG } from "../model/equipment-config";
 import { getEquipmentTranslation } from "@/shared/lib/workout-session/equipments";
 import { cn } from "@/shared/lib/utils";
 import { useWorkoutFeedback } from "@/shared/hooks/use-workout-feedback";
-import { env } from "@/env";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -97,11 +96,10 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
         <div className="text-center">
           <h3
             className={cn(
-              "font-semibold text-sm transition-all duration-200",
-              "tracking-wide leading-tight",
+              "font-semibold text-lg leading-tight tracking-wide transition-all duration-200",
               isSelected
-                ? "text-emerald-700 dark:text-emerald-300"
-                : "text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-200",
+                ? "text-[var(--wc-dash-accent)]"
+                : "text-[var(--wc-dash-text)] group-hover:text-[var(--wc-dash-accent)]",
             )}
           >
             {translation.label}
@@ -122,8 +120,8 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
   );
 }
 
-export function EquipmentSelection({ onToggleEquipment, selectedEquipment }: EquipmentSelectionProps) {
-  const locale = useCurrentLocale();
+export function EquipmentSelection({ onClearEquipment, onToggleEquipment, selectedEquipment }: EquipmentSelectionProps) {
+  const t = useI18n();
 
   return (
     <div className="space-y-6">
@@ -156,7 +154,18 @@ export function EquipmentSelection({ onToggleEquipment, selectedEquipment }: Equ
           />
         )
       )} */}
-      {/* <ActionBar onClearEquipment={onClearEquipment} selectedCount={selectedEquipment.length} /> */}
+      <div className="flex flex-wrap items-center justify-between gap-3" data-wc-equipment-bar="">
+        <p className="text-lg text-[var(--wc-dash-text)]">
+          {t("workout_builder.stats.equipment_selected", { count: selectedEquipment.length })}
+        </p>
+        <button
+          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)]"
+          onClick={onClearEquipment}
+          type="button"
+        >
+          {t("workout_builder.selection.clear_all")}
+        </button>
+      </div>
     </div>
   );
 }

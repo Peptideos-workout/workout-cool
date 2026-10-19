@@ -244,11 +244,12 @@ test("stats copy keys and chart data props stay put", () => {
   const modal = read(MODAL);
   const charts = read(CHARTS);
   const overlay = read(OVERLAY);
-  assert.match(page, /data-wc-kicker=""/);
-  assert.match(page, /\{t\("statistics\.kicker"\)\}/);
+  assert.doesNotMatch(page, /data-wc-kicker/);
+  assert.doesNotMatch(page, /statistics\.kicker/);
+  assert.equal(page.split("<h1").length - 1, 1);
   assert.match(
     page,
-    /<h1 className="mb-4 text-4xl font-black text-\[var\(--wc-dash-text\)\] sm:text-6xl">\{t\("statistics\.title"\)\}<\/h1>/,
+    /<h1 className="mb-2 text-lg font-bold text-\[var\(--wc-dash-accent\)\]">\{t\("statistics\.title"\)\}<\/h1>/,
   );
   assert.match(page, /statistics\.page_subtitle/);
   assert.equal(page.split("statistics.title").length - 1, 1);
@@ -256,9 +257,15 @@ test("stats copy keys and chart data props stay put", () => {
   assert.doesNotMatch(page, /import React from "react"/);
   assert.match(page, /fallback=\{/);
   assert.match(page, /feature="Statistics"/);
-  assert.match(page, /<div className="flex flex-wrap justify-center">/);
+  assert.match(page, /<div className="flex flex-col flex-wrap items-center justify-center gap-4">/);
+  assert.match(page, /premium\.upgrade_to_access_feature/);
+  assert.match(page, /premium\.actions\.go_premium/);
+  assert.match(page, /href="\/premium"/);
+  assert.match(page, /data-wc-entry="premium"/);
+  assert.match(page, /inline-flex min-h-12 items-center justify-center rounded-xl/);
+  assert.match(page, /bg-\[var\(--wc-dash-accent\)\] px-6 text-lg font-bold text-\[var\(--wc-dash-ink\)\]/);
   const fallbackBlock = page.slice(page.indexOf("fallback={"), page.indexOf("</PremiumGate>"));
-  assert.doesNotMatch(fallbackBlock, /\b(?:m[trblxy]?-|p[trblxy]?-|gap-|space-[xy]-)/);
+  assert.doesNotMatch(fallbackBlock, /15\.4K\+|89%|4\.8|active_daily_users|success_rate|user_rating/);
   assert.doesNotMatch(page, /15\.4K\+|89%|4\.8|active_daily_users|success_rate|user_rating/);
   for (const key of [
     "statistics.select_exercise",

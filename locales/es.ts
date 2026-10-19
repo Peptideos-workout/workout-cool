@@ -1891,7 +1891,6 @@ export default {
   },
   statistics: {
     title: "Estadísticas",
-    kicker: "Estadísticas",
     page_subtitle: "Sigue tu viaje fitness con análisis avanzados y perspectivas personalizadas.",
     select_exercise: "Seleccionar Ejercicio",
     // Tabs

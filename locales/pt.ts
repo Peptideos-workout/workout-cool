@@ -1892,7 +1892,6 @@ export default {
   },
   statistics: {
     title: "Estatísticas",
-    kicker: "Estatísticas",
     page_subtitle: "Acompanhe sua jornada fitness com análises avançadas e insights personalizados.",
     select_exercise: "Selecionar Exercício",
     // Tabs

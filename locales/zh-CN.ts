@@ -1826,7 +1826,6 @@ export default {
   },
   statistics: {
     title: "统计数据",
-    kicker: "统计",
     page_subtitle: "通过高级分析和个性化洞察，追踪您的健身之旅。",
     select_exercise: "选择练习",
     // Tabs

@@ -1914,7 +1914,6 @@ export default {
   },
   statistics: {
     title: "Statistiques",
-    kicker: "Statistiques",
     page_subtitle: "Suivez votre parcours fitness avec des analyses avancées et des informations personnalisées.",
     select_exercise: "Sélectionner un exercice",
 

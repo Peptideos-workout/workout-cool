@@ -1888,7 +1888,6 @@ export default {
   },
   statistics: {
     title: "Statistics",
-    kicker: "Statistics",
     page_subtitle: "Track your fitness journey with advanced analytics and personalized insights.",
     select_exercise: "Select Exercise",
 

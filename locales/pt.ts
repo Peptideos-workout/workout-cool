@@ -1894,9 +1894,6 @@ export default {
     kicker: "Estatísticas",
     page_subtitle: "Acompanhe sua jornada fitness com análises avançadas e insights personalizados.",
     select_exercise: "Selecionar Exercício",
-    active_daily_users: "Usuários Ativos Diários",
-    success_rate: "Taxa de Sucesso",
-    user_rating: "Avaliação do Usuário",
     // Tabs
     tabs: {
       video: "Vídeo",

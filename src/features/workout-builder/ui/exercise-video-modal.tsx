@@ -168,13 +168,13 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.one_rm_est")}</p>
+                      </div>
+                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
                         <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.volume")}</p>
                       </div>
                       <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
                         <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.sessions")}</p>
-                      </div>
-                      <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
-                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("exercise_modal.feature_volume")}</p>
                       </div>
                     </div>
                   </div>

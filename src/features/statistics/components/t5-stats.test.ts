@@ -245,11 +245,8 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(page, /statistics\.page_subtitle/);
   assert.equal(page.split("statistics.title").length - 1, 1);
   assert.match(page, /import \{ PremiumGate \} from "@\/components\/ui\/premium-gate"/);
-  assert.match(page, /feature="Statistics"/);
-  assert.match(page, /15\.4K\+/);
-  assert.match(page, /active_daily_users/);
-  assert.match(page, /success_rate/);
-  assert.match(page, /user_rating/);
+  assert.match(page, /<PremiumGate feature="Statistics">/);
+  assert.doesNotMatch(page, /15\.4K\+|89%|4\.8|active_daily_users|success_rate|user_rating/);
   for (const key of [
     "statistics.select_exercise",
     "statistics.all_equipment",
@@ -294,8 +291,12 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(read("app/[locale]/(app)/layout.tsx"), /max-sm:min-h-screen/);
   assert.match(modal, /\{t\("statistics\.title"\)\}/);
   assert.doesNotMatch(modal, /\|\| "Statistics"/);
-  assert.doesNotMatch(modal, /t\("statistics\.one_rm_est"\)/);
+  const oneRmAt = modal.indexOf("t(\"statistics.one_rm_est\")");
+  const volumeAt = modal.indexOf("t(\"statistics.volume\")");
+  const sessionsAt = modal.indexOf("t(\"statistics.sessions\")");
+  assert.ok(oneRmAt >= 0 && oneRmAt < volumeAt && volumeAt < sessionsAt);
   assert.doesNotMatch(modal, /85kg|2,400kg|\+12%/);
+  assert.doesNotMatch(modal, /feature_volume"\)\}<\/p>/);
   assert.match(modal, /relative overflow-hidden rounded-xl border border-dashed/);
   assert.match(modal, /absolute inset-0 flex items-center justify-center/);
   assert.match(modal, /href="\/premium"/);

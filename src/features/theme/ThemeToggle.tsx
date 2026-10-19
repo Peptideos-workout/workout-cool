@@ -15,7 +15,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <div className="tooltip tooltip-bottom" data-tip="Toggle theme">
-        <Button className="hover:bg-slate-200 rounded-full p-1 pr-1 sm:p-2 sm:pr-2" variant="ghost">
+        <Button className="!h-12 !w-12 !min-h-12 !min-w-12 !p-0 hover:!scale-100 hover:bg-slate-200 rounded-full" variant="ghost">
           <MoonIcon className="text-blue-500 dark:text-blue-400 h-6 w-6" />
         </Button>
       </div>
@@ -25,7 +25,7 @@ export function ThemeToggle() {
   return (
     <div className="tooltip tooltip-bottom" data-tip={resolvedTheme === "light" ? "Dark mode" : "Light mode"}>
       <Button
-        className="hover:bg-slate-200 rounded-full p-1 pr-1 sm:p-2 sm:pr-2"
+        className="!h-12 !w-12 !min-h-12 !min-w-12 !p-0 hover:!scale-100 hover:bg-slate-200 rounded-full"
         onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
         variant="ghost"
       >

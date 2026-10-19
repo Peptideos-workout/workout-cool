@@ -222,7 +222,10 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(listItem, /data-wc-exercise-name=""/);
   assert.match(listItem, /min-w-\[120px\] flex-1/);
   assert.match(listItem, /flex w-full min-w-0 flex-wrap items-center gap-2/);
-  assert.match(listItem, /min-h-12 min-w-12 shrink-0 cursor-grab/);
+  assert.match(listItem, /h-12 w-12 min-h-12 min-w-12 shrink-0 cursor-grab/);
+  assert.match(listItem, /\{\.\.\.attributes\}/);
+  assert.match(listItem, /\{\.\.\.listeners\}/);
+  assert.match(listItem, /touchAction: "none"/);
   assert.match(listItem, /h-12 w-12 min-h-12 min-w-12/);
   assert.match(listItem, /text-lg font-bold text-\[var\(--wc-dash-text\)\]/);
   assert.match(listItem, /aria-label=\{t\("statistics\.title"\)\}/);

@@ -381,6 +381,31 @@ test("embed colors outside the token blocks use wc-dash variables", () => {
   assert.match(withoutTokens, /var\(--wc-dash-secondary\)/);
 });
 
+test("header controls and streak day cells are 48px tap targets", () => {
+  const theme = read("src/features/theme/ThemeToggle.tsx");
+  const language = read("src/widgets/language-selector/language-selector.tsx");
+  const streak = read("src/features/layout/workout-streak-header.tsx");
+
+  assert.equal(theme.split("!h-12 !w-12 !min-h-12 !min-w-12 !p-0").length - 1, 2);
+  assert.doesNotMatch(theme, /sm:p-2|p-1 pr-1/);
+  assert.match(theme, /setTheme\(resolvedTheme === "light" \? "dark" : "light"\)/);
+
+  const triggerAt = language.indexOf("role=\"button\"");
+  const trigger = language.slice(Math.max(0, triggerAt - 500), triggerAt + 40);
+  assert.match(trigger, /!h-12 !w-12 !min-h-12 !min-w-12 !p-0/);
+  assert.doesNotMatch(trigger, /h-8 w-8/);
+  assert.match(language, /onClick=\{\(\) => handleLanguageChange\(language\)\}/);
+
+  const cellAt = streak.indexOf("role=\"button\"");
+  const cell = streak.slice(Math.max(0, cellAt - 800), cellAt + 80);
+  assert.match(cell, /h-12 w-12 min-h-12 min-w-12 shrink-0/);
+  assert.match(cell, /focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-\[var\(--wc-dash-text\)\]/);
+  assert.doesNotMatch(cell, /focus:ring-emerald|hover:scale-110|hover:brightness/);
+  assert.match(streak, /pointer-events-none h-4 w-4/);
+  assert.doesNotMatch(streak, /onClick/);
+  assert.doesNotMatch(streak, /w-4 h-4 sm:w-6 sm:h-6 rounded-sm sm:rounded-md transition-all/);
+});
+
 test("equipment card titles are 18px dash tokens", () => {
   const equipment = read("src/features/workout-builder/ui/equipment-selection.tsx");
   assert.match(equipment, /font-semibold text-lg leading-tight tracking-wide/);

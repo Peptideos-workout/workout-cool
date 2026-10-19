@@ -413,6 +413,9 @@ test("q=0, malformed q, star, and blank Accept-Language do not select an unaccep
     { acceptLanguage: "fr;q=2", locale: "en" },
     { acceptLanguage: "fr;q=-1", locale: "en" },
     { acceptLanguage: "fr; q=0.9", locale: "fr" },
+    { acceptLanguage: "en;q=0.8, fr; q=0.5", locale: "en" },
+    { acceptLanguage: "fr;q = 0.9", locale: "fr" },
+    { acceptLanguage: "en;q=0.8, fr;q = 0.5", locale: "en" },
     { acceptLanguage: "*", locale: "en" },
     { acceptLanguage: "   ", locale: "en" },
     { acceptLanguage: "\t", locale: "en" },
@@ -449,6 +452,53 @@ test("embed=1 and other query params survive every locale redirect hop", async (
   assert.equal(new URL(malformed.finalUrl).pathname, "/en");
   assertKeptQuery(malformed.finalUrl, "q=0");
   for (const location of malformed.locations) assertKeptQuery(location, "q=0 hop");
+});
+
+test("Content-Language is the rendered locale, including on /programs and /about", async () => {
+  const nestedPaths = ["/programs", "/programs/x", "/about"];
+
+  for (const path of nestedPaths) {
+    const cookieless = await proxy(
+      new NextRequest(`${APP}${path}`, {
+        headers: { "accept-language": "fr" }
+      })
+    );
+    assert.equal(cookieless.headers.get("content-language"), "fr", path);
+    assert.notEqual(cookieless.headers.get("content-language"), "pr", path);
+    assert.notEqual(cookieless.headers.get("content-language"), "ab", path);
+
+    const saved = await proxy(
+      new NextRequest(`${APP}${path}`, {
+        headers: { "accept-language": "zh-CN", cookie: "Next-Locale=fr" }
+      })
+    );
+    assert.equal(saved.headers.get("content-language"), "fr", `${path} Next-Locale=fr`);
+    assert.notEqual(saved.headers.get("content-language"), "pr", path);
+    assert.notEqual(saved.headers.get("content-language"), "ab", path);
+  }
+
+  const root = await proxy(
+    new NextRequest(`${APP}/`, {
+      headers: { "accept-language": "zh-CN", cookie: "detected-locale=zh-CN; Next-Locale=fr" }
+    })
+  );
+  assert.equal(root.headers.get("location"), null);
+  assert.equal(root.headers.get("content-language"), "fr");
+
+  const rootRedirect = await proxy(
+    new NextRequest(`${APP}/`, {
+      headers: { "accept-language": "zh-CN", cookie: "Next-Locale=fr" }
+    })
+  );
+  const redirectLanguage = rootRedirect.headers.get("content-language");
+  if (redirectLanguage !== null) assert.equal(redirectLanguage, "fr");
+
+  const prefixed = await proxy(
+    new NextRequest(`${APP}/zh-CN/programs`, {
+      headers: { "accept-language": "en" }
+    })
+  );
+  assert.equal(prefixed.headers.get("content-language"), "zh-CN");
 });
 
 test("unsupported Accept-Language falls back to English without a redirect loop", async () => {

@@ -153,11 +153,8 @@ export async function proxy(request: NextRequest) {
   // Normal i18n middleware processing. The library reads Next-Locale before detectUserLocale.
   const response = I18nMiddleware(request);
 
-  // Extract current locale from pathname
-  const localeMatch = pathname.match(/^\/([a-z]{2}(?:-[A-Z]{2})?)/);
-  const currentLocale = localeMatch ? localeMatch[1] : detectedLocale;
-
-  // Set Content-Language header for SEO
+  // next-international 1.3.1 sets X-Next-Locale to the locale it applied.
+  const currentLocale = response.headers.get("X-Next-Locale") ?? resolvedLocale;
   response.headers.set("Content-Language", currentLocale);
 
   if (!request.cookies.get("detected-locale")) {

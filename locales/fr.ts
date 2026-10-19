@@ -62,6 +62,7 @@ export default {
     not_found: "Programme non trouvé",
     characteristics: "Caractéristiques",
     weeks: "semaines",
+    cover_alt: "Couverture de {title}",
     sessions_per_week: "séances/semaine",
     session_duration: "min/séance",
     "your_coach#zero": "Ton coach cool",
@@ -111,6 +112,7 @@ export default {
       frequency_label: "Fréquence",
       later_button: "Plus tard",
       start_button: "C'est parti !",
+      close: "Fermer",
     },
   },
   premium: {

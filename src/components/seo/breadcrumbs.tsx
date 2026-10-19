@@ -32,20 +32,20 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
     <>
       <StructuredDataScript data={breadcrumbStructuredData} />
-      <nav aria-label="Breadcrumb" className="m-2 overflow-x-auto min-h-5 flex items-center">
-        <ol className="flex items-center space-x-1 sm:space-x-2 text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-max">
+      <nav aria-label="Breadcrumb" className="m-2 flex min-h-12 items-center">
+        <ol className="flex flex-wrap items-center gap-x-1 gap-y-1 sm:gap-x-2">
           {items.map((item, index) => (
             <li className="flex items-center" key={index}>
-              {index > 0 && <ChevronRight aria-hidden="true" className="h-4 w-4 text-gray-400" />}
+              {index > 0 && <ChevronRight aria-hidden="true" className="h-4 w-4 text-[var(--wc-dash-secondary)]" />}
               {item.current ? (
-                <span aria-current="page" className="font-medium text-gray-900 dark:text-white">
+                <span aria-current="page" className="text-lg font-medium text-[var(--wc-dash-text)]">
                   {item.label}
                 </span>
               ) : item.href ? (
                 <Link
                   className={
-                    "transition-colors hover:text-gray-900 dark:hover:text-white" +
-                    (index === 0 ? " inline-flex min-h-12 items-center text-lg" : "")
+                    "inline-flex min-h-12 items-center text-lg transition-colors hover:text-[var(--wc-dash-text)]" +
+                    (index === 0 ? " text-[var(--wc-dash-secondary)]" : " text-[var(--wc-dash-text)]")
                   }
                   href={item.href}
                 >

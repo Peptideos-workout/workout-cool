@@ -69,6 +69,7 @@ export function WelcomeModal({
       >
         {/* Close button */}
         <button
+          aria-label={t("programs.welcome_modal.close")}
           className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full text-[var(--wc-dash-text)]"
           onClick={onClose}
         >
@@ -82,7 +83,7 @@ export function WelcomeModal({
             <div className="relative inline-block mb-4">
               <div className="w-24 h-24 mx-auto relative animate-bounce">
                 <Image
-                  alt="WorkoutCool Mascot"
+                  alt=""
                   className="object-contain"
                   height={96}
                   src="/images/emojis/WorkoutCoolSwag.png"

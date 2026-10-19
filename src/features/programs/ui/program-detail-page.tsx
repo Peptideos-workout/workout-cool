@@ -196,8 +196,13 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
           />
         )}
         {/* Hero Image Section with Gamification */}
-        <div className="relative h-40 bg-[var(--wc-dash-accent)] sm:h-64">
-          <Image alt={programTitle} className="absolute inset-0 object-cover opacity-30" fill src={program.image} />
+        <div className="relative min-h-40 bg-[var(--wc-dash-accent)] pr-24 sm:min-h-64">
+          <Image
+            alt={t("programs.cover_alt", { title: programTitle })}
+            className="absolute inset-0 object-cover opacity-30"
+            fill
+            src={program.image}
+          />
 
           {/* Mascot Emoji */}
           <div
@@ -207,7 +212,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
             }
           >
             <Image
-              alt="Mascotte WorkoutCool"
+              alt=""
               className="w-12 h-12 object-contain"
               height={48}
               src="/images/emojis/WorkoutCoolSwag.png"
@@ -215,7 +220,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
             />
           </div>
 
-          <div className="relative h-full flex items-end p-6">
+          <div className="relative flex min-h-40 items-end p-6 sm:min-h-64">
             <div className="flex-1 text-[var(--wc-dash-ink)]">
               <div className="mb-3 flex items-center gap-2">
                 <span
@@ -310,7 +315,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
                         <Image
-                          alt="Communauté"
+                          alt=""
                           className="w-10 h-10 object-contain"
                           height={40}
                           src="/images/emojis/WorkoutCoolHappy.png"
@@ -356,14 +361,14 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                     <div className="flex items-center gap-4">
                       <Clock className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
                       <span className="text-lg font-medium text-[var(--wc-dash-text)]">
-                        {program.durationWeeks} {t("programs.weeks")}
+                        {program.durationWeeks} {t("programs.weeks", { count: program.durationWeeks })}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <Calendar className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
                       <span className="text-lg font-medium text-[var(--wc-dash-text)]">
-                        {program.sessionsPerWeek} {t("programs.sessions_per_week")}
+                        {program.sessionsPerWeek} {t("programs.sessions_per_week", { count: program.sessionsPerWeek })}
                       </span>
                     </div>
 
@@ -429,7 +434,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                             />
                             <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center">
                               <Image
-                                alt="Coachs"
+                                alt=""
                                 className="w-6 h-6 object-contain"
                                 height={24}
                                 src="/images/emojis/WorkoutCoolLove.png"
@@ -635,7 +640,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
             }
             onClick={handleCTAClick}
           >
-            <Image alt="Rejoindre" className="w-6 h-6 object-contain" height={24} src="/images/emojis/WorkoutCoolSwag.png" width={24} />
+            <Image alt="" className="w-6 h-6 object-contain" height={24} src="/images/emojis/WorkoutCoolSwag.png" width={24} />
             <div className="flex flex-col items-center">
               <span className="text-lg">{isAuthenticated && hasJoinedProgram ? t("programs.continue") : t("programs.join_cta")}</span>
             </div>
@@ -664,8 +669,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
         isOpen={showWelcomeModal}
         onClose={() => setShowWelcomeModal(false)}
         onJoin={handleJoinProgram}
-        programDuration={`${program.durationWeeks} ${t("programs.weeks")}`}
-        programFrequency={`${program.sessionsPerWeek} ${t("programs.sessions_per_week")}`}
+        programDuration={`${program.durationWeeks} ${t("programs.weeks", { count: program.durationWeeks })}`}
+        programFrequency={`${program.sessionsPerWeek} ${t("programs.sessions_per_week", { count: program.sessionsPerWeek })}`}
         programLevel={t(`levels.${program.level}` as keyof typeof t)}
         programTitle={programTitle}
       />

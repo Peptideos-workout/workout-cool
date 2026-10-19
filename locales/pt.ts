@@ -69,6 +69,7 @@ export default {
     not_found: "Programa não encontrado",
     characteristics: "Características",
     weeks: "semanas",
+    cover_alt: "Capa de {title}",
     sessions_per_week: "sessões/semana",
     session_duration: "min/sessão",
     "your_coach#zero": "Seu coach",
@@ -110,6 +111,7 @@ export default {
       frequency_label: "Frequência",
       later_button: "Mais tarde",
       start_button: "Vamos lá!",
+      close: "Fechar",
     },
   },
   premium: {

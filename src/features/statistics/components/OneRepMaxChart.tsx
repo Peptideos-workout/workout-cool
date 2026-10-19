@@ -24,7 +24,7 @@ interface OneRepMaxChartProps {
 export function OneRepMaxChart({
   data,
   formula,
-  formulaDescription,
+  formulaDescription: _formulaDescription,
   height = 300,
   unit = "kg",
   className,
@@ -105,7 +105,6 @@ export function OneRepMaxChart({
           </button>
         </div>
       </div>
-      <p className="mb-4 break-words text-lg text-[var(--wc-dash-secondary)]">{formulaDescription}</p>
 
       <div style={{ opacity: hasData ? 1 : 0.2 }}>
         <ResponsiveContainer height={height} width="100%">

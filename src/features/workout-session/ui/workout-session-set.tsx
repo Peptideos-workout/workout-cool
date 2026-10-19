@@ -176,7 +176,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
           {t("workout_builder.session.set_number", { number: setIndex + 1 })}
         </div>
         <Button
-          aria-label="Supprimer la série"
+          aria-label={t("workout_builder.session.delete_set")}
           className={`${plainErrorButton} !min-h-12 !min-w-12 px-3`}
           disabled={set.completed}
           onClick={onRemove}

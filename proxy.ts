@@ -10,10 +10,19 @@ import { isSignoutConfirmPath, isSignoutContinuePath } from "@/features/auth/sig
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 
-function detectUserLocale(request: NextRequest): string {
+const SUPPORTED_LOCALES = ["en", "fr", "es", "zh-CN", "ru", "pt"] as const;
+type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+const DEFAULT_LOCALE: SupportedLocale = "en";
+const NEXT_LOCALE_COOKIE = "Next-Locale";
+
+function isSupportedLocale(locale: string): locale is SupportedLocale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(locale);
+}
+
+function detectUserLocale(request: NextRequest): SupportedLocale {
   const acceptLanguage = request.headers.get("accept-language");
 
-  if (!acceptLanguage) return "en";
+  if (!acceptLanguage) return DEFAULT_LOCALE;
 
   // Parse Accept-Language header
   const languages = acceptLanguage
@@ -24,28 +33,33 @@ function detectUserLocale(request: NextRequest): string {
     })
     .sort((a, b) => b.quality - a.quality);
 
-  // Map browser locales to supported locales
-  const supportedLocales = ["en", "fr", "es", "zh-cn", "ru", "pt"];
-
   for (const { locale } of languages) {
-    // Exact match
-    if (supportedLocales.includes(locale)) {
-      return locale === "zh-cn" ? "zh-CN" : locale;
-    }
+    const exact = SUPPORTED_LOCALES.find((supported) => supported.toLowerCase() === locale);
+    if (exact) return exact;
 
-    // Language match (fr-FR -> fr)
-    const lang = locale.split("-")[0];
-    if (supportedLocales.includes(lang)) {
-      return lang;
-    }
+    // Language match (fr-FR -> fr, fr-CA -> fr)
+    const primary = locale.split("-")[0];
+    const primaryMatch = SUPPORTED_LOCALES.find((supported) => supported.toLowerCase() === primary);
+    if (primaryMatch) return primaryMatch;
 
-    // Chinese variants
-    if (locale.startsWith("zh")) {
-      return "zh-CN";
-    }
+    // zh-TW, zh-HK, zh, and other Chinese tags share the supported zh-CN locale
+    if (locale.startsWith("zh")) return "zh-CN";
   }
 
-  return "en"; // fallback
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Locale next-international will apply: a supported Next-Locale cookie, else Accept-Language, else default.
+ * The root redirect must use this same value. A mismatch sends /zh-CN back to / and loops when cookies are dropped.
+ */
+function resolveRequestLocale(request: NextRequest, detectedLocale: SupportedLocale): SupportedLocale {
+  const cookieLocale = request.cookies.get(NEXT_LOCALE_COOKIE)?.value;
+  const candidate = cookieLocale ?? detectedLocale;
+  if (!candidate || !isSupportedLocale(candidate)) {
+    return DEFAULT_LOCALE;
+  }
+  return candidate;
 }
 
 /** Locale redirect target. Pathname gains the locale; search and hash stay as received. */
@@ -57,9 +71,11 @@ export function buildLocaleRedirectUrl(request: NextRequest, locale: string): UR
 }
 
 const I18nMiddleware = createI18nMiddleware({
-  locales: ["en", "fr", "es", "zh-CN", "ru", "pt"],
-  defaultLocale: "en",
+  locales: SUPPORTED_LOCALES,
+  defaultLocale: DEFAULT_LOCALE,
   urlMappingStrategy: "rewrite",
+  // The default resolver keeps only the primary tag, so zh-CN becomes "zh" and falls back to English.
+  resolveLocaleFromRequest: detectUserLocale,
 });
 
 export async function proxy(request: NextRequest) {
@@ -102,12 +118,13 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  // If on root path and no locale detected yet, redirect to detected locale
+  // If on root path and no locale detected yet, redirect to the locale the i18n middleware agrees with
   if (pathname === "/" && !request.cookies.get("detected-locale")) {
-    const url = buildLocaleRedirectUrl(request, detectedLocale);
+    const locale = resolveRequestLocale(request, detectedLocale);
+    const url = buildLocaleRedirectUrl(request, locale);
     const response = NextResponse.redirect(url);
 
-    response.cookies.set("detected-locale", detectedLocale, {
+    response.cookies.set("detected-locale", locale, {
       maxAge: 60 * 60 * 24 * 365, // 1 year
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",

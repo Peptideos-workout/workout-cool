@@ -353,11 +353,13 @@ test("public Sign up, nav labels, and the version chip are at least 18px", () =>
   const signupAt = header.indexOf(signupCall);
   assert.ok(signupAt > 0);
   const signup = header.slice(Math.max(0, signupAt - 800), signupAt + signupCall.length);
-  assert.match(signup, /!text-lg/);
-  assert.match(signup, /!min-h-12/);
-  assert.match(signup, /!min-w-12/);
-  assert.match(signup, /whitespace-nowrap/);
+  assert.match(signup, /className=\{publicSignupClass\}/);
   assert.match(signup, /commons\.signup/);
+  const signupClass = header.slice(header.indexOf("const publicSignupClass"), header.indexOf("const publicSignupClass") + 700);
+  assert.match(signupClass, /!text-lg/);
+  assert.match(signupClass, /!min-h-12/);
+  assert.match(signupClass, /!min-w-12/);
+  assert.match(signupClass, /whitespace-nowrap/);
   assert.match(nav, /text-lg/);
   assert.match(nav, /whitespace-nowrap/);
   assert.doesNotMatch(nav, /whitespace-normal/);

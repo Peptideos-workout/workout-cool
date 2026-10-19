@@ -254,6 +254,7 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.doesNotMatch(version, /sm:left-4/);
   assert.doesNotMatch(version, /sm:bottom-/);
   assert.doesNotMatch(version, /max-sm:bottom-/);
+  assert.doesNotMatch(version, /\babsolute\b/);
   assert.match(main, /sm:pb-12/);
   assert.doesNotMatch(version, /\bfixed\b/);
   assert.match(footer, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
@@ -267,8 +268,8 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /\+33px/);
   assert.doesNotMatch(main, /max-sm:pb-36/);
   assert.doesNotMatch(main, /134px/);
-  assert.doesNotMatch(version, /\babsolute\b/);
   assert.doesNotMatch(version, /136px/);
+  assert.doesNotMatch(version, /bottom-36/);
   for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
     assert.match(read(`locales/${locale}.ts`), /label:\s*"/);
   }

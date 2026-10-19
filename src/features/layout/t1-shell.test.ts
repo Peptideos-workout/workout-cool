@@ -93,7 +93,8 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /\{t\("workout_builder\.title"\)\}/);
   assert.doesNotMatch(stepper, /<h1[^>]*data-wc-title/);
   assert.doesNotMatch(stepper, /Build your workout/);
-  assert.match(stepper, /data-wc-lead/);
+  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-lead/);
   assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h1" : "h3"/);
   assert.match(stepper, /data-wc-step-sheet/);
   assert.match(stepper, /bottom_navigation\.workouts/);

@@ -27,6 +27,14 @@ export function WorkoutBuilderFooter({
   const t = useI18n();
   const isFirstStep = currentStep === 1;
   const isFinalStep = currentStep === totalSteps;
+  const solidDisabledPrevious =
+    "disabled:!opacity-100 disabled:!border-[var(--wc-dash-border)] disabled:!bg-[var(--wc-dash-inner)] " +
+    "disabled:!text-[var(--wc-dash-secondary)]";
+  const solidDisabledNext =
+    "disabled:!opacity-100 disabled:!border disabled:!border-[var(--wc-dash-accent)] " +
+    "disabled:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_16%,var(--wc-dash-panel))] disabled:!text-[var(--wc-dash-text)] " +
+    "dark:disabled:!border-[var(--wc-dash-link)] " +
+    "dark:disabled:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_22%,var(--wc-dash-page))]";
 
   return (
     <div
@@ -45,7 +53,7 @@ export function WorkoutBuilderFooter({
         >
           {/* Previous button */}
           <Button
-            className={`flex-1 rounded-full !h-auto !min-h-12 !text-lg text-[var(--wc-dash-text)] hover:!scale-100 disabled:pointer-events-auto ${isFinalStep ? "w-full" : ""}`}
+            className={`flex-1 rounded-full !h-auto !min-h-12 !text-lg text-[var(--wc-dash-text)] hover:!scale-100 disabled:pointer-events-auto ${solidDisabledPrevious} ${isFinalStep ? "w-full" : ""}`}
             data-wc-step-previous=""
             disabled={isFirstStep}
             onClick={onPrevious}
@@ -63,7 +71,7 @@ export function WorkoutBuilderFooter({
             <RewardedAdGate onRewardGranted={onStartWorkout}>
               <Button
                 asChild
-                className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!scale-100 hover:[&:not(:disabled)]:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto"
+                className={`flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!scale-100 hover:[&:not(:disabled)]:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto ${solidDisabledNext}`}
                 data-wc-step-next=""
                 disabled={!canContinue}
                 size="default"
@@ -77,7 +85,7 @@ export function WorkoutBuilderFooter({
             </RewardedAdGate>
           ) : (
             <Button
-              className="flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!scale-100 hover:[&:not(:disabled)]:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto"
+              className={`flex-1 w-full rounded-full !h-auto !min-h-12 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)] hover:!scale-100 hover:[&:not(:disabled)]:!bg-[color-mix(in_srgb,var(--wc-dash-accent)_78%,var(--wc-dash-ink))] disabled:pointer-events-auto ${solidDisabledNext}`}
               data-wc-step-next=""
               disabled={!canContinue}
               onClick={onNext}

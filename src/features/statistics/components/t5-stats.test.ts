@@ -323,7 +323,9 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(nav, /max-sm:pb-\[env\(safe-area-inset-bottom\)\]/);
   assert.doesNotMatch(nav, /max-sm:order-3/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
-  assert.match(version, /absolute bottom-2 right-4 z-50 sm:bottom-\[168px\] sm:left-4 sm:right-auto/);
+  assert.match(version, /pointer-events-none absolute bottom-2 right-4 z-20 sm:left-4 sm:right-auto/);
+  assert.doesNotMatch(version, /z-50/);
+  assert.doesNotMatch(version, /sm:bottom-\[168px\]/);
   assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(version, /fixed/);
   assert.match(read(SETS), /sm:pb-40/);

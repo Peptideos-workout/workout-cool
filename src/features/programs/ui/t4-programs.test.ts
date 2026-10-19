@@ -365,3 +365,10 @@ test("program tabs, washes, confetti, progress, and visibility stay locked", () 
   }
   assert.match(read(LIST), /<h2 className="sr-only">\{t\("programs\.available_programs"\)\}<\/h2>/);
 });
+
+test("breadcrumb Home is 18px with a 48px target", () => {
+  const crumbs = read("src/components/seo/breadcrumbs.tsx");
+  assert.match(crumbs, /href=\{item\.href\}/);
+  assert.match(crumbs, /index === 0 \? " inline-flex min-h-12 items-center text-lg" : ""/);
+  assert.doesNotMatch(crumbs, /Home aria-hidden="true" className="h-3/);
+});

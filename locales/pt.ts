@@ -1666,6 +1666,8 @@ export default {
       exercise_progress: "Progresso do exercício",
       total_volume: "Volume total",
       current_exercise: "Exercício atual",
+      exercise_complete: "Exercício completo",
+      exercise_in_progress: "Exercício em progresso",
       complete: "Concluído",
       active: "Ativo",
       already_have_a_active_session: "Já tem uma sessão ativa. Não é possível repetir sem terminar ou abandonar o treino.",

@@ -1657,6 +1657,8 @@ export default {
       exercise_progress: "Прогресс упражнений",
       total_volume: "Общий объем",
       current_exercise: "Текущее упражнение",
+      exercise_complete: "Упражнение завершено",
+      exercise_in_progress: "Упражнение в процессе",
       complete: "Завершено",
       active: "Активно",
       already_have_a_active_session: "У вас уже есть активная сессия. Невозможно повторить без завершения или выхода из тренировки.",

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { Dumbbell, Grid, Hammer, Crown, Activity, Trophy } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 
-import type { CSSProperties } from "react";
-
 import { cn } from "@/shared/lib/utils";
 import { paths } from "@/shared/constants/paths";
 import { SiteConfig } from "@/shared/config/site-config";
@@ -108,7 +106,6 @@ export function BottomNavigation() {
             (tabs.length <= 5 ? " lg:flex lg:items-center lg:justify-center lg:gap-1" : "")
           }
           data-wc-nav-grid=""
-          style={{ "--wc-nav-tabs": String(tabs.length) } as CSSProperties}
         >
           {tabs.map((tab) => {
             const isActive = tab.isActive;

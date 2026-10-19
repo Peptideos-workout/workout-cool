@@ -42,7 +42,13 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
                   {item.label}
                 </span>
               ) : item.href ? (
-                <Link className="hover:text-gray-900 dark:hover:text-white transition-colors" href={item.href}>
+                <Link
+                  className={
+                    "transition-colors hover:text-gray-900 dark:hover:text-white" +
+                    (index === 0 ? " inline-flex min-h-12 items-center text-lg" : "")
+                  }
+                  href={item.href}
+                >
                   {index === 0 ? (
                     <span className="flex items-center">
                       <Home aria-hidden="true" className="h-4 w-4 mr-1" />

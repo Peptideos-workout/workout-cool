@@ -98,7 +98,7 @@ test("finished steps and finish actions are teal with a check", () => {
   const row = read(SET);
   assert.match(
     sets,
-    /aria-label="Exercice terminé" className="text-lg font-semibold text-\[var\(--wc-dash-ink\)\]" role="img">\s*✓\s*<\/span>/,
+    /aria-label=\{t\("workout_builder\.session\.exercise_complete"\)\} className="text-lg font-semibold text-\[var\(--wc-dash-ink\)\]" role="img">\s*✓\s*<\/span>/,
   );
   assert.match(sets, /border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-accent\)\] text-\[var\(--wc-dash-ink\)\]/);
   assert.equal(sets.split("border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]").length - 1, 2);
@@ -194,6 +194,20 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
         "sm:fixed sm:right-6 sm:bottom-28 sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0",
     ),
   );
+  assert.doesNotMatch(read(SETS), /Exercice terminé/);
+  assert.doesNotMatch(read(SETS), /Exercice en cours/);
+  assert.match(read("locales/en.ts"), /exercise_complete: "Exercise complete"/);
+  assert.match(read("locales/en.ts"), /exercise_in_progress: "Exercise in progress"/);
+  assert.match(read("locales/fr.ts"), /exercise_complete: "Exercice terminé"/);
+  assert.match(read("locales/fr.ts"), /exercise_in_progress: "Exercice en cours"/);
+  assert.match(read("locales/es.ts"), /exercise_complete: "Ejercicio completo"/);
+  assert.match(read("locales/es.ts"), /exercise_in_progress: "Ejercicio en progreso"/);
+  assert.match(read("locales/pt.ts"), /exercise_complete: "Exercício completo"/);
+  assert.match(read("locales/pt.ts"), /exercise_in_progress: "Exercício em progresso"/);
+  assert.match(read("locales/ru.ts"), /exercise_complete: "Упражнение завершено"/);
+  assert.match(read("locales/ru.ts"), /exercise_in_progress: "Упражнение в процессе"/);
+  assert.match(read("locales/zh-CN.ts"), /exercise_complete: "练习已完成"/);
+  assert.match(read("locales/zh-CN.ts"), /exercise_in_progress: "练习进行中"/);
   assert.match(timer, /rounded-full border border-\[var\(--wc-dash-border\)\] bg-\[var\(--wc-dash-card\)\] px-4 py-2 shadow-lg/);
   assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
   assert.match(sets, /px-3 pb-16 sm:px-6 sm:pb-40 \[html\[data-wc-embed='1'\]_&\]:pb-8/);

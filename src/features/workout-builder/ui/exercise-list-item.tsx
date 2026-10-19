@@ -52,7 +52,7 @@ export function ExerciseListItemOverlay({ exercise, muscle }: { exercise: Exerci
         {muscle.charAt(0)}
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 block truncate">{exerciseName}</span>
+        <span className="block break-words text-lg font-semibold text-slate-900 dark:text-slate-100">{exerciseName}</span>
       </div>
     </div>
   );
@@ -115,7 +115,7 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
       className={`border-b select-none transition-all duration-200 ${
         isGhost
           ? "border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/40 dark:bg-blue-950/20 rounded-lg"
-          : "flex items-center gap-2 sm:gap-3 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+          : "flex flex-wrap items-center gap-2 sm:gap-3 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
       } p-2 sm:p-3`}
       ref={setNodeRef}
       style={{
@@ -168,19 +168,32 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
           </div>
 
           <div className="flex-1 min-w-0">
-            <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 block truncate">{exerciseName}</span>
+            <span className="block break-words text-lg font-medium text-slate-900 dark:text-slate-100">{exerciseName}</span>
           </div>
 
           <Button
-            className="p-2 min-h-12 min-w-12 touch-manipulation"
+            className="!min-h-12 !text-lg touch-manipulation"
             disabled={isShuffling}
             onClick={handleShuffle}
-            size="small"
             variant="outline"
           >
-            {isShuffling ? <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" /> : <Shuffle className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
-            <span className="hidden sm:inline ml-1">{t("workout_builder.exercise.shuffle")}</span>
+            {isShuffling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shuffle className="h-4 w-4" />}
+            <span>{t("workout_builder.exercise.shuffle")}</span>
           </Button>
+
+          {exercise.fullVideoUrl ? (
+            <button
+              className="inline-flex min-h-12 items-center gap-1 px-2 text-lg text-[var(--wc-dash-text)]"
+              onClick={() => {
+                setModalTab("video");
+                playVideo.setTrue();
+              }}
+              type="button"
+            >
+              <Play className="h-4 w-4" />
+              <span>{t("workout_builder.exercise.watch_video")}</span>
+            </button>
+          ) : null}
 
           <button
             className="inline-flex min-h-12 min-w-12 items-center justify-center p-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
@@ -190,10 +203,12 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
           </button>
 
           <button
-            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1 text-lg text-[var(--wc-dash-error)]"
+            className="inline-flex min-h-12 items-center gap-1 px-2 text-lg text-[var(--wc-dash-error)]"
             onClick={handleDelete}
+            type="button"
           >
             <Trash2 className="h-4 w-4" />
+            <span>{t("workout_builder.exercise.remove")}</span>
           </button>
 
           {exercise.fullVideoUrl && <ExerciseVideoModal defaultTab={modalTab} exercise={exercise} onOpenChange={playVideo.toggle} open={playVideo.value} />}

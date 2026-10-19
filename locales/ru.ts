@@ -1645,6 +1645,7 @@ export default {
       back_to_workout: "Вернуться к тренировке",
       congrats: "Поздравляем, тренировка завершена! 🎉",
       congrats_subtitle: "Вы справились!",
+      trophy_alt: "Трофей",
       see_instructions: "Смотреть инструкции",
       finish_set: "Завершить подход",
       finish_session: "Завершить сессию",

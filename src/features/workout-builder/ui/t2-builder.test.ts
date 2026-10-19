@@ -202,6 +202,12 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(equipment, /data-wc-equipment-bar/);
   assert.ok(equipment.indexOf("data-wc-equipment-bar") < equipment.indexOf("grid grid-cols-2"));
   assert.match(equipment, /✓ \{translation\.description\}/);
+  assert.match(equipment, /aria-pressed=\{isSelected\}/);
+  assert.match(equipment, /type="button"/);
+  assert.match(equipment, /border-\[var\(--wc-dash-accent\)\] bg-\[var\(--wc-dash-inner\)\]/);
+  assert.match(equipment, /focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-\[var\(--wc-dash-text\)\]/);
+  assert.match(equipment, /onTap\(\);\n\s+onToggle\(\);/);
+  assert.doesNotMatch(equipment, /w-2 h-2 rounded-full/);
   assert.match(equipment, /workout_builder\.stats\.equipment_selected/);
   assert.match(equipment, /workout_builder\.selection\.clear_all/);
   assert.match(equipment, /onClick=\{onClearEquipment\}/);

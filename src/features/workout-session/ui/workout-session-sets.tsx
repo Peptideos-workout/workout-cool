@@ -164,7 +164,7 @@ export function WorkoutSessionSets({
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-3 pb-8 sm:px-6 [html[data-wc-embed='1']_&]:pb-8">
+    <div className="mx-auto w-full max-w-3xl px-3 pb-8 sm:px-6">
       <div className="mb-6">
         <PremiumUpsellAlert />
       </div>
@@ -253,7 +253,7 @@ export function WorkoutSessionSets({
                 <div className="mb-10 mt-6 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]">
                   {/* Liste des sets */}
                   <div className="flex justify-start items-center gap-2">
-                    <FavoriteExerciseButton exerciseId={ex.id} />
+                    <FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId={ex.id} />
                   </div>
                   <div className="space-y-10 mb-8">
                     {ex.sets.map((set, setIdx) => (
@@ -277,8 +277,8 @@ export function WorkoutSessionSets({
                       {t("workout_builder.session.add_set")}
                     </Button>
                     <Button aria-label="Exercice suivant" className={`${secondaryButton} flex-1 font-bold`} onClick={handleNextExercise}>
-                      <ArrowRight className="h-5 w-5" />
                       {t("workout_builder.session.next_exercise")}
+                      <ArrowRight className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
@@ -295,7 +295,6 @@ export function WorkoutSessionSets({
             onClick={handleFinishSession}
           >
             <TrophyIcon className="h-6 w-6" />
-            <span aria-hidden="true">✓</span>
             {t("workout_builder.session.finish_session")}
           </Button>
         </div>

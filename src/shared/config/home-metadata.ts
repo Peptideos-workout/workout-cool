@@ -140,6 +140,31 @@ export function getOgImageName(locale: string): string {
   return `default-og-image_${imageLocale}.jpg`;
 }
 
+interface OgImageSize {
+  width: number;
+  height: number;
+}
+
+const ogImageSizeByName: Record<string, OgImageSize> = {
+  "default-og-image_en.jpg": { width: 1200, height: 630 },
+  "default-og-image_es.jpg": { width: 1200, height: 675 },
+  "default-og-image_fr.jpg": { width: 1200, height: 630 },
+  "default-og-image_pt.jpg": { width: 1200, height: 675 },
+  "default-og-image_ru.jpg": { width: 1200, height: 675 },
+  "default-og-image_zh.jpg": { width: 1200, height: 675 },
+};
+
+function getOgImageSize(imageName: string): OgImageSize {
+  if (Object.prototype.hasOwnProperty.call(ogImageSizeByName, imageName)) {
+    return ogImageSizeByName[imageName];
+  }
+
+  return {
+    width: SiteConfig.seo.ogImage.width,
+    height: SiteConfig.seo.ogImage.height,
+  };
+}
+
 export function getProgramsOpenGraphTitle(locale: string): string {
   return `${getProgramsMetadata(locale).title} | ${SiteConfig.title}`;
 }
@@ -225,10 +250,11 @@ export function getHomePageMetadata(locale: string): Metadata {
   const social = getLayoutSocialMetadata(locale);
   const ogImageName = getOgImageName(locale);
   const imageUrl = `${getServerUrl()}/images/${ogImageName}`;
+  const imageSize = getOgImageSize(ogImageName);
   const image = {
     url: imageUrl,
-    width: SiteConfig.seo.ogImage.width,
-    height: SiteConfig.seo.ogImage.height,
+    width: imageSize.width,
+    height: imageSize.height,
     alt: title,
   };
 
@@ -259,10 +285,11 @@ export function getProgramsPageMetadata(locale: string): Metadata {
   const socialTitle = getProgramsOpenGraphTitle(locale);
   const ogImageName = getOgImageName(locale);
   const imageUrl = `${getServerUrl()}/images/${ogImageName}`;
+  const imageSize = getOgImageSize(ogImageName);
   const image = {
     url: imageUrl,
-    width: SiteConfig.seo.ogImage.width,
-    height: SiteConfig.seo.ogImage.height,
+    width: imageSize.width,
+    height: imageSize.height,
     alt: title,
   };
 

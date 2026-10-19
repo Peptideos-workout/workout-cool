@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import path from "node:path";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 import { stripLocalePrefix } from "./locale-path";
@@ -319,12 +321,78 @@ test("home and programs twitter images match the open graph image", () => {
       assert.equal(twitterImage.width, ogImage.width, locale);
       assert.equal(twitterImage.height, ogImage.height, locale);
       assert.equal(twitterImage.alt, ogImage.alt, locale);
-      assert.equal(twitterImage.width, SiteConfig.seo.ogImage.width, locale);
-      assert.equal(twitterImage.height, SiteConfig.seo.ogImage.height, locale);
       assert.equal(typeof twitterImage.alt, "string", locale);
       assert.ok((twitterImage.alt ?? "").length > 0, locale);
     }
   }
+});
+
+function jpegSize(buffer: Buffer) {
+  if (buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+    throw new Error("not a jpeg");
+  }
+
+  let offset = 2;
+  while (offset < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+    while (offset < buffer.length && buffer[offset] === 0xff) {
+      offset += 1;
+    }
+    const marker = buffer[offset];
+    offset += 1;
+    if (marker === 0xd8 || marker === 0xd9) {
+      continue;
+    }
+    if (marker === 0xda) {
+      break;
+    }
+    const length = buffer.readUInt16BE(offset);
+    if (marker === 0xc0 || marker === 0xc2) {
+      return {
+        height: buffer.readUInt16BE(offset + 3),
+        width: buffer.readUInt16BE(offset + 5),
+      };
+    }
+    offset += length;
+  }
+
+  throw new Error("jpeg SOF0/SOF2 marker not found");
+}
+
+test("home and programs image dimensions match the jpeg files", () => {
+  const imagesDir = path.resolve(process.cwd(), "public/images");
+  const mismatches: string[] = [];
+
+  for (const locale of supportedLocales) {
+    const imageName = getOgImageName(locale);
+    const actual = jpegSize(readFileSync(path.join(imagesDir, imageName)));
+
+    for (const metadata of [getHomePageMetadata(locale), getProgramsPageMetadata(locale)]) {
+      const openGraph = metadata.openGraph as { images?: unknown } | null;
+      const twitter = metadata.twitter as { images?: unknown } | null;
+      const ogImage = firstSocialImage(openGraph?.images);
+      const twitterImage = firstSocialImage(twitter?.images);
+      if (ogImage.width !== actual.width || ogImage.height !== actual.height) {
+        mismatches.push(`${locale} og ${ogImage.width}x${ogImage.height} file ${actual.width}x${actual.height}`);
+      }
+      if (twitterImage.width !== actual.width || twitterImage.height !== actual.height) {
+        mismatches.push(`${locale} twitter ${twitterImage.width}x${twitterImage.height} file ${actual.width}x${actual.height}`);
+      }
+      const twitterMatchesOg =
+        twitterImage.url === ogImage.url &&
+        twitterImage.width === ogImage.width &&
+        twitterImage.height === ogImage.height &&
+        twitterImage.alt === ogImage.alt;
+      if (!twitterMatchesOg) {
+        mismatches.push(`${locale} twitter image differs from og`);
+      }
+    }
+  }
+
+  assert.deepEqual(mismatches, []);
 });
 
 test("unknown and prototype locales omit the page og locale from alternates", () => {

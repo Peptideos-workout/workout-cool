@@ -777,6 +777,7 @@ export default {
       time: "Tiempo",
       next_exercise: "Siguiente ejercicio",
       add_set: "Agregar serie",
+      delete_set: "Eliminar serie",
       add_column: "Agregar columna",
       add_row: "Agregar fila de atributos",
       remove_column: "Eliminar columna",

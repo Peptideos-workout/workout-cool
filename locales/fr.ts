@@ -1672,6 +1672,7 @@ export default {
       time: "Temps",
       next_exercise: "Exercice suivant",
       add_set: "Ajouter une série",
+      delete_set: "Supprimer la série",
       add_column: "Ajouter une colonne",
       add_row: "Ajouter une ligne d'attributs",
       remove_column: "Supprimer une colonne",

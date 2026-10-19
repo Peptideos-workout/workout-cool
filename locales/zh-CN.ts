@@ -772,6 +772,7 @@ export default {
       time: "时间",
       next_exercise: "下一个练习",
       add_set: "添加组",
+      delete_set: "删除组",
       add_column: "添加列",
       add_row: "添加行",
       remove_column: "移除列",

@@ -1647,6 +1647,7 @@ export default {
       time: "Time",
       next_exercise: "Next Exercise",
       add_set: "Add set",
+      delete_set: "Delete set",
       add_column: "Add column",
       add_row: "Add row",
       remove_column: "Remove column",

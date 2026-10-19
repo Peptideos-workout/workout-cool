@@ -147,7 +147,10 @@ test("builder contrast pairs meet AA", () => {
 
   assert.match(remove, /text-\[var\(--wc-dash-error\)\]/);
   assert.match(read("src/features/workout-builder/ui/exercise-card.tsx"), /workout_builder\.exercise\.remove/);
-  assert.doesNotMatch(footer, /!opacity-100/);
+  assert.match(footer, /disabled:!opacity-100 disabled:!border-\[var\(--wc-dash-border\)\] disabled:!bg-\[var\(--wc-dash-inner\)\]/);
+  assert.match(footer, /disabled:!bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_16%,var\(--wc-dash-panel\)\)\]/);
+  assert.match(footer, /dark:disabled:!bg-\[color-mix\(in_srgb,var\(--wc-dash-accent\)_22%,var\(--wc-dash-page\)\)\]/);
+  assert.doesNotMatch(footer, /disabled:opacity-30/);
   assert.equal(footer.split("!bg-[var(--wc-dash-accent)] !text-lg").length - 1, 2);
   assert.equal(footer.split("!text-[var(--wc-dash-ink)]").length - 1, 2);
   assert.ok(contrast(light.error, light.panel) >= 4.5);
@@ -186,6 +189,33 @@ test("builder handlers and conditionals stay byte-identical", () => {
   assert.match(footer, /disabled=\{!canContinue\}\n\s+onClick=\{onNext\}/);
   assert.equal(footer.split("disabled={!canContinue}").length - 1, 2);
   assert.equal(card.split("h-12 w-12 min-h-12 min-w-12").length - 1, 2);
-  assert.match(listItem, /className="p-2 min-h-12 min-w-12 touch-manipulation"/);
+  assert.match(listItem, /className="!min-h-12 !text-lg touch-manipulation"/);
   assert.match(listItem, /className="inline-flex min-h-12 min-w-12 items-center justify-center/);
+});
+
+test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
+  const equipment = read("src/features/workout-builder/ui/equipment-selection.tsx");
+  const listItem = read("src/features/workout-builder/ui/exercise-list-item.tsx");
+  const card = read("src/features/workout-builder/ui/exercise-card.tsx");
+  assert.match(equipment, /data-wc-equipment-bar/);
+  assert.match(equipment, /workout_builder\.stats\.equipment_selected/);
+  assert.match(equipment, /workout_builder\.selection\.clear_all/);
+  assert.match(equipment, /onClick=\{onClearEquipment\}/);
+  assert.match(equipment, /min-h-12 items-center rounded-lg px-3 text-lg/);
+  assert.doesNotMatch(equipment, /choose_your_arsenal/);
+  assert.doesNotMatch(equipment, /select_equipment_description/);
+  assert.match(listItem, /flex flex-wrap items-center/);
+  assert.match(listItem, /break-words text-lg font-semibold/);
+  assert.match(listItem, /break-words text-lg font-medium/);
+  assert.doesNotMatch(listItem, /text-xs sm:text-sm/);
+  assert.doesNotMatch(listItem, /truncate/);
+  assert.doesNotMatch(listItem, /hidden sm:inline/);
+  assert.match(listItem, /workout_builder\.exercise\.shuffle/);
+  assert.match(listItem, /workout_builder\.exercise\.watch_video/);
+  assert.match(listItem, /workout_builder\.exercise\.remove/);
+  assert.match(listItem, /text-lg text-\[var\(--wc-dash-error\)\]/);
+  assert.match(card, /className="min-h-12 text-lg" onClick=\{\(\) => onShuffle\(exercise\.id, muscle\)\}/);
+  assert.match(card, /break-words text-lg font-semibold leading-tight/);
+  assert.doesNotMatch(card, /line-clamp-2/);
+  assert.doesNotMatch(card, /text-sm leading-tight line-clamp-2/);
 });

@@ -1642,6 +1642,7 @@ export default {
       back_to_workout: "Voltar ao treino",
       congrats: "Parabéns, treino concluído! 🎉",
       congrats_subtitle: "Conseguiu!",
+      trophy_alt: "Troféu",
       see_instructions: "Ver instruções",
       finish_set: "Concluir série",
       finish_session: "Terminar sessão",

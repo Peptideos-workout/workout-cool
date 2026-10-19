@@ -1638,6 +1638,7 @@ export default {
       back_to_workout: "Back to workout",
       congrats: "Congratulations, workout finished! 🎉",
       congrats_subtitle: "You've done it !",
+      trophy_alt: "Trophy",
       see_instructions: "See instructions",
       finish_set: "Finish Set",
       finish_session: "Finish Session",

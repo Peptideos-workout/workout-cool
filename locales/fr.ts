@@ -1663,6 +1663,7 @@ export default {
       back_to_workout: "Retour à l'entraînement",
       congrats: "Bravo, séance terminée ! 🎉",
       congrats_subtitle: "Tu l'as fait !",
+      trophy_alt: "Trophée",
       see_instructions: "Voir les instructions",
       finish_set: "Valider la série",
       finish_session: "Terminer la séance",

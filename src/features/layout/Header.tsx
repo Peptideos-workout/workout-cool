@@ -42,6 +42,12 @@ export const Header = () => {
     element.blur();
   };
 
+  const publicSignupClass =
+    "inline-flex !h-auto !min-h-12 !min-w-12 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 " +
+    "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
+    "shadow-none hover:bg-[var(--wc-dash-accent)] " +
+    "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]";
+
   return (
     <>
       <div
@@ -93,12 +99,7 @@ export const Header = () => {
                 {t("commons.login")}
               </Link>
               <Link
-                className={
-                  "inline-flex !h-auto !min-h-12 !min-w-12 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 " +
-                  "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
-                  "shadow-none hover:bg-[var(--wc-dash-accent)] " +
-                  "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]"
-                }
+                className={publicSignupClass}
                 href={getConfiguredPeptideOsSignupUrl()}
                 prefetch={false}
                 size="lg"

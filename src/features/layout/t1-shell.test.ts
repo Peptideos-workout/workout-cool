@@ -240,8 +240,13 @@ test("phone nav clearance matches the two-column nav", () => {
   const mainMarker = main.indexOf("data-wc-main=\"\"");
   assert.ok(mainMarker > 0);
   assert.doesNotMatch(main.slice(mainMarker - 180, mainMarker), /pb-\[var\(--wc-nav-h\)\]/);
-  assert.match(version, /sm:bottom-\[168px\]/);
+  assert.match(version, /pointer-events-none/);
+  assert.match(version, /z-20/);
+  assert.doesNotMatch(version, /z-50/);
+  assert.match(version, /sm:left-4 sm:right-auto/);
+  assert.doesNotMatch(version, /sm:bottom-\[168px\]/);
   assert.match(version, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(main, /sm:pb-12/);
   assert.doesNotMatch(version, /\bfixed\b/);
   assert.match(footer, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
   assert.match(footer, /disabled:pointer-events-auto/);
@@ -288,7 +293,7 @@ test("embed nav grid fits five or six tabs", () => {
       "grid-template-columns: repeat\\(3, minmax\\(0, 1fr\\)\\);",
   );
   assert.match(css, desktop);
-  assert.match(read("src/features/layout/BottomNavigation.tsx"), /--wc-nav-tabs/);
+  assert.doesNotMatch(read("src/features/layout/BottomNavigation.tsx"), /--wc-nav-tabs/);
   assert.match(css, phone);
   assert.doesNotMatch(css, /repeat\(5,/);
 });
@@ -357,4 +362,14 @@ test("embed colors outside the token blocks use wc-dash variables", () => {
   assert.match(withoutTokens, /var\(--wc-dash-link\)/);
   assert.match(withoutTokens, /var\(--wc-dash-ink\)/);
   assert.match(withoutTokens, /var\(--wc-dash-secondary\)/);
+});
+
+test("equipment card titles are 18px dash tokens", () => {
+  const equipment = read("src/features/workout-builder/ui/equipment-selection.tsx");
+  assert.match(equipment, /font-semibold text-lg leading-tight tracking-wide/);
+  assert.match(equipment, /text-\[var\(--wc-dash-accent\)\]/);
+  assert.match(equipment, /text-\[var\(--wc-dash-text\)\] group-hover:text-\[var\(--wc-dash-accent\)\]/);
+  assert.doesNotMatch(equipment, /font-semibold text-sm/);
+  assert.doesNotMatch(equipment, /text-emerald-700/);
+  assert.doesNotMatch(equipment, /text-slate-700/);
 });

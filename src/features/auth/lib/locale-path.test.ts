@@ -98,6 +98,11 @@ test("zh-CN home og image name uses _zh", () => {
   assert.doesNotMatch(getHomeOgImageName("zh-CN"), /zh-CN/);
   assert.equal(getHomeOgImageName("en"), "default-og-image_en.jpg");
   assert.equal(getHomeOgImageName("fr"), "default-og-image_fr.jpg");
+  assert.equal(getHomeOgImageName("zh-cn"), "default-og-image_en.jpg");
+  assert.equal(getHomeOgImageName("not-a-locale"), "default-og-image_en.jpg");
+  assert.equal(getHomeOgImageName("es"), "default-og-image_es.jpg");
+  assert.equal(getHomeOgImageName("pt"), "default-og-image_pt.jpg");
+  assert.equal(getHomeOgImageName("ru"), "default-og-image_ru.jpg");
 });
 
 test("programs titles are localized, English is not Programmes, and unknown locales fall back", () => {

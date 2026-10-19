@@ -118,6 +118,7 @@ export function getProgramsMetadata(locale: string): ProgramsMetadataCopy {
 }
 
 export function getHomeOgImageName(locale: string): string {
-  const imageLocale = locale === "zh-CN" ? "zh" : locale;
+  const resolved = resolveSupportedLocale(locale);
+  const imageLocale = resolved === "zh-CN" ? "zh" : resolved;
   return `default-og-image_${imageLocale}.jpg`;
 }

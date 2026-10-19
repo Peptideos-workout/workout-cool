@@ -120,7 +120,7 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   assert.match(sets, /!min-h-12 !border !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
   assert.match(sets, /!text-lg !text-\[var\(--wc-dash-text\)\]/);
   const quitClass =
-    "className=\"border-0 bg-transparent px-3 !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
+    "className=\"max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(header, new RegExp(quitClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const dialogQuit =
     "className=\"w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
@@ -193,7 +193,10 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
   assert.match(
     timer,
-    /fixed bottom-\[calc\(var\(--wc-nav-h\)\+96px\)\] left-1\/2 z-50 mb-0 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-\[320px\]/,
+    new RegExp(
+      "fixed bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+96px\\)\\] left-1\\/2 z-50 mb-0 " +
+        "max-w-\\[calc\\(100vw-16px\\)\\] -translate-x-1\\/2 sm:bottom-\\[320px\\]",
+    ),
   );
   assert.doesNotMatch(timer, /sm:bottom-20/);
   assert.doesNotMatch(timer, /sm:bottom-32/);
@@ -229,6 +232,24 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(read("locales/pt.ts"), /delete_set: "Eliminar série"/);
   assert.match(read("locales/ru.ts"), /delete_set: "Удалить подход"/);
   assert.match(read("locales/zh-CN.ts"), /delete_set: "删除组"/);
+  assert.match(read("locales/en.ts"), /seconds_short: "sec"/);
+  assert.match(read("locales/fr.ts"), /seconds_short: "sec"/);
+  assert.match(read("locales/es.ts"), /seconds_short: "seg"/);
+  assert.match(read("locales/pt.ts"), /seconds_short: "seg"/);
+  assert.match(read("locales/ru.ts"), /seconds_short: "сек"/);
+  assert.match(read("locales/zh-CN.ts"), /seconds_short: "秒"/);
+  assert.match(read("locales/en.ts"), /exercise_image: "Exercise image"/);
+  assert.match(read("locales/fr.ts"), /exercise_image: "Image de l'exercice"/);
+  assert.match(read("locales/es.ts"), /exercise_image: "Imagen del ejercicio"/);
+  assert.match(read("locales/pt.ts"), /exercise_image: "Imagem do exercício"/);
+  assert.match(read("locales/ru.ts"), /exercise_image: "Изображение упражнения"/);
+  assert.match(read("locales/zh-CN.ts"), /exercise_image: "练习图片"/);
+  assert.match(read("locales/en.ts"), /trophy: "trophy"/);
+  assert.match(read("locales/fr.ts"), /trophy: "trophée"/);
+  assert.match(read("locales/es.ts"), /trophy: "trofeo"/);
+  assert.match(read("locales/pt.ts"), /trophy: "troféu"/);
+  assert.match(read("locales/ru.ts"), /trophy: "трофей"/);
+  assert.match(read("locales/zh-CN.ts"), /trophy: "奖杯"/);
   assert.match(timer, /rounded-full border border-\[var\(--wc-dash-border\)\] bg-\[var\(--wc-dash-card\)\] px-4 py-2 shadow-lg/);
   assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
   assert.match(sets, /px-3 pb-8 sm:px-6/);
@@ -237,16 +258,28 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(sets, /\{t\("workout_builder\.session\.next_exercise"\)\}\n\s+<ArrowRight className="h-5 w-5" \/>/);
   assert.doesNotMatch(sets, /<ArrowRight className="h-5 w-5" \/>\n\s+\{t\("workout_builder\.session\.next_exercise"\)\}/);
   assert.match(row, /\+ \{t\("workout_builder\.session\.add_row"\)\}/);
+  assert.doesNotMatch(row, /add_column/);
   assert.doesNotMatch(row, /<Plus/);
+  assert.match(header, /flex flex-col items-start gap-1 sm:flex-row sm:items-center/);
+  assert.match(header, /min-w-0 break-words text-lg font-medium/);
+  assert.match(sets, /min-w-0 flex-1 !whitespace-normal/);
+  assert.match(sets, /details\?\.fullVideoUrl \? \([\s\S]*workout_builder\.exercise\.watch_video/);
+  assert.match(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /text-lg text-\[var\(--wc-dash-secondary\)\]/);
+  assert.doesNotMatch(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /text-sm text-slate-500/);
   assert.match(sets, /aria-label=\{t\("workout_builder\.session\.add_set"\)\}/);
   assert.match(sets, /aria-label=\{t\("workout_builder\.session\.next_exercise"\)\}/);
   assert.doesNotMatch(sets, /aria-label="Ajouter une série"/);
   assert.doesNotMatch(sets, /aria-label="Exercice suivant"/);
   assert.match(row, /mt-2 flex w-full flex-col gap-2 sm:flex-row/);
   assert.match(row, /!whitespace-normal/);
-  assert.match(sets, /<FavoriteExerciseButton className="!h-12 !min-h-12 !min-w-12" exerciseId=\{ex\.id\} \/>/);
+  assert.match(sets, /<FavoriteExerciseButton className="!h-auto !min-h-12 !min-w-12 !whitespace-normal" exerciseId=\{ex\.id\} \/>/);
   assert.match(quit, /\[&>button\]:!h-12 \[&>button\]:!w-12/);
   assert.match(read("src/features/workout-builder/ui/exercise-video-modal.tsx"), /\[&>button\]:!h-12 \[&>button\]:!w-12/);
+  assert.match(read("src/features/workout-builder/ui/exercise-video-modal.tsx"), /min-h-12 items-center gap-2 text-lg/);
+  assert.match(sets, /t\("workout_builder\.session\.exercise_image"\)/);
+  assert.match(sets, /t\("workout_builder\.session\.trophy"\)/);
+  assert.doesNotMatch(sets, /Exercise image/);
+  assert.doesNotMatch(sets, /" trophy"/);
   assert.doesNotMatch(header, /elapsed_time/);
   assert.match(header, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(quit, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
@@ -283,6 +316,11 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(row, /types\.length < MAX_WORKOUT_SET_COLUMNS && !set\.completed && \(/);
   assert.match(row, /\{set\.completed && \(/);
   assert.match(row, /t\("workout_builder\.session\.add_row"\)/);
-  assert.match(row, /t\("workout_builder\.session\.add_column"\)/);
+  assert.match(row, /placeholder=\{t\("programs\.min_short"\)\}/);
+  assert.match(row, /placeholder=\{t\("workout_builder\.session\.seconds_short"\)\}/);
+  assert.match(row, /placeholder:text-\[var\(--wc-dash-secondary\)\]/);
+  assert.match(row, /sm:min-w-60/);
+  assert.doesNotMatch(row, /placeholder="min"/);
+  assert.doesNotMatch(row, /placeholder="sec"/);
   assert.match(row, /t\("commons\.edit"\)/);
 });

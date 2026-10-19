@@ -89,16 +89,19 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /onStepClick=\{handleStepClick\}/);
   assert.match(stepper, /data-wc-intro/);
   assert.match(stepper, /data-wc-kicker/);
-  assert.match(stepper, /<h2 className="mt-2 text-3xl font-bold text-\[var\(--wc-dash-text\)\]" data-wc-title="">/);
+  assert.match(stepper, /<h1 className="mt-2 text-3xl font-bold text-\[var\(--wc-dash-text\)\]" data-wc-title="">/);
   assert.match(stepper, /\{t\("workout_builder\.title"\)\}/);
-  assert.doesNotMatch(stepper, /<h1[^>]*data-wc-title/);
+  assert.doesNotMatch(stepper, /<h2[^>]*data-wc-title/);
+  assert.doesNotMatch(stepper, /alt="Trophée"/);
   assert.doesNotMatch(stepper, /Build your workout/);
-  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.match(stepper, /data-wc-lead/);
+  assert.match(stepper, /workout_builder\.selection\.select_equipment_description/);
   assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-lead/);
   assert.doesNotMatch(stepper, /className="hidden[^"]*" data-wc-intro/);
-  assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h1" : "h3"/);
+  assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h2" : "h3"/);
   assert.match(stepper, /data-wc-step-sheet/);
-  assert.match(stepper, /bottom_navigation\.workouts/);
+  assert.match(stepper, /data-wc-kicker="">\s*\{steps\.find\(\(step\) => step\.stepNumber === currentStep\)\?\.title\}/);
+  assert.match(stepper, /workout_builder\.steps\.equipment\.title/);
   assert.match(footer, /data-wc-step-next/);
   assert.match(footer, /data-wc-step-previous/);
   assert.match(footer, /disabled=\{isFirstStep\}/);
@@ -260,7 +263,10 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.doesNotMatch(footer, /max-sm:bottom-14/);
   assert.match(
     read("src/features/workout-session/ui/workout-session-timer.tsx"),
-    /fixed bottom-\[calc\(var\(--wc-nav-h\)\+96px\)\] left-1\/2 z-50 mb-0 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-\[320px\]/,
+    new RegExp(
+      "fixed bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+96px\\)\\] left-1\\/2 z-50 mb-0 " +
+        "max-w-\\[calc\\(100vw-16px\\)\\] -translate-x-1\\/2 sm:bottom-\\[320px\\]",
+    ),
   );
   assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-20/);
   assert.doesNotMatch(main, /max-sm:pb-36/);

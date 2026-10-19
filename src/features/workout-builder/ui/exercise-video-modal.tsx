@@ -81,11 +81,11 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
         {/* @ts-expect-error Tabs shadcn */}
         <Tabs className="flex-1" onValueChange={setActiveTab} value={activeTab}>
           <TabsList className="grid w-full grid-cols-2 mx-4" style={{ width: "calc(100% - 2rem)" }}>
-            <TabsTrigger className="flex items-center gap-2" value="video">
+            <TabsTrigger className="flex min-h-12 items-center gap-2 text-lg" value="video">
               <Play size={16} />
               {t("statistics.tabs.video")}
             </TabsTrigger>
-            <TabsTrigger className="flex items-center gap-2" value="statistics">
+            <TabsTrigger className="flex min-h-12 items-center gap-2 text-lg" value="statistics">
               <BarChart3 size={16} />
               {t("statistics.title") || "Statistics"}
             </TabsTrigger>

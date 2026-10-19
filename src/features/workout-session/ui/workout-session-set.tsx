@@ -7,7 +7,8 @@ import { getWorkoutSetTypeLabels } from "@/features/workout-session/lib/workout-
 import { Button } from "@/components/ui/button";
 
 const sessionField =
-  "min-h-14 rounded border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] " + "px-3 text-lg font-bold text-[var(--wc-dash-text)]";
+  "min-h-14 rounded border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] " +
+  "px-3 text-lg font-bold text-[var(--wc-dash-text)] placeholder:text-[var(--wc-dash-secondary)]";
 const plainErrorButton = "border-0 bg-transparent !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent";
 const accentButton =
   "!min-h-12 !bg-[var(--wc-dash-accent)] !text-lg font-bold !text-[var(--wc-dash-ink)] hover:!bg-[var(--wc-dash-accent)]";
@@ -95,7 +96,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
               min={0}
               onChange={handleValueIntChange(columnIndex)}
               pattern="[0-9]*"
-              placeholder="min"
+              placeholder={t("programs.min_short")}
               type="number"
               value={valuesInt[columnIndex] ?? ""}
             />
@@ -106,7 +107,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
               min={0}
               onChange={handleValueSecChange(columnIndex)}
               pattern="[0-9]*"
-              placeholder="sec"
+              placeholder={t("workout_builder.session.seconds_short")}
               type="number"
               value={valuesSec[columnIndex] ?? ""}
             />
@@ -188,16 +189,16 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
       </div>
 
       {/* Columns of types, stack vertical on mobile, horizontal on md+ */}
-      <div className="flex flex-col md:flex-row gap-6 md:gap-2 w-full">
+      <div className="flex w-full flex-col gap-6 md:flex-row md:flex-wrap md:gap-2">
         {types.map((type, columnIndex) => {
           // An option is available if it's not used by another column, OR it's the current column's type.
           const availableTypes = AVAILABLE_WORKOUT_SET_TYPES.filter((option) => !types.includes(option) || option === type);
 
           return (
-            <div className="flex flex-col w-full md:w-auto" key={columnIndex}>
-              <div className="flex items-center w-full gap-1 mb-1">
+            <div className="flex w-full min-w-0 flex-col md:w-auto md:min-w-60 md:flex-1" key={columnIndex}>
+              <div className="mb-1 flex w-full min-w-0 flex-col gap-1 sm:flex-row sm:items-center">
                 <select
-                  className={`${sessionField} w-full min-w-0`}
+                  className={`${sessionField} w-full !px-2 sm:min-w-60 sm:!px-3`}
                   disabled={set.completed}
                   onChange={handleTypeChange(columnIndex)}
                   value={type}
@@ -234,8 +235,7 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
             onClick={addColumn}
             variant="outline"
           >
-            <span className="block md:hidden">+ {t("workout_builder.session.add_row")}</span>
-            <span className="hidden md:block">{t("workout_builder.session.add_column")}</span>
+            + {t("workout_builder.session.add_row")}
           </Button>
         </div>
       )}

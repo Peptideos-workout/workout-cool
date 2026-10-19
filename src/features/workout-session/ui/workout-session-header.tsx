@@ -76,7 +76,7 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
             </span>
 
             <Button
-              className="border-0 bg-transparent px-3 !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
+              className="max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
               onClick={handleQuitClick}
               variant="ghost"
             >
@@ -87,12 +87,14 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
 
           <div className="grid grid-cols-2 gap-2">
             {/* Card 1: Exercise Progress */}
-            <div className="rounded-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-2">
-              <div className="mb-2 flex items-center gap-2">
+            <div className="min-w-0 rounded-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-2">
+              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--wc-dash-inner)]">
                   <Target className="h-5 w-5 text-[var(--wc-dash-accent)]" />
                 </div>
-                <h3 className="min-w-0 text-lg font-medium text-[var(--wc-dash-text)]">{t("workout_builder.session.exercise_progress")}</h3>
+                <h3 className="min-w-0 break-words text-lg font-medium text-[var(--wc-dash-text)]">
+                  {t("workout_builder.session.exercise_progress")}
+                </h3>
               </div>
 
               <div className="space-y-1">
@@ -117,12 +119,14 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
             </div>
 
             {/* Card 2: Total Volume */}
-            <div className="rounded-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-2">
-              <div className="mb-2 flex items-center gap-2">
+            <div className="min-w-0 rounded-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-2">
+              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--wc-dash-inner)]">
                   <Weight className="h-5 w-5 text-[var(--wc-dash-accent)]" />
                 </div>
-                <h3 className="min-w-0 text-lg font-medium text-[var(--wc-dash-text)]">{t("workout_builder.session.total_volume")}</h3>
+                <h3 className="min-w-0 break-words text-lg font-medium text-[var(--wc-dash-text)]">
+                  {t("workout_builder.session.total_volume")}
+                </h3>
               </div>
 
               <div className="text-center">

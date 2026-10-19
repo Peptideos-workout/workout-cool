@@ -185,7 +185,12 @@ test("session handlers, disabled expressions, conditionals, and copy stay byte-i
   assert.match(quit, /t\("workout_builder\.session\.continue_workout"\)/);
 
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
-  assert.match(timer, /fixed bottom-\[calc\(var\(--wc-nav-h\)\+96px\)\] left-1\/2 z-50 mb-0 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-32/);
+  assert.match(
+    timer,
+    /fixed bottom-\[calc\(var\(--wc-nav-h\)\+96px\)\] left-1\/2 z-50 mb-0 max-w-\[calc\(100vw-16px\)\] -translate-x-1\/2 sm:bottom-\[320px\]/,
+  );
+  assert.doesNotMatch(timer, /sm:bottom-20/);
+  assert.doesNotMatch(timer, /sm:bottom-32/);
   assert.doesNotMatch(read(SETS), /Exercice terminé/);
   assert.doesNotMatch(read(SETS), /Exercice en cours/);
   assert.match(read("locales/en.ts"), /exercise_complete: "Exercise complete"/);

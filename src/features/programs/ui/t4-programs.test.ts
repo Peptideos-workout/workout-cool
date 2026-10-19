@@ -159,7 +159,7 @@ test("program contrast pairs meet AA", () => {
   }
 });
 
-test("program handlers, hrefs, disabled expressions, and conditionals stay byte-identical", () => {
+test("program handlers, hrefs, disabled expressions, and conditionals stay in place", () => {
   const card = read(CARD);
   const detail = read(DETAIL);
   const progress = read(PROGRESS);
@@ -383,7 +383,7 @@ test("program tabs, washes, confetti, progress, and visibility stay locked", () 
   assert.match(read(CARD), /className=\{levelConfig\.kicker\}/);
 });
 
-test("breadcrumb Home is 18px with a 48px target", () => {
+test("breadcrumbs, program cover, list title, and plural copy stay locked", () => {
   const crumbs = read("src/components/seo/breadcrumbs.tsx");
   const detail = read(DETAIL);
   const list = read(LIST);

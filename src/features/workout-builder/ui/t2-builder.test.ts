@@ -81,7 +81,9 @@ test("stepper uses teal accent tokens and a check on finished steps", () => {
   assert.match(header, /isCompleted \? <span className="text-lg font-semibold">✓<\/span>/);
   assert.equal(header.split("✓").length - 1, 2);
   assert.match(stepper, /data-wc-title="">\s*\{t\("workout_builder\.title"\)\}/);
-  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.match(stepper, /data-wc-kicker="">\s*\{steps\.find\(\(step\) => step\.stepNumber === currentStep\)\?\.title\}/);
+  assert.match(stepper, /currentStep === 1 \?/);
+  assert.match(stepper, /data-wc-lead="">\s*\{t\("workout_builder\.selection\.select_equipment_description"\)\}/);
   assert.doesNotMatch(stepper, /hidden px-2/);
   assert.match(read("locales/en.ts"), /title:\s*"Build your workout"/);
   assert.match(read("locales/fr.ts"), /title:\s*"Construire votre entraînement"/);
@@ -198,6 +200,8 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   const listItem = read("src/features/workout-builder/ui/exercise-list-item.tsx");
   const card = read("src/features/workout-builder/ui/exercise-card.tsx");
   assert.match(equipment, /data-wc-equipment-bar/);
+  assert.ok(equipment.indexOf("data-wc-equipment-bar") < equipment.indexOf("grid grid-cols-2"));
+  assert.match(equipment, /✓ \{translation\.description\}/);
   assert.match(equipment, /workout_builder\.stats\.equipment_selected/);
   assert.match(equipment, /workout_builder\.selection\.clear_all/);
   assert.match(equipment, /onClick=\{onClearEquipment\}/);
@@ -222,7 +226,7 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(listItem, /h-12 w-12 min-h-12 min-w-12/);
   assert.match(listItem, /text-lg font-bold text-\[var\(--wc-dash-text\)\]/);
   assert.match(listItem, /aria-label=\{t\("statistics\.title"\)\}/);
-  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /workout_builder\.addExercise/);
+  assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /\+ \{t\("workout_builder\.addExercise"\)\}/);
   assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /min-h-12 w-full/);
   assert.match(read("src/features/workout-builder/ui/exercises-selection.tsx"), /bg-\[var\(--wc-dash-accent\)\]/);
   assert.match(equipment, /aria-disabled=\{selectedEquipment\.length === 0\}/);

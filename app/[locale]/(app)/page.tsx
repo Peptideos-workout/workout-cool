@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 
 import { getServerUrl } from "@/shared/lib/server-url";
 import { SiteConfig } from "@/shared/config/site-config";
-import { getHomeMetadata, getHomeOgImageName } from "@/shared/config/home-metadata";
+import { getHomeMetadata, getOgImageName, getOgLocale } from "@/shared/config/home-metadata";
 import { WorkoutStepper } from "@/features/workout-builder";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const { title, description, keywords } = getHomeMetadata(locale);
-  const ogImageName = getHomeOgImageName(locale);
+  const ogImageName = getOgImageName(locale);
 
   return {
     title,
@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       title: `${title} | ${SiteConfig.title}`,
       description,
+      locale: getOgLocale(locale),
       images: [
         {
           url: `${getServerUrl()}/images/${ogImageName}`,

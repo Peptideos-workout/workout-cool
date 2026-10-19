@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 
 import { stripLocalePrefix } from "./locale-path";
 
+import { SiteConfig } from "@/shared/config/site-config";
 import { LocalizedMetadata } from "@/shared/config/localized-metadata";
-import { getHomeMetadata, getHomeOgImageName, getProgramsMetadata } from "@/shared/config/home-metadata";
+import { getHomeMetadata, getOgImageName, getOgLocale, getProgramsMetadata, getProgramsOpenGraphTitle } from "@/shared/config/home-metadata";
+
+const prototypeKeys = ["constructor", "__proto__", "toString", "hasOwnProperty"];
 
 const supportedLocales = Object.keys(LocalizedMetadata);
 const cjk = /[\u3400-\u9fff]/;
@@ -81,10 +84,9 @@ test("non-French home titles are not the French string, and zh-CN uses CJK", () 
 });
 
 test("unknown and wrong-case locales fall back to English home metadata", () => {
-  assert.deepEqual(getHomeMetadata("zh-cn"), englishHome);
-  assert.deepEqual(getHomeMetadata("ZH-CN"), englishHome);
-  assert.deepEqual(getHomeMetadata("not-a-locale"), englishHome);
-  assert.deepEqual(getHomeMetadata(""), englishHome);
+  for (const locale of ["zh-cn", "ZH-CN", "not-a-locale", "", ...prototypeKeys]) {
+    assert.deepEqual(getHomeMetadata(locale), englishHome, locale);
+  }
 });
 
 test("English and French home metadata stay byte-identical", () => {
@@ -93,16 +95,54 @@ test("English and French home metadata stay byte-identical", () => {
 });
 
 test("zh-CN home og image name uses _zh", () => {
-  assert.equal(getHomeOgImageName("zh-CN"), "default-og-image_zh.jpg");
-  assert.match(getHomeOgImageName("zh-CN"), /_zh\.jpg$/);
-  assert.doesNotMatch(getHomeOgImageName("zh-CN"), /zh-CN/);
-  assert.equal(getHomeOgImageName("en"), "default-og-image_en.jpg");
-  assert.equal(getHomeOgImageName("fr"), "default-og-image_fr.jpg");
-  assert.equal(getHomeOgImageName("zh-cn"), "default-og-image_en.jpg");
-  assert.equal(getHomeOgImageName("not-a-locale"), "default-og-image_en.jpg");
-  assert.equal(getHomeOgImageName("es"), "default-og-image_es.jpg");
-  assert.equal(getHomeOgImageName("pt"), "default-og-image_pt.jpg");
-  assert.equal(getHomeOgImageName("ru"), "default-og-image_ru.jpg");
+  assert.equal(getOgImageName("zh-CN"), "default-og-image_zh.jpg");
+  assert.match(getOgImageName("zh-CN"), /_zh\.jpg$/);
+  assert.doesNotMatch(getOgImageName("zh-CN"), /zh-CN/);
+  assert.equal(getOgImageName("en"), "default-og-image_en.jpg");
+  assert.equal(getOgImageName("fr"), "default-og-image_fr.jpg");
+  assert.equal(getOgImageName("zh-cn"), "default-og-image_en.jpg");
+  assert.equal(getOgImageName("not-a-locale"), "default-og-image_en.jpg");
+  assert.equal(getOgImageName("es"), "default-og-image_es.jpg");
+  assert.equal(getOgImageName("pt"), "default-og-image_pt.jpg");
+  assert.equal(getOgImageName("ru"), "default-og-image_ru.jpg");
+  for (const locale of prototypeKeys) {
+    assert.equal(getOgImageName(locale), "default-og-image_en.jpg", locale);
+  }
+});
+
+test("programs og image follows the locale and is not the French file", () => {
+  assert.equal(getOgImageName("en"), "default-og-image_en.jpg");
+  assert.equal(getOgImageName("fr"), "default-og-image_fr.jpg");
+  assert.equal(getOgImageName("es"), "default-og-image_es.jpg");
+  assert.equal(getOgImageName("pt"), "default-og-image_pt.jpg");
+  assert.equal(getOgImageName("ru"), "default-og-image_ru.jpg");
+  assert.equal(getOgImageName("zh-CN"), "default-og-image_zh.jpg");
+  for (const locale of ["en", "es", "pt", "ru", "zh-CN"]) {
+    assert.doesNotMatch(getOgImageName(locale), /_fr/, locale);
+  }
+});
+
+test("og locale matches each supported locale and falls back to en_US", () => {
+  assert.equal(getOgLocale("en"), "en_US");
+  assert.equal(getOgLocale("fr"), "fr_FR");
+  assert.equal(getOgLocale("es"), "es_ES");
+  assert.equal(getOgLocale("pt"), "pt_PT");
+  assert.equal(getOgLocale("ru"), "ru_RU");
+  assert.equal(getOgLocale("zh-CN"), "zh_CN");
+  for (const locale of ["zh-cn", "not-a-locale", ...prototypeKeys]) {
+    assert.equal(getOgLocale(locale), "en_US", locale);
+  }
+});
+
+test("programs open graph title uses the localized title", () => {
+  for (const locale of supportedLocales) {
+    const metadata = getProgramsMetadata(locale);
+    assert.equal(getProgramsOpenGraphTitle(locale), `${metadata.title} | ${SiteConfig.title}`, locale);
+    assert.notEqual(getProgramsOpenGraphTitle(locale), SiteConfig.title, locale);
+  }
+  assert.equal(getProgramsOpenGraphTitle("en"), "Programs | WorkoutOS");
+  assert.equal(getProgramsOpenGraphTitle("fr"), "Programmes | WorkoutOS");
+  assert.equal(getProgramsOpenGraphTitle("constructor"), `Programs | ${SiteConfig.title}`);
 });
 
 test("programs titles are localized, English is not Programmes, and unknown locales fall back", () => {
@@ -121,6 +161,9 @@ test("programs titles are localized, English is not Programmes, and unknown loca
   assert.match(getProgramsMetadata("zh-CN").title, cjk);
   assert.deepEqual(getProgramsMetadata("en"), englishPrograms);
   assert.deepEqual(getProgramsMetadata("fr"), frenchPrograms);
-  assert.deepEqual(getProgramsMetadata("zh-cn"), englishPrograms);
-  assert.deepEqual(getProgramsMetadata("unknown"), englishPrograms);
+  for (const locale of ["zh-cn", "unknown", ...prototypeKeys]) {
+    assert.deepEqual(getProgramsMetadata(locale), englishPrograms, locale);
+  }
+  assert.ok(getHomeMetadata("ru").keywords.includes("фитнес-программа"));
+  assert.ok(getHomeMetadata("zh-CN").keywords.includes("健身计划"));
 });

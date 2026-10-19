@@ -1,5 +1,7 @@
 import type { SupportedLocale } from "@/shared/config/localized-metadata";
 
+import { SiteConfig } from "@/shared/config/site-config";
+
 interface HomeMetadataCopy {
   title: string;
   description: string;
@@ -57,7 +59,7 @@ const homeMetadataByLocale: Record<SupportedLocale, HomeMetadataCopy> = {
     keywords: [
       "конструктор тренировок",
       "планировщик упражнений",
-      "фитнес-рутина",
+      "фитнес-программа",
       "персональная тренировка",
       "проработка мышц",
       "бесплатная тренировка",
@@ -66,7 +68,7 @@ const homeMetadataByLocale: Record<SupportedLocale, HomeMetadataCopy> = {
   "zh-CN": {
     title: "打造您的完美锻炼",
     description: "使用我们全面的运动数据库，免费创建锻炼计划。跟踪您的进度，实现您的健身目标。 🏋️",
-    keywords: ["锻炼创建器", "运动计划器", "健身流程", "个性化训练", "肌肉针对性训练", "免费锻炼"],
+    keywords: ["锻炼创建器", "运动计划器", "健身计划", "个性化训练", "肌肉针对性训练", "免费锻炼"],
   },
 };
 
@@ -117,8 +119,25 @@ export function getProgramsMetadata(locale: string): ProgramsMetadataCopy {
   return programsMetadataByLocale[resolveSupportedLocale(locale)];
 }
 
-export function getHomeOgImageName(locale: string): string {
+const ogLocaleByLocale: Record<SupportedLocale, string> = {
+  en: "en_US",
+  fr: "fr_FR",
+  es: "es_ES",
+  pt: "pt_PT",
+  ru: "ru_RU",
+  "zh-CN": "zh_CN",
+};
+
+export function getOgLocale(locale: string): string {
+  return ogLocaleByLocale[resolveSupportedLocale(locale)];
+}
+
+export function getOgImageName(locale: string): string {
   const resolved = resolveSupportedLocale(locale);
   const imageLocale = resolved === "zh-CN" ? "zh" : resolved;
   return `default-og-image_${imageLocale}.jpg`;
+}
+
+export function getProgramsOpenGraphTitle(locale: string): string {
+  return `${getProgramsMetadata(locale).title} | ${SiteConfig.title}`;
 }

@@ -52,6 +52,7 @@ export default {
     no_equipment: "Без оборудования",
     workout_programs_title: "Программы тренировок (+ в процессе создания)",
     workout_programs: "Программы тренировок",
+    kicker: "Программы",
     workout_programs_description: "Выберите свой вызов и станьте сильнее! 💪",
     no_programs_available: "Программы не найдены",
     no_programs_available_description: "Программы будут доступны в ближайшее время!",

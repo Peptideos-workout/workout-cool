@@ -36,6 +36,9 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
               width={80}
             />
           </div>
+          <p className="mb-2 text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
+            {t("programs.kicker")}
+          </p>
           <h1 className="mb-3 text-center text-xl font-bold text-[var(--wc-dash-text)] sm:text-2xl">
             {t("programs.no_programs_available")}
           </h1>
@@ -57,6 +60,9 @@ export async function ProgramsPage({ locale }: ProgramsPageProps) {
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
+              <p className="mb-2 text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
+                {t("programs.kicker")}
+              </p>
               <div className="mb-3 flex items-center gap-3">
                 <h1 className="text-2xl font-bold tracking-tight text-[var(--wc-dash-text)] sm:text-3xl">
                   {t("programs.workout_programs")}

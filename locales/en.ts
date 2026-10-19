@@ -51,6 +51,7 @@ export default {
     no_equipment: "No equipment",
     workout_programs_title: "Workout programs (+ in progress)",
     workout_programs: "Workout programs",
+    kicker: "Programs",
     workout_programs_description: "Choose your challenge and become stronger! 💪",
     no_programs_available: "No programs available",
     no_programs_available_description: "Programs will be available soon!",

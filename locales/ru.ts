@@ -1869,6 +1869,7 @@ export default {
   },
   statistics: {
     title: "Статистика",
+    kicker: "Статистика",
     page_subtitle: "Отслеживайте свой фитнес-путь с помощью расширенной аналитики и персонализированных рекомендаций.",
     select_exercise: "Выбрать Упражнение",
     active_daily_users: "Активные Ежедневные Пользователи",
@@ -1884,6 +1885,11 @@ export default {
     // Chart titles and labels
     weight: "Вес",
     volume: "Объем",
+    one_rm_est: "Оценка 1ПМ",
+    sessions: "Сессии",
+    "set_count#zero": "{count} подходов",
+    "set_count#one": "{count} подход",
+    "set_count#other": "{count} подходов",
     weight_progression: "Прогресс Веса",
     weight_progression_chart: "График прогресса веса",
     weekly_volume: "Недельный Объем",

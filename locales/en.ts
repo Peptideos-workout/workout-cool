@@ -1875,6 +1875,7 @@ export default {
   },
   statistics: {
     title: "Statistics",
+    kicker: "Statistics",
     page_subtitle: "Track your fitness journey with advanced analytics and personalized insights.",
     select_exercise: "Select Exercise",
     active_daily_users: "Active Daily Users",
@@ -1890,6 +1891,11 @@ export default {
     // Chart titles and labels
     weight: "Weight",
     volume: "Volume",
+    one_rm_est: "1RM Est.",
+    sessions: "Sessions",
+    "set_count#zero": "{count} sets",
+    "set_count#one": "{count} set",
+    "set_count#other": "{count} sets",
     weight_progression: "Weight Progression",
     weight_progression_chart: "Weight progression chart",
     weekly_volume: "Weekly Volume",

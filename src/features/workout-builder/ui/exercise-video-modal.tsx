@@ -65,7 +65,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-h-[80vh] w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] overflow-x-hidden border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] sm:max-w-2xl [&>button]:!right-2 [&>button]:top-2 [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)]">
+      <DialogContent className="!z-[240] max-h-[80vh] w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] overflow-x-hidden border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] sm:max-w-2xl [&>button]:!right-2 [&>button]:top-2 [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)] [&>button]:dark:!bg-[var(--wc-dash-panel)] [&>button]:dark:!text-[var(--wc-dash-text)]">
         <DialogHeader className="flex flex-row items-start justify-between px-4 pb-2 pr-16 pt-4">
           <DialogTitle className="text-lg md:text-xl font-bold flex min-w-0 flex-col gap-2">
             <span className="break-words text-left text-lg text-[var(--wc-dash-text)]">{title}</span>
@@ -93,7 +93,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
               value="statistics"
             >
               <BarChart3 size={16} />
-              {t("statistics.title") || "Statistics"}
+              {t("statistics.title")}
             </TabsTrigger>
           </TabsList>
 
@@ -172,15 +172,15 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
-                        <p className="text-lg uppercase tracking-wide text-[var(--wc-dash-secondary)]">1RM Est.</p>
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.one_rm_est")}</p>
                         <p className="font-bold text-[var(--wc-dash-text)]">85kg</p>
                       </div>
                       <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
-                        <p className="text-lg uppercase tracking-wide text-[var(--wc-dash-secondary)]">Volume</p>
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.volume")}</p>
                         <p className="font-bold text-[var(--wc-dash-text)]">2,400kg</p>
                       </div>
                       <div className="rounded-xl bg-[var(--wc-dash-inner)] p-2.5 text-center">
-                        <p className="text-lg uppercase tracking-wide text-[var(--wc-dash-secondary)]">Sessions</p>
+                        <p className="text-lg text-[var(--wc-dash-secondary)]">{t("statistics.sessions")}</p>
                         <p className="font-bold text-[var(--wc-dash-text)]">24</p>
                       </div>
                     </div>

@@ -24,7 +24,7 @@ interface OneRepMaxChartProps {
 export function OneRepMaxChart({
   data,
   formula,
-  formulaDescription: _formulaDescription,
+  formulaDescription,
   height = 300,
   unit = "kg",
   className,
@@ -75,8 +75,8 @@ export function OneRepMaxChart({
             color: colors.text,
           }}
         >
-          <p className="font-medium">{label}</p>
-          <p className="text-[var(--wc-dash-accent)]">
+          <p className="text-lg font-medium">{label}</p>
+          <p className="text-lg text-[var(--wc-dash-accent)]">
             1RM: {payload[0].value.toFixed(1)} {unit}
           </p>
         </div>
@@ -92,7 +92,7 @@ export function OneRepMaxChart({
       role="img"
       style={{ backgroundColor: colors.cardBackground }}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="text-lg font-semibold" style={{ color: colors.text }}>
           {t("statistics.estimated_1rm")}
         </h3>
@@ -105,27 +105,31 @@ export function OneRepMaxChart({
           </button>
         </div>
       </div>
+      <p className="mb-4 break-words text-lg text-[var(--wc-dash-secondary)]">{formulaDescription}</p>
 
       <div style={{ opacity: hasData ? 1 : 0.2 }}>
         <ResponsiveContainer height={height} width="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: 28, bottom: 8 }}>
             <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" />
             <XAxis
               axisLine={{ stroke: colors.border }}
               dataKey="formattedDate"
+              minTickGap={48}
               tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
             />
             <YAxis
               axisLine={{ stroke: colors.border }}
               label={{
-                value: `1RM (${unit})`,
+                value: `${t("statistics.one_rm_est")} (${unit})`,
                 angle: -90,
                 position: "insideLeft",
-                style: { textAnchor: "middle", fill: colors.text },
+                offset: 16,
+                style: { textAnchor: "middle", fill: colors.text, fontSize: 18 },
               }}
               tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
+              width={104}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line

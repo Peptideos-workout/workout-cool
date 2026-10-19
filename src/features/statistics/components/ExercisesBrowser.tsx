@@ -370,9 +370,10 @@ export const ExercisesBrowser = () => {
           {/* Statistics Section */}
           <div className="space-y-4">
             {/* Time period selector */}
-            <div className="flex min-h-12 items-center justify-between rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4">
-              <span className="hidden text-lg font-semibold text-[var(--wc-dash-text)] sm:block">{t("statistics.title")}</span>
-              <TimeframeSelector className="bg-[var(--wc-dash-panel)]" onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
+            <div className="flex flex-col gap-3 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4">
+              <span className="text-lg font-semibold text-[var(--wc-dash-text)]">{t("statistics.title")}</span>
+              <span className="text-lg font-semibold text-[var(--wc-dash-text)]">{t("statistics.timeframe")}</span>
+              <TimeframeSelector onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
             </div>
 
             {/* Stats Charts */}

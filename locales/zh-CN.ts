@@ -1813,6 +1813,7 @@ export default {
   },
   statistics: {
     title: "统计数据",
+    kicker: "统计",
     page_subtitle: "通过高级分析和个性化洞察，追踪您的健身之旅。",
     select_exercise: "选择练习",
     active_daily_users: "每日活跃用户",
@@ -1828,6 +1829,11 @@ export default {
     // Chart titles and labels
     weight: "重量",
     volume: "训练量",
+    one_rm_est: "估算1RM",
+    sessions: "训练次数",
+    "set_count#zero": "{count} 组",
+    "set_count#one": "{count} 组",
+    "set_count#other": "{count} 组",
     weight_progression: "重量进展",
     weight_progression_chart: "重量进展图表",
     weekly_volume: "每周训练量",

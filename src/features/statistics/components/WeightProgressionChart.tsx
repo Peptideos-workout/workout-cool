@@ -65,8 +65,8 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
             color: colors.text,
           }}
         >
-          <p className="font-medium">{label}</p>
-          <p className="text-[var(--wc-dash-accent)]">
+          <p className="text-lg font-medium">{label}</p>
+          <p className="text-lg text-[var(--wc-dash-accent)]">
             {t("statistics.weight")}: {payload[0].value} {unit}
           </p>
         </div>
@@ -88,11 +88,12 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
 
       <div style={{ opacity: hasData ? 1 : 0.2 }}>
         <ResponsiveContainer height={height} width="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: 28, bottom: 8 }}>
             <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" />
             <XAxis
               axisLine={{ stroke: colors.border }}
               dataKey="formattedDate"
+              minTickGap={48}
               tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
             />
@@ -102,10 +103,12 @@ export function WeightProgressionChart({ data, height = 300, unit = "kg", classN
                 value: `${t("statistics.weight")} (${unit})`,
                 angle: -90,
                 position: "insideLeft",
-                style: { textAnchor: "middle", fill: colors.text },
+                offset: 16,
+                style: { textAnchor: "middle", fill: colors.text, fontSize: 18 },
               }}
               tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
+              width={104}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line

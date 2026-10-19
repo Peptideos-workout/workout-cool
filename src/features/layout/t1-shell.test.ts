@@ -237,6 +237,7 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(globals, /--wc-nav-h:\s*calc\(var\(--wc-nav-rows\) \* var\(--wc-nav-row-h\)\)/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-rows:\s*2/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-row-h:\s*67px/);
+  assert.match(main, /max-sm:min-h-screen/);
   assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\][\s\S]*data-wc-shell=""/);
   const mainMarker = main.indexOf("data-wc-main=\"\"");
@@ -245,9 +246,11 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(version, /pointer-events-none/);
   assert.match(version, /z-20/);
   assert.doesNotMatch(version, /z-50/);
-  assert.match(version, /sm:left-4 sm:right-auto/);
+  assert.match(version, /left-1\/2 z-20 w-full max-w-3xl -translate-x-1\/2/);
+  assert.doesNotMatch(version, /sm:left-4/);
   assert.doesNotMatch(version, /sm:bottom-\[168px\]/);
-  assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(version, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\+168px\)\]/);
+  assert.match(version, /sm:bottom-36/);
   assert.match(main, /sm:pb-12/);
   assert.doesNotMatch(version, /\bfixed\b/);
   assert.match(footer, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);

@@ -1901,6 +1901,7 @@ export default {
   },
   statistics: {
     title: "Statistiques",
+    kicker: "Statistiques",
     page_subtitle: "Suivez votre parcours fitness avec des analyses avancées et des informations personnalisées.",
     select_exercise: "Sélectionner un exercice",
     active_daily_users: "Utilisateurs actifs quotidiens",
@@ -1916,6 +1917,11 @@ export default {
     // Chart titles and labels
     weight: "Poids",
     volume: "Volume",
+    one_rm_est: "1RM est.",
+    sessions: "Séances",
+    "set_count#zero": "{count} séries",
+    "set_count#one": "{count} série",
+    "set_count#other": "{count} séries",
     weight_progression: "Progression du Poids",
     weight_progression_chart: "Graphique de progression du poids",
     weekly_volume: "Volume Hebdomadaire",

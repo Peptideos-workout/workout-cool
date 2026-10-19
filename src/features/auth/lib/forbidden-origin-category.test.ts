@@ -97,13 +97,12 @@ test("a token or URL in Origin or Referer never appears in the logged object", (
   console.warn = (...args: unknown[]) => {
     lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
   };
+  const headers = new Headers();
+  headers.set("origin", ORIGIN_URL);
+  headers.set("sec-fetch-site", "cross-site");
+  headers.set("referer", REFERER_URL);
   try {
-    logForbiddenOrigin({
-      origin: ORIGIN_URL,
-      secFetchSite: "cross-site",
-      referer: REFERER_URL,
-      method: "POST"
-    });
+    logForbiddenOrigin(headers, "POST");
   } finally {
     console.warn = original;
   }
@@ -122,7 +121,7 @@ test("a token or URL in Origin or Referer never appears in the logged object", (
   });
 });
 
-test("has_referer is presence only and the method stays a short uppercase token", () => {
+test("has_referer is presence only and whitespace does not count", () => {
   assert.equal(
     forbiddenOriginLogRecord({ origin: null, secFetchSite: null, referer: null, method: "POST" }).has_referer,
     false
@@ -133,11 +132,53 @@ test("has_referer is presence only and the method stays a short uppercase token"
   );
   assert.equal(
     forbiddenOriginLogRecord({ origin: "null", secFetchSite: "none", referer: " ", method: "OPTIONS" }).has_referer,
-    true
+    false
   );
-  assert.equal(forbiddenOriginLogRecord({ origin: null, secFetchSite: "none", referer: null, method: "POST" }).method, "POST");
   assert.equal(
-    forbiddenOriginLogRecord({ origin: null, secFetchSite: "none", referer: null, method: "GET /secret" }).method,
-    "other"
+    forbiddenOriginLogRecord({ origin: null, secFetchSite: null, referer: "\t\n", method: "HEAD" }).has_referer,
+    false
   );
+  const padded = forbiddenOriginLogRecord({
+    origin: null,
+    secFetchSite: null,
+    referer: " https://peptideos.us/dashboard ",
+    method: "POST"
+  });
+  assert.equal(padded.has_referer, true);
+});
+
+test("logs only an allowlisted HTTP method and other for everything else", () => {
+  for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
+    assert.equal(forbiddenOriginLogRecord({ origin: null, secFetchSite: null, referer: null, method }).method, method);
+  }
+  const rejected = ["GETSEKRET", "ABCDEFGHIJ", "POSTX", "ABCDEFGHIJK", "post", " POST", "GET /secret", null, undefined, ""];
+  for (const method of rejected) {
+    assert.equal(
+      forbiddenOriginLogRecord({ origin: null, secFetchSite: null, referer: null, method }).method,
+      "other",
+      String(method)
+    );
+  }
+});
+
+test("a throwing console.warn does not escape logForbiddenOrigin", () => {
+  const original = console.warn;
+  console.warn = () => {
+    throw new Error("warn failed");
+  };
+  try {
+    assert.doesNotThrow(() => logForbiddenOrigin(new Headers({ origin: "https://evil.example" }), "POST"));
+  } finally {
+    console.warn = original;
+  }
+});
+
+test("a throwing header read does not escape logForbiddenOrigin", () => {
+  class ThrowingHeaders extends Headers {
+    override get(_name: string): string | null {
+      throw new Error("header read failed");
+    }
+  }
+
+  assert.doesNotThrow(() => logForbiddenOrigin(new ThrowingHeaders(), "POST"));
 });

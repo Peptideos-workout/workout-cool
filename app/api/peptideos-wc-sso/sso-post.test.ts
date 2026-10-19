@@ -53,6 +53,7 @@ function postRequest(options: {
   queryReturn?: string;
   rawBody?: string;
   contentLength?: string;
+  method?: string;
 }) {
   const url = new URL(`${WC}/api/peptideos-wc-sso`);
   if (options.queryToken) url.searchParams.set("token", options.queryToken);
@@ -72,7 +73,7 @@ function postRequest(options: {
   if (options.secFetchSite) headers.set("sec-fetch-site", options.secFetchSite);
   if (options.contentLength !== undefined) headers.set("content-length", options.contentLength);
   const body = options.rawBody ?? params.toString();
-  return new NextRequest(url, { method: "POST", headers, body });
+  return new NextRequest(url, { method: options.method ?? "POST", headers, body });
 }
 
 function fakeWorld(overrides: {
@@ -402,6 +403,68 @@ test("forbidden_origin warn line is categories only and does not change the 403"
     has_referer: true,
     method: "POST"
   });
+});
+
+test("a non-allowlisted method is logged as other and the 403 is unchanged", async () => {
+  const lines: string[] = [];
+  const original = console.warn;
+  console.warn = (...args: unknown[]) => {
+    lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+  };
+  try {
+    const { deps, handoff, claimCount } = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      postRequest({
+        token: rawToken,
+        origin: "https://evil.example",
+        accept: "application/json",
+        method: "GETSEKRET"
+      }),
+      deps,
+      POS
+    );
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+    assertSsoResponseHeaders(response);
+    assert.equal(handoff.consumed_at, null);
+    assert.equal(claimCount(), 0);
+  } finally {
+    console.warn = original;
+  }
+
+  const logged = lines.join("\n");
+  assert.equal(lines.length, 1);
+  assert.doesNotMatch(logged, /GETSEKRET/);
+  assert.doesNotMatch(logged, /plaintext-handoff-from-form-body/);
+  assert.doesNotMatch(logged, /evil\.example/);
+  assert.deepEqual(JSON.parse((lines[0] ?? "").slice("[sso] forbidden_origin ".length)), {
+    origin_category: "other_host",
+    sec_fetch_site: "missing",
+    has_referer: false,
+    method: "other"
+  });
+});
+
+test("a throwing console.warn still returns the same forbidden_origin 403", async () => {
+  const original = console.warn;
+  console.warn = () => {
+    throw new Error("warn failed");
+  };
+  try {
+    const { deps, handoff, claimCount } = fakeWorld();
+    const response = await runPeptideOsSsoPost(
+      postRequest({ token: rawToken, origin: "https://evil.example", accept: "application/json" }),
+      deps,
+      POS
+    );
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), { error: "forbidden_origin" });
+    assertSsoResponseHeaders(response);
+    assert.equal(handoff.consumed_at, null);
+    assert.equal(claimCount(), 0);
+  } finally {
+    console.warn = original;
+  }
 });
 
 test("embed forbidden_origin and SSO errors show top-level Log in and Sign up", async () => {

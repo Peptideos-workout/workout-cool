@@ -408,12 +408,7 @@ export async function runPeptideOsSsoPost(
 ): Promise<NextResponse> {
   if (!isExactPeptideOsSsoOrigin(request.headers.get("origin"), expectedOrigin)) {
     logSsoEvent("sso_origin", undefined, "forbidden_origin");
-    logForbiddenOrigin({
-      origin: request.headers.get("origin"),
-      secFetchSite: request.headers.get("sec-fetch-site"),
-      referer: request.headers.get("referer"),
-      method: request.method
-    });
+    logForbiddenOrigin(request.headers, request.method);
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
     const embed = await embedFromRejectedRequest(request);
     return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref, embed);

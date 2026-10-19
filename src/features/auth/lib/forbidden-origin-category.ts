@@ -18,8 +18,8 @@ const SEC_FETCH_SITE_TOKENS = ["same-origin", "same-site", "cross-site", "none"]
 
 const SEC_FETCH_SITE_ALLOWLIST = new Set<string>(SEC_FETCH_SITE_TOKENS);
 
-/** A real method token. Anything else could smuggle a URL or secret into the log line. */
-const SAFE_HTTP_METHOD = /^[A-Z]{1,10}$/;
+/** Exact methods only. Anything else, including a lookalike token, is logged as `other`. */
+const SAFE_HTTP_METHODS = new Set<string>(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 
 export const FORBIDDEN_ORIGIN_CATEGORIES = ["missing", "null", "www", "http", "other_host"] as const;
 
@@ -56,7 +56,7 @@ export function classifySecFetchSite(value: string | null | undefined): SecFetch
 }
 
 function safeHttpMethod(method: string | null | undefined): string {
-  if (typeof method !== "string" || !SAFE_HTTP_METHOD.test(method)) return "other";
+  if (typeof method !== "string" || !SAFE_HTTP_METHODS.has(method)) return "other";
   return method;
 }
 
@@ -65,15 +65,26 @@ export function forbiddenOriginLogRecord(signals: ForbiddenOriginSignals): Forbi
   return {
     origin_category: forbiddenOriginCategory(signals.origin),
     sec_fetch_site: classifySecFetchSite(signals.secFetchSite),
-    has_referer: typeof signals.referer === "string" && signals.referer.length > 0,
+    has_referer: typeof signals.referer === "string" && signals.referer.trim().length > 0,
     method: safeHttpMethod(signals.method)
   };
 }
 
-/** Server-side only. A logging failure must not change the 403. */
-export function logForbiddenOrigin(signals: ForbiddenOriginSignals): void {
+/**
+ * Server-side only. Header reads and console.warn stay inside the try, so a throwing
+ * read or a throwing warn cannot change the 403.
+ */
+export function logForbiddenOrigin(headers: Headers, method: string): void {
   try {
-    console.warn("[sso] forbidden_origin", forbiddenOriginLogRecord(signals));
+    console.warn(
+      "[sso] forbidden_origin",
+      forbiddenOriginLogRecord({
+        origin: headers.get("origin"),
+        secFetchSite: headers.get("sec-fetch-site"),
+        referer: headers.get("referer"),
+        method
+      })
+    );
   } catch {
     /* Logging must never change SSO disposition. */
   }

@@ -93,6 +93,11 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
   assert.match(stepper, /\{t\("workout_builder\.title"\)\}/);
   assert.doesNotMatch(stepper, /<h2[^>]*data-wc-title/);
   assert.doesNotMatch(stepper, /alt="Trophée"/);
+  assert.doesNotMatch(stepper, /alt=""/);
+  assert.match(stepper, /alt=\{t\("workout_builder\.session\.trophy_alt"\)\}/);
+  for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
+    assert.match(read(`locales/${locale}.ts`), /trophy_alt:/);
+  }
   assert.doesNotMatch(stepper, /Build your workout/);
   assert.match(stepper, /data-wc-lead/);
   assert.match(stepper, /workout_builder\.selection\.select_equipment_description/);

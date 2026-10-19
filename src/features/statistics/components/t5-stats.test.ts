@@ -253,6 +253,8 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(charts, /data=\{weightProgressionQuery\.data\?\.data \|\| \[\]\}/);
   assert.match(charts, /formula=\{oneRepMaxQuery\.data\?\.formula \|\| "Lombardi"\}/);
   assert.match(charts, /formulaDescription=\{oneRepMaxQuery\.data\?\.formulaDescription \|\| ""\}/);
+  assert.doesNotMatch(read(ONE_RM), /\{formulaDescription\}/);
+  assert.match(read(ONE_RM), /formulaDescription: _formulaDescription/);
   assert.match(charts, /data=\{volumeQuery\.data\?\.data \|\| \[\]\}/);
   assert.match(read(WEIGHT), /dataKey="weight"/);
   assert.match(read(WEIGHT), /stroke="var\(--wc-dash-accent\)"/);

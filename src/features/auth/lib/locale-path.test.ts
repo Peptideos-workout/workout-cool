@@ -231,14 +231,77 @@ function assertLayoutSocialBase(metadata: Metadata, locale: string) {
   assert.equal("creator" in twitter ? twitter.creator : undefined, SiteConfig.seo.twitterHandle);
 }
 
+function ogDetails(metadata: Metadata) {
+  const openGraph = metadata.openGraph as {
+    locale?: string;
+    title?: string;
+    alternateLocale?: string[];
+    images?: Array<{ url?: string } | string> | { url?: string };
+  };
+  const images = openGraph.images;
+  const first = Array.isArray(images) ? images[0] : images;
+  const url = typeof first === "string" ? first : (first?.url ?? "");
+
+  return {
+    locale: openGraph.locale,
+    title: typeof openGraph.title === "string" ? openGraph.title : "",
+    alternateLocale: openGraph.alternateLocale ?? [],
+    imageName: url.split("/").pop() ?? "",
+  };
+}
+
 test("home and programs spread the layout open graph and twitter base", async () => {
   for (const locale of supportedLocales) {
     assertLayoutSocialBase(getHomePageMetadata(locale), locale);
     assertLayoutSocialBase(getProgramsPageMetadata(locale), locale);
   }
 
-  for (const locale of ["en", "fr", "zh-CN"]) {
-    assertLayoutSocialBase(getHomePageMetadata(locale), locale);
-    assertLayoutSocialBase(getProgramsPageMetadata(locale), locale);
+  const localizedPages = [
+    {
+      locale: "en",
+      ogLocale: "en_US",
+      image: "default-og-image_en.jpg",
+      homeTitle: "Build Your Perfect Workout",
+      programsTitle: "Programs",
+    },
+    {
+      locale: "fr",
+      ogLocale: "fr_FR",
+      image: "default-og-image_fr.jpg",
+      homeTitle: "Créez Votre Entraînement Parfait",
+      programsTitle: "Programmes",
+    },
+    {
+      locale: "zh-CN",
+      ogLocale: "zh_CN",
+      image: "default-og-image_zh.jpg",
+      homeTitle: "打造您的完美锻炼",
+      programsTitle: "课程",
+    },
+  ] as const;
+
+  for (const page of localizedPages) {
+    const home = ogDetails(getHomePageMetadata(page.locale));
+    const programs = ogDetails(getProgramsPageMetadata(page.locale));
+    assert.equal(home.locale, page.ogLocale, page.locale);
+    assert.equal(programs.locale, page.ogLocale, page.locale);
+    assert.equal(home.imageName, page.image, page.locale);
+    assert.equal(programs.imageName, page.image, page.locale);
+    assert.equal(getHomePageMetadata(page.locale).title, page.homeTitle, page.locale);
+    assert.equal(getProgramsPageMetadata(page.locale).title, page.programsTitle, page.locale);
+    assert.equal(home.title, `${page.homeTitle} | ${SiteConfig.title}`, page.locale);
+    assert.equal(programs.title, `${page.programsTitle} | ${SiteConfig.title}`, page.locale);
+  }
+});
+
+test("unknown and prototype locales omit the page og locale from alternates", () => {
+  for (const locale of ["not-a-locale", ...prototypeKeys]) {
+    for (const metadata of [getHomePageMetadata(locale), getProgramsPageMetadata(locale)]) {
+      const openGraph = ogDetails(metadata);
+      assert.equal(openGraph.locale, "en_US", locale);
+      assert.equal(openGraph.alternateLocale.length, 19, locale);
+      assert.equal(openGraph.alternateLocale.includes("en_US"), false, locale);
+      assert.equal(openGraph.alternateLocale.includes("fr_FR"), true, locale);
+    }
   }
 });

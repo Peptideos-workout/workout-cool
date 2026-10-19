@@ -186,6 +186,10 @@ export function getLayoutOgAlternateLocales(locale: string): string[] {
   return layoutOgAlternateLocales.filter((alt) => alt !== current);
 }
 
+function getPageOgAlternateLocales(locale: string): string[] {
+  return layoutOgAlternateLocales.filter((alt) => alt !== getOgLocale(locale));
+}
+
 export function getLayoutSocialMetadata(locale: string): {
   openGraph: {
     type: "website";
@@ -231,6 +235,7 @@ export function getHomePageMetadata(locale: string): Metadata {
       title: `${title} | ${SiteConfig.title}`,
       description,
       locale: getOgLocale(locale),
+      alternateLocale: getPageOgAlternateLocales(locale),
       images: [
         {
           url: imageUrl,
@@ -264,6 +269,7 @@ export function getProgramsPageMetadata(locale: string): Metadata {
       title: socialTitle,
       description,
       locale: getOgLocale(locale),
+      alternateLocale: getPageOgAlternateLocales(locale),
       images: [
         {
           url: imageUrl,

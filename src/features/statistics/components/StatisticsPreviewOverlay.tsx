@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Lock, Eye, TrendingUp, Zap, Star, Crown, ArrowRight, RotateCcw } from "lucide-react";
+import { Lock, Eye, Zap, Crown, ArrowRight, RotateCcw } from "lucide-react";
 import { useI18n, useCurrentLocale } from "locales/client";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -87,13 +87,6 @@ const AnimatedChart: React.FC = () => {
         ))}
       </svg>
 
-      {/* Overlay stats */}
-      <div className="absolute right-2 top-2 rounded-xl bg-[var(--wc-dash-panel)] px-2 py-1 text-lg">
-        <div className="flex items-center gap-1 text-[var(--wc-dash-link)]">
-          <TrendingUp className="w-3 h-3" />
-          <span className="font-semibold">+12.5%</span>
-        </div>
-      </div>
     </div>
   );
 };
@@ -245,10 +238,6 @@ export const StatisticsPreviewOverlay: React.FC<StatisticsPreviewOverlayProps> =
         initial={{ y: 20, opacity: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <div className="flex items-center gap-1">
-          <Star className="h-5 w-5 text-[var(--wc-dash-ink)]" />
-          <span>{t("statistics.rating")}</span>
-        </div>
         <div className="flex items-center gap-1">
           <Eye className="h-5 w-5" />
           <span>{t("statistics.no_ads")}</span>

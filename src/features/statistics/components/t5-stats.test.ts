@@ -128,6 +128,8 @@ test("stats text is 18px and tap targets are 48px", () => {
   assert.match(page, /text-lg text-\[var\(--wc-dash-secondary\)\]/);
   assert.match(timeframe, /aria-pressed=\{isSelected\}/);
   assert.match(timeframe, /inline-flex min-h-12 items-center justify-center rounded-xl border px-3 text-lg font-semibold/);
+  assert.match(timeframe, /aria-hidden="true"/);
+  assert.match(timeframe, /✓/);
   assert.match(timeframe, /onClick=\{\(\) => onSelect\(option\.value\)\}/);
   assert.doesNotMatch(timeframe, /SelectTrigger/);
   assert.match(modal, /!min-h-12 !text-lg !text-\[var\(--wc-dash-text\)\]/);
@@ -207,7 +209,14 @@ test("stats handlers, hrefs, and conditionals stay put", () => {
   assert.match(overlay, /data-wc-entry="premium"/);
   assert.match(overlay, /if \(!isVisible\) return null;/);
   assert.match(overlay, /\{showTeaserModal && \(/);
-  assert.match(page, /feature="Statistics"/);
+  assert.doesNotMatch(page, /feature="Statistics"/);
+  assert.match(browser, /useState<StatisticsTimeframe>\("8weeks"\)/);
+  assert.match(modal, /useState<StatisticsTimeframe>\("8weeks"\)/);
+  assert.match(read(ONE_RM), /t\("statistics\.one_rm_formula_tooltip", \{ formula \}\)/);
+  for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
+    assert.match(read(`locales/${locale}.ts`), /one_rm_formula_tooltip:/);
+    assert.match(read(`locales/${locale}.ts`), /1RM = Weight × \(1 \+ \(Reps ÷ 30\)\)/);
+  }
   assert.match(read(THEME), /const isDark = currentTheme === "dark";/);
   assert.match(read(WEIGHT), /style=\{\{ opacity: hasData \? 1 : 0\.2 \}\}/);
 });
@@ -218,18 +227,11 @@ test("stats copy keys and chart data props stay put", () => {
   const modal = read(MODAL);
   const charts = read(CHARTS);
   const overlay = read(OVERLAY);
-  for (const key of [
-    "statistics.title",
-    "statistics.page_subtitle",
-    "statistics.active_daily_users",
-    "statistics.success_rate",
-    "statistics.user_rating",
-  ]) {
-    assert.match(page, new RegExp(key.replace(".", "\\.")));
-  }
-  assert.match(page, /15\.4K\+/);
-  assert.match(page, /89%/);
-  assert.match(page, /4\.8★/);
+  assert.match(page, /statistics\.kicker/);
+  assert.match(page, /statistics\.page_subtitle/);
+  assert.doesNotMatch(page, /<h1/);
+  assert.doesNotMatch(page, /statistics\.title/);
+  assert.doesNotMatch(page, /15\.4K\+|89%|4\.8★|active_daily_users|success_rate|user_rating/);
   for (const key of [
     "statistics.select_exercise",
     "statistics.all_equipment",
@@ -240,7 +242,7 @@ test("stats copy keys and chart data props stay put", () => {
     "statistics.equipment_label",
     "statistics.primary_muscle_label",
     "statistics.no_image_available",
-    "statistics.title",
+    "statistics.timeframe",
   ]) {
     assert.match(browser, new RegExp(key.replace(/\./g, "\\.")));
   }
@@ -274,16 +276,11 @@ test("stats copy keys and chart data props stay put", () => {
   assert.match(read("app/[locale]/(app)/layout.tsx"), /max-sm:min-h-screen/);
   assert.match(modal, /\{t\("statistics\.title"\)\}/);
   assert.doesNotMatch(modal, /\|\| "Statistics"/);
-  assert.match(modal, /t\("statistics\.one_rm_est"\)/);
-  assert.match(modal, /t\("statistics\.volume"\)/);
-  assert.match(modal, /t\("statistics\.sessions"\)/);
+  assert.doesNotMatch(modal, /t\("statistics\.one_rm_est"\)/);
+  assert.doesNotMatch(modal, /85kg|2,400kg|\+12%/);
   assert.match(modal, /!z-\[240\]/);
   assert.match(modal, /\[&>button\]:dark:!bg-\[var\(--wc-dash-panel\)\]/);
   assert.doesNotMatch(modal, /slate-900/);
-  assert.match(modal, /\+12%/);
-  assert.match(modal, /85kg/);
-  assert.match(modal, /2,400kg/);
-  assert.match(modal, />24</);
   for (const key of [
     "statistics.total_volume",
     "statistics.pr_increase",
@@ -291,7 +288,6 @@ test("stats copy keys and chart data props stay put", () => {
     "statistics.premium_statistics",
     "statistics.premium_statistics_description",
     "statistics.upgrade_now",
-    "statistics.rating",
     "statistics.no_ads",
     "statistics.cancel_anytime",
     "statistics.preview_notice",
@@ -300,7 +296,9 @@ test("stats copy keys and chart data props stay put", () => {
   ]) {
     assert.match(overlay, new RegExp(key.replace(/\./g, "\\.")));
   }
-  assert.match(overlay, /\+12\.5%/);
+  assert.doesNotMatch(overlay, /\+12\.5%|statistics\.rating|4\.8/);
+  assert.match(read("src/components/ui/simple-select.tsx"), /!z-\[250\]/);
+  assert.match(browser, /modal !z-\[245\]/);
 });
 
 test("timer, nav, and version chip reserve space", () => {

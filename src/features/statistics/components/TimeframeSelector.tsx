@@ -43,6 +43,11 @@ export function TimeframeSelector({ selected, onSelect, className }: TimeframeSe
             onClick={() => onSelect(option.value)}
             type="button"
           >
+            {isSelected ? (
+              <span aria-hidden="true" className="mr-2">
+                ✓
+              </span>
+            ) : null}
             {t(option.labelKey as keyof typeof t)}
           </button>
         );

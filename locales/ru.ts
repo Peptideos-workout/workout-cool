@@ -1931,6 +1931,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Информация о формуле 1RM",
+    one_rm_formula_tooltip: "Формула {formula}: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Объем = Вес × Повторы × Подходы",
     last_updated: "Последнее обновление: {date}",
 

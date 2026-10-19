@@ -1940,6 +1940,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Información de fórmula 1RM",
+    one_rm_formula_tooltip: "Fórmula {formula}: 1RM = Weight × (1 + (Reps ÷ 30))",
     volume_calculation: "Volumen = Peso × Reps × Series",
     last_updated: "Última actualización: {date}",
 

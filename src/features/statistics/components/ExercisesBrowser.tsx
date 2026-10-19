@@ -131,7 +131,7 @@ const ExerciseSelectionModal: React.FC<{
   };
 
   return (
-    <div className={`modal ${isOpen ? "modal-open" : ""}`}>
+    <div className={`modal !z-[245] ${isOpen ? "modal-open" : ""}`}>
       <div className="modal-box mt-32 flex h-full max-h-screen w-full max-w-2xl flex-col border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4 text-[var(--wc-dash-text)] sm:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -371,7 +371,6 @@ export const ExercisesBrowser = () => {
           <div className="space-y-4">
             {/* Time period selector */}
             <div className="flex flex-col gap-3 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4">
-              <span className="text-lg font-semibold text-[var(--wc-dash-text)]">{t("statistics.title")}</span>
               <span className="text-lg font-semibold text-[var(--wc-dash-text)]">{t("statistics.timeframe")}</span>
               <TimeframeSelector onSelect={setSelectedTimeframe} selected={selectedTimeframe} />
             </div>

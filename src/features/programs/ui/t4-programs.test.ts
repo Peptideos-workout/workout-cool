@@ -183,7 +183,11 @@ test("program handlers, hrefs, disabled expressions, and conditionals stay byte-
   assert.match(card, /t\("programs\.session_duration"\)/);
   assert.match(
     card,
-    /inline-flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-\[var\(--wc-dash-text\)\] bg-\[var\(--wc-dash-card\)\] px-4 text-lg font-semibold text-\[var\(--wc-dash-text\)\]/,
+    new RegExp(
+      "inline-flex min-h-12 w-full items-center justify-center rounded-xl border-2 " +
+        "border-\\[var\\(--wc-dash-text\\)\\] bg-\\[var\\(--wc-dash-card\\)\\] px-4 text-lg " +
+        "font-semibold text-\\[var\\(--wc-dash-text\\)\\]",
+    ),
   );
   assert.match(card, /\{isLocked \? \(/);
   assert.match(card, /\{!isLocked && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-\[var\(--wc-dash-accent\)\]" \/>\}/);

@@ -25,6 +25,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       </Suspense>
       <Header />
       <div className="flex-1 flex flex-col" data-wc-main="">
+        <Version />
         {children}
         <Version variant="meta" />
       </div>

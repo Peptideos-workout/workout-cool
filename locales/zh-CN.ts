@@ -787,6 +787,8 @@ export default {
       exercise_progress: "练习进度",
       total_volume: "总训练量",
       current_exercise: "当前练习",
+      exercise_complete: "练习已完成",
+      exercise_in_progress: "练习进行中",
       complete: "完成",
       active: "进行中",
       already_have_a_active_session: "您已有一个进行中的回合。在完成或退出锻炼前无法重复。",

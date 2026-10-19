@@ -245,7 +245,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
         <div className="px-0 sm:px-4 py-4">
           <div className="flex flex-wrap gap-2" role="tablist">
             <button
-              aria-label="À propos"
+              aria-label={t("programs.about")}
               className={`min-h-12 rounded-xl px-4 text-lg ${
                 tab === "about" ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]" : "!text-[var(--wc-dash-text)]"
               }`}

@@ -175,7 +175,16 @@ test("program handlers, hrefs, disabled expressions, and conditionals stay byte-
   assert.match(card, /size === "large" \? 16 : 14/);
   assert.match(card, /size === "large" \? 24 : 20/);
   assert.equal(count(card, "size === \"large\" ? 24 : 20"), 2);
-  assert.match(card, /\{isLocked && <span className=\{premiumKicker\}>Premium<\/span>\}/);
+  assert.match(card, /program\.isPremium \? premiumKicker : levelKicker\.text/);
+  assert.match(card, /program\.isPremium \? t\("programs\.premium"\) : t\("programs\.free"\)/);
+  assert.doesNotMatch(card, />Premium</);
+  assert.match(card, /t\("programs\.weeks"\)/);
+  assert.match(card, /t\("programs\.sessions_per_week"\)/);
+  assert.match(card, /t\("programs\.session_duration"\)/);
+  assert.match(
+    card,
+    /inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-\[var\(--wc-dash-accent\)\] px-4 text-lg font-semibold text-\[var\(--wc-dash-ink\)\]/,
+  );
   assert.match(card, /\{isLocked \? \(/);
   assert.match(card, /\{!isLocked && <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-\[var\(--wc-dash-accent\)\]" \/>\}/);
   assert.match(card, /program\.equipment && program\.equipment\.length > 0/);
@@ -249,8 +258,12 @@ test("program copy stays on the existing translation keys", () => {
   const expected: Record<string, Record<string, number>> = {
     [CARD]: {
       "`levels.${program.level}`": 2,
-      "\"programs.week_short\"": 2,
-      "\"programs.min_short\"": 1,
+      "\"programs.weeks\"": 1,
+      "\"programs.sessions_per_week\"": 1,
+      "\"programs.session_duration\"": 1,
+      "\"programs.premium\"": 1,
+      "\"programs.free\"": 1,
+      "\"programs.about\"": 1,
     },
     [DETAIL]: {
       "\"about\"": 1,
@@ -258,7 +271,7 @@ test("program copy stays on the existing translation keys", () => {
       "\"programs.workout_programs\"": 1,
       "\"refresh\"": 1,
       "`levels.${program.level}`": 3,
-      "\"programs.about\"": 1,
+      "\"programs.about\"": 2,
       "\"programs.sessions\"": 2,
       "\"programs.important_info\"": 1,
       "\"programs.donation_teaser\"": 1,
@@ -291,6 +304,7 @@ test("program copy stays on the existing translation keys", () => {
       "\"programs.session\"": 1,
     },
     [LIST]: {
+      "\"programs.kicker\"": 2,
       "\"programs.no_programs_available\"": 1,
       "\"programs.no_programs_available_description\"": 1,
       "\"programs.workout_programs\"": 2,

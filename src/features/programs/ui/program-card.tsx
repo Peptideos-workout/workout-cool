@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Lock, Star, Clock, Calendar, Dumbbell } from "lucide-react";
+import { Lock, Dumbbell } from "lucide-react";
 import { Locale } from "locales/types";
 import { getI18n } from "locales/server";
 import { ExerciseAttributeValueEnum } from "@prisma/client";
@@ -89,13 +89,13 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
 
   return (
     <div className="group">
-      <Link
-        aria-label={`${title} - ${t(`levels.${program.level}` as keyof typeof t)} program`}
-        className={cardShell}
-        href={`/programs/${programSlug}`}
-        itemScope
-        itemType="https://schema.org/Course"
-      >
+      <div className={`${cardShell} relative`} itemScope itemType="https://schema.org/Course">
+        <Link
+          aria-label={`${title} - ${t(`levels.${program.level}` as keyof typeof t)} program`}
+          className="absolute inset-0 z-0"
+          href={`/programs/${programSlug}`}
+        />
+        <div className="pointer-events-none relative z-10">
         <div className="h-1 bg-[var(--wc-dash-accent)]" />
 
         <div className="relative h-32 sm:h-36 overflow-hidden">
@@ -105,7 +105,9 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
           <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
             <div className="flex flex-wrap gap-2">
               <span className={levelConfig.kicker}>{t(`levels.${program.level}` as keyof typeof t)}</span>
-              {isLocked && <span className={premiumKicker}>Premium</span>}
+              <span className={program.isPremium ? premiumKicker : levelKicker.text}>
+                {program.isPremium ? t("programs.premium") : t("programs.free")}
+              </span>
             </div>
 
             <div className="relative">
@@ -143,26 +145,13 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
             </p>
           </div>
 
-          <div className="flex items-center gap-3 text-lg text-[var(--wc-dash-secondary)] sm:gap-4">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-5 w-5" />
-              <span>
-                {program.durationWeeks} {t("programs.week_short").toLocaleLowerCase()}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-5 w-5" />
-              <span>
-                {program.sessionDurationMin} {t("programs.min_short").toLocaleLowerCase()}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Star className="h-5 w-5" />
-              <span>
-                {program.sessionsPerWeek}x/{t("programs.week_short").toLocaleLowerCase()}
-              </span>
-            </div>
-          </div>
+          <p className="text-lg break-words text-[var(--wc-dash-secondary)]">
+            {program.durationWeeks} {t("programs.weeks")}
+            {" · "}
+            {program.sessionsPerWeek} {t("programs.sessions_per_week")}
+            {" · "}
+            {program.sessionDurationMin} {t("programs.session_duration")}
+          </p>
 
           {program.equipment && program.equipment.length > 0 && (
             <div className="flex items-start gap-2">
@@ -178,8 +167,16 @@ export async function ProgramCard({ program, size = "medium", locale }: ProgramC
               </div>
             </div>
           )}
+
+          <Link
+            className="pointer-events-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--wc-dash-accent)] px-4 text-lg font-semibold text-[var(--wc-dash-ink)]"
+            href={`/programs/${programSlug}`}
+          >
+            {t("programs.about")}
+          </Link>
         </div>
-      </Link>
+        </div>
+      </div>
     </div>
   );
 }

@@ -30,6 +30,7 @@ export default {
   programs: {
     available_programs: "可用的课程",
     workout_programs: "锻炼程序",
+    kicker: "计划",
     exercises_in_session: "课程中的练习",
     start_session: "开始课程",
     starting_session: "启动中...",

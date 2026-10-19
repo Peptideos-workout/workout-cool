@@ -764,6 +764,7 @@ export default {
       back_to_workout: "返回锻炼",
       congrats: "恭喜，锻炼完成！🎉",
       congrats_subtitle: "您做到了！",
+      trophy_alt: "奖杯",
       see_instructions: "查看说明",
       finish_set: "完成组",
       finish_session: "完成回合",

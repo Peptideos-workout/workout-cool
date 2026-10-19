@@ -186,7 +186,7 @@ export const ExercisesSelection = ({
               type="button"
             >
               <Plus className="h-5 w-5" />
-              <span>+ {t("workout_builder.addExercise")}</span>
+              <span>{t("workout_builder.addExercise")}</span>
             </button>
           </div>
         </div>

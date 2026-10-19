@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+import { stripLocalePrefix } from "./locale-path";
+
 import { LocalizedMetadata } from "@/shared/config/localized-metadata";
 import { getHomeMetadata, getHomeOgImageName, getProgramsMetadata } from "@/shared/config/home-metadata";
-
-import { stripLocalePrefix } from "./locale-path";
 
 const supportedLocales = Object.keys(LocalizedMetadata);
 const cjk = /[\u3400-\u9fff]/;

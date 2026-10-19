@@ -354,6 +354,7 @@ test("public Sign up, nav labels, and the version chip are at least 18px", () =>
   const signup = header.slice(Math.max(0, signupAt - 800), signupAt + signupCall.length);
   assert.match(signup, /!text-lg/);
   assert.match(signup, /!min-h-12/);
+  assert.match(signup, /!min-w-12/);
   assert.match(signup, /whitespace-nowrap/);
   assert.match(signup, /commons\.signup/);
   assert.match(nav, /text-lg/);

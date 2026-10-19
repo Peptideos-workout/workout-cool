@@ -172,7 +172,8 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
               : "border border-[var(--wc-dash-accent)] bg-[var(--wc-dash-card)] text-[var(--wc-dash-accent)]"
           }`}
         >
-          {set.completed ? "✓" : ""} SET {setIndex + 1}
+          {set.completed ? "✓ " : ""}
+          {t("workout_builder.session.set_number", { number: setIndex + 1 })}
         </div>
         <Button
           aria-label="Supprimer la série"
@@ -234,20 +235,25 @@ export function WorkoutSessionSet({ set, setIndex, onChange, onFinish, onRemove 
             variant="outline"
           >
             <Plus className="h-4 w-4" />
-            <span className="block md:hidden">{t("workout_builder.session.add_row")}</span>
+            <span className="block md:hidden">+ {t("workout_builder.session.add_row")}</span>
             <span className="hidden md:block">{t("workout_builder.session.add_column")}</span>
           </Button>
         </div>
       )}
 
       {/* Finish & Edit buttons, full width on mobile */}
-      <div className="flex gap-2 w-full md:w-auto mt-2">
-        <Button className={`${accentButton} flex-1 px-4`} disabled={set.completed} onClick={onFinish} variant="default">
+      <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row">
+        <Button
+          className={`${accentButton} w-full !whitespace-normal px-4 sm:flex-1`}
+          disabled={set.completed}
+          onClick={onFinish}
+          variant="default"
+        >
           <span aria-hidden="true">✓</span>
           {t("workout_builder.session.finish_set")}
         </Button>
         {set.completed && (
-          <Button className={`${secondaryButton} flex-1 px-4`} onClick={handleEdit} variant="outline">
+          <Button className={`${secondaryButton} w-full !whitespace-normal px-4 sm:flex-1`} onClick={handleEdit} variant="outline">
             {t("commons.edit")}
           </Button>
         )}

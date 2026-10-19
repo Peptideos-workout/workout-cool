@@ -65,7 +65,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-w-2xl p-0 max-h-[80vh]">
+      <DialogContent className="max-w-2xl p-0 max-h-[80vh] [&>button]:!h-12 [&>button]:!w-12">
         <DialogHeader className="flex flex-row items-center justify-between px-4 pt-4 pb-2">
           <DialogTitle className="text-lg md:text-xl font-bold flex flex-col gap-2">
             <span className="text-slate-700 dark:text-slate-200 pr-10 text-left">{title}</span>

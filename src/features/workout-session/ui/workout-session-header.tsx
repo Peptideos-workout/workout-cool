@@ -68,6 +68,7 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
   return (
     <>
       <div className="w-full mt-2 mb-6 px-2 sm:px-6">
+        <h2 className="mb-3 text-2xl font-bold text-[var(--wc-dash-text)]">{t("workout_builder.session.workout_in_progress")}</h2>
         <div className="rounded-lg border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-2 sm:p-3">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 sm:mb-3">
             <span className="text-lg font-medium text-[var(--wc-dash-secondary)]">

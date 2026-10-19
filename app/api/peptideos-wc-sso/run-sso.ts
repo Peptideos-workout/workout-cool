@@ -14,6 +14,7 @@ import type { AttachTrustedSessionResult } from "./attach-trusted-session";
 
 import { isEmbedSsoSignal } from "@/features/embed/lib/embed-mode";
 import { resolvePeptideOsWorkoutsSsoUrl, ssoFinalizeLocation } from "@/features/auth/lib/peptideos-signup-url";
+import { logForbiddenOrigin } from "@/features/auth/lib/forbidden-origin-category";
 
 export interface PeptideOsSsoDeps {
   claimByHash: (tokenHash: string) => Promise<HandoffClaimRow[]>;
@@ -407,6 +408,7 @@ export async function runPeptideOsSsoPost(
 ): Promise<NextResponse> {
   if (!isExactPeptideOsSsoOrigin(request.headers.get("origin"), expectedOrigin)) {
     logSsoEvent("sso_origin", undefined, "forbidden_origin");
+    logForbiddenOrigin(request.headers, request.method);
     const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(undefined, deps.workoutOrigin);
     const embed = await embedFromRejectedRequest(request);
     return ssoClientError(request, { error: "forbidden_origin" }, 403, tryAgainHref, embed);

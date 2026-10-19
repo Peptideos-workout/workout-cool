@@ -201,7 +201,8 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   const listItem = read("src/features/workout-builder/ui/exercise-list-item.tsx");
   const card = read("src/features/workout-builder/ui/exercise-card.tsx");
   assert.match(equipment, /data-wc-equipment-bar/);
-  assert.ok(equipment.indexOf("data-wc-equipment-bar") < equipment.indexOf("grid grid-cols-2"));
+  assert.ok(equipment.indexOf("data-wc-equipment-bar") < equipment.indexOf("grid auto-rows-fr grid-cols-2"));
+  assert.match(equipment, /grid auto-rows-fr grid-cols-2/);
   assert.match(equipment, /aria-describedby=\{descriptionId\}/);
   assert.match(equipment, /<span className="sr-only" id=\{descriptionId\}>\s*\{translation\.description\}/);
   assert.doesNotMatch(equipment, /✓/);

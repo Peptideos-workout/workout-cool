@@ -1879,7 +1879,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "1RM公式信息",
-    one_rm_formula_tooltip: "{formula} 公式：1RM = Weight × (1 + (Reps ÷ 30))",
+    one_rm_formula_tooltip: "{formula} 公式：1RM = 重量 × (1 + (次数 ÷ 30))",
     volume_calculation: "训练量 = 重量 × 次数 × 组数",
     last_updated: "最后更新：{date}",
 

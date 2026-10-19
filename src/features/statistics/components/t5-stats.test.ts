@@ -220,10 +220,18 @@ test("stats handlers, hrefs, and conditionals stay put", () => {
   assert.match(modal, /useState<StatisticsTimeframe>\("8weeks"\)/);
   assert.match(read(ONE_RM), /data-tip=\{t\("statistics\.one_rm_formula_tooltip", \{ formula \}\)\}/);
   assert.doesNotMatch(read(ONE_RM), /Formula: 1RM = Weight/);
-  for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
+  const formulaByLocale = {
+    en: "1RM = Weight × (1 + (Reps ÷ 30))",
+    fr: "1RM = Poids × (1 + (Répétitions ÷ 30))",
+    es: "1RM = Peso × (1 + (Repeticiones ÷ 30))",
+    pt: "1RM = Peso × (1 + (Repetições ÷ 30))",
+    ru: "1RM = Вес × (1 + (Повторения ÷ 30))",
+    "zh-CN": "1RM = 重量 × (1 + (次数 ÷ 30))",
+  };
+  for (const [locale, formula] of Object.entries(formulaByLocale)) {
     const source = read(`locales/${locale}.ts`);
     assert.match(source, /one_rm_formula_tooltip:/);
-    assert.match(source, /1RM = Weight × \(1 \+ \(Reps ÷ 30\)\)/);
+    assert.ok(source.includes(formula), locale);
   }
   assert.doesNotMatch(read(THEME), /const isDark = currentTheme === "dark";/);
   assert.match(read(THEME), /tooltipBorder: "var\(--wc-dash-border\)"/);

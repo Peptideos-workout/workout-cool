@@ -1643,6 +1643,7 @@ export default {
       time: "Время",
       next_exercise: "Следующее упражнение",
       add_set: "Добавить подход",
+      delete_set: "Удалить подход",
       add_column: "Добавить колонку",
       add_row: "Добавить строку",
       remove_column: "Удалить колонку",

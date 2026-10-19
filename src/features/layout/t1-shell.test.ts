@@ -180,8 +180,9 @@ test("public Log in is 18px and at least 48px", () => {
   assert.match(login, /!text-lg/);
   assert.match(login, /!min-h-12/);
   assert.match(login, /!min-w-12/);
-  assert.match(login, /shrink-0/);
-  assert.match(login, /inline-flex/);
+  assert.match(login, /!shrink-0/);
+  assert.match(login, /!inline-flex/);
+  assert.match(login, /text-center/);
   assert.match(login, /items-center/);
   assert.match(login, /getConfiguredPeptideOsLoginUrl\(\)/);
   assert.match(login, /commons\.login/);
@@ -363,6 +364,8 @@ test("public Sign up, nav labels, and the version chip are at least 18px", () =>
   assert.match(signupClass, /!text-lg/);
   assert.match(signupClass, /!min-h-12/);
   assert.match(signupClass, /!min-w-12/);
+  assert.match(signupClass, /!inline-flex/);
+  assert.match(signupClass, /!shrink-0/);
   assert.match(signupClass, /whitespace-nowrap/);
   assert.match(nav, /text-lg/);
   assert.match(nav, /whitespace-nowrap/);
@@ -387,6 +390,14 @@ test("embed colors outside the token blocks use wc-dash variables", () => {
   assert.match(withoutTokens, /var\(--wc-dash-link\)/);
   assert.match(withoutTokens, /var\(--wc-dash-ink\)/);
   assert.match(withoutTokens, /var\(--wc-dash-secondary\)/);
+});
+
+test("the streak gets its own row below 448px and stays visible", () => {
+  const header = read("src/features/layout/Header.tsx");
+  assert.match(header, /order-3 flex min-w-0 max-w-full justify-end max-\[447px\]:basis-full/);
+  assert.match(header, /min-\[448px\]:order-2/);
+  assert.doesNotMatch(header, /max-\[447px\]:hidden/);
+  assert.doesNotMatch(header, /max-sm:hidden/);
 });
 
 test("header controls and streak day cells are 48px tap targets", () => {

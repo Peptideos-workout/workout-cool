@@ -46,7 +46,7 @@ export default {
     workout_description: "Descripción de la sesión",
     connect_to_access: "Conecta para acceder",
     become_premium: "Hazte Premium",
-    back_to_program: "Voltar ao programa",
+    back_to_program: "Volver al programa",
     premium_session_exercises: "Ejercicios incluidos",
     no_equipment: "Ningún equipo",
     workout_programs_title: "Programas de entrenamiento (+ en curso de creación)",
@@ -221,13 +221,13 @@ export default {
       premium: {
         name: "PREMIUM ⭐",
         price_label: "€7.90/mes o €49/año",
-        badge: "MOST POPULAR • Para entusiastas",
+        badge: "MÁS POPULAR • Para entusiastas",
         description: "Todas las funciones + acceso temprano",
         footer_monthly: "¡Únete a la comunidad apasionada! 🔥",
         footer_yearly: "¡Gracias por el apoyo anual! 🙏",
         yearly_price_note: "/mes",
         features: [
-          "...todo del plan Gratuit",
+          "...todo del plan Gratis",
           "Sin publicidad",
           "Historial ilimitado (vs 6 meses gratuito)",
           "Seguimiento de progreso con estadísticas avanzadas (volumen, progresión, PR)",
@@ -364,11 +364,11 @@ export default {
         },
       ],
       additional_support: {
-        title: "Still have questions?",
-        description: "Our fitness-focused community is here to help you succeed",
-        community: "Community support (discord or hello@workout.cool)",
-        discussions: "Open discussions (github/discord)",
-        roadmap: "Transparent roadmap (github)",
+        title: "¿Todavía tienes preguntas?",
+        description: "Nuestra comunidad de fitness está aquí para ayudarte a conseguirlo",
+        community: "Soporte de la comunidad (discord o hello@workout.cool)",
+        discussions: "Debates abiertos (github/discord)",
+        roadmap: "Hoja de ruta transparente (github)",
       },
     },
 
@@ -1102,7 +1102,7 @@ export default {
         carbs: "Carbohidratos",
         fat: "Grasa",
         disclaimer:
-          "These calculations are estimates based on average formulas. Actual caloric needs may vary based on individual factors. Consult with a healthcare professional or registered dietitian for personalized advice.",
+          "Estos cálculos son estimaciones basadas en fórmulas promedio. Las necesidades calóricas reales pueden variar según factores individuales. Consulta a un profesional de la salud o a un dietista para un consejo personalizado.",
       },
       faq: {
         title: "Preguntas Frecuentes",

@@ -197,17 +197,22 @@ export default function WorkoutStreakHeader({ className, streakCount = DEFAULT_S
         return (
           <div
             aria-label={`${day.date}: ${day.hasWorkout ? "Workout completed" : "No workout"}`}
-            className={`w-4 h-4 sm:w-6 sm:h-6 rounded-sm sm:rounded-md transition-all duration-200 ease-in-out tooltip tooltip-bottom hover:scale-110 cursor-pointer focus:ring-2 focus:ring-offset-1 focus:outline-none ${
-              day.hasWorkout
-                ? "bg-emerald-400 dark:bg-emerald-500 shadow-sm hover:shadow-md hover:brightness-110 focus:ring-emerald-300"
-                : "bg-gray-300 dark:bg-gray-600 border border-gray-400 dark:border-gray-500 hover:bg-gray-400 dark:hover:bg-gray-500 focus:ring-gray-300 dark:focus:ring-gray-400"
-            }`}
+            className="relative flex h-12 w-12 min-h-12 min-w-12 shrink-0 items-center justify-center rounded-md tooltip tooltip-bottom cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--wc-dash-text)]"
             data-tip={title}
             key={day.date}
             role="button"
             tabIndex={0}
             title={title}
-          />
+          >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none h-4 w-4 rounded-sm transition-transform duration-200 sm:h-6 sm:w-6 sm:rounded-md ${
+                day.hasWorkout
+                  ? "bg-emerald-400 shadow-sm dark:bg-emerald-500"
+                  : "border border-gray-400 bg-gray-300 dark:border-gray-500 dark:bg-gray-600"
+              }`}
+            />
+          </div>
         );
       })}
     </div>

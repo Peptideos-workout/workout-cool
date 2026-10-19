@@ -22,7 +22,7 @@ function StepperStep({
   onStepClick,
 }: StepperStepProps & { currentStep: number; onStepClick?: (stepNumber: number) => void }) {
   const canClick = stepNumber < currentStep || isCompleted;
-  const StepTitle = isActive ? "h1" : "h3";
+  const StepTitle = isActive ? "h2" : "h3";
 
   const handleClick = () => {
     if (canClick && onStepClick) {

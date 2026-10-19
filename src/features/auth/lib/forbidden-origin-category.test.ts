@@ -102,7 +102,7 @@ test("a token or URL in Origin or Referer never appears in the logged object", (
   headers.set("sec-fetch-site", "cross-site");
   headers.set("referer", REFERER_URL);
   try {
-    logForbiddenOrigin(headers, "POST");
+    logForbiddenOrigin({ headers, method: "POST" });
   } finally {
     console.warn = original;
   }
@@ -147,6 +147,26 @@ test("has_referer is presence only and whitespace does not count", () => {
   assert.equal(padded.has_referer, true);
 });
 
+test("has_referer is false for whitespace and invisible characters only", () => {
+  const absent = ["\u200B", " \u200B\uFEFF ", "\u200C", "\u200D", "\u2060", "\uFEFF", "\u200B\u200C\u200D\u2060\uFEFF \t\n"];
+  for (const referer of absent) {
+    assert.equal(
+      forbiddenOriginLogRecord({ origin: null, secFetchSite: null, referer, method: "POST" }).has_referer,
+      false,
+      JSON.stringify(referer)
+    );
+  }
+  assert.equal(
+    forbiddenOriginLogRecord({
+      origin: null,
+      secFetchSite: null,
+      referer: "https://www.peptideos.us/dashboard",
+      method: "POST"
+    }).has_referer,
+    true
+  );
+});
+
 test("logs only an allowlisted HTTP method and other for everything else", () => {
   for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
     assert.equal(forbiddenOriginLogRecord({ origin: null, secFetchSite: null, referer: null, method }).method, method);
@@ -167,18 +187,21 @@ test("a throwing console.warn does not escape logForbiddenOrigin", () => {
     throw new Error("warn failed");
   };
   try {
-    assert.doesNotThrow(() => logForbiddenOrigin(new Headers({ origin: "https://evil.example" }), "POST"));
+    assert.doesNotThrow(() => logForbiddenOrigin({ headers: new Headers({ origin: "https://evil.example" }), method: "POST" }));
   } finally {
     console.warn = original;
   }
 });
 
 test("a throwing header read does not escape logForbiddenOrigin", () => {
+  // This helper cannot see the SSO response. The 403 status, body, and null Set-Cookie are asserted by
+  // "a throwing diagnostic header read still returns the same forbidden_origin 403" in
+  // app/api/peptideos-wc-sso/sso-post.test.ts.
   class ThrowingHeaders extends Headers {
     override get(_name: string): string | null {
       throw new Error("header read failed");
     }
   }
 
-  assert.doesNotThrow(() => logForbiddenOrigin(new ThrowingHeaders(), "POST"));
+  assert.doesNotThrow(() => logForbiddenOrigin({ headers: new ThrowingHeaders(), method: "POST" }));
 });

@@ -10,42 +10,78 @@ import { isSignoutConfirmPath, isSignoutContinuePath } from "@/features/auth/sig
 import { peptideOsSignedOutRedirectLocation, shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 import { peptideOsOrigin } from "@/features/auth/lib/peptideos-signup-url";
 
-function detectUserLocale(request: NextRequest): string {
+const SUPPORTED_LOCALES = ["en", "fr", "es", "zh-CN", "ru", "pt"] as const;
+type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+const DEFAULT_LOCALE: SupportedLocale = "en";
+const NEXT_LOCALE_COOKIE = "Next-Locale";
+
+const LOCALE_COOKIE_OPTIONS = {
+  maxAge: 60 * 60 * 24 * 365, // 1 year
+  httpOnly: false,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const
+};
+
+function isSupportedLocale(locale: string): locale is SupportedLocale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(locale);
+}
+
+function qualityFromAcceptParam(param: string): number | undefined {
+  const trimmed = param.trim();
+  const match = trimmed.match(/^q\s*=\s*(.*)$/i);
+  if (!match) return undefined;
+  const parsed = Number(match[1].trim());
+  // q=0 is not acceptable. NaN and out-of-range values count as 0 so header order cannot revive them.
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) return 0;
+  return parsed;
+}
+
+function detectUserLocale(request: NextRequest): SupportedLocale {
   const acceptLanguage = request.headers.get("accept-language");
+  if (!acceptLanguage || !acceptLanguage.trim()) return DEFAULT_LOCALE;
 
-  if (!acceptLanguage) return "en";
-
-  // Parse Accept-Language header
   const languages = acceptLanguage
     .split(",")
-    .map((lang) => {
-      const [locale, quality = "1"] = lang.trim().split(";q=");
-      return { locale: locale.toLowerCase(), quality: parseFloat(quality) };
+    .map((part, index) => {
+      const [rawLocale, ...params] = part.split(";");
+      const locale = rawLocale.trim().toLowerCase();
+      let quality = 1;
+      for (const param of params) {
+        const parsed = qualityFromAcceptParam(param);
+        if (parsed !== undefined) quality = parsed;
+      }
+      return { locale, quality, index };
     })
-    .sort((a, b) => b.quality - a.quality);
-
-  // Map browser locales to supported locales
-  const supportedLocales = ["en", "fr", "es", "zh-cn", "ru", "pt"];
+    .filter((entry) => entry.locale && entry.locale !== "*" && entry.quality > 0)
+    .sort((left, right) => right.quality - left.quality || left.index - right.index);
 
   for (const { locale } of languages) {
-    // Exact match
-    if (supportedLocales.includes(locale)) {
-      return locale === "zh-cn" ? "zh-CN" : locale;
-    }
+    const exact = SUPPORTED_LOCALES.find((supported) => supported.toLowerCase() === locale);
+    if (exact) return exact;
 
-    // Language match (fr-FR -> fr)
-    const lang = locale.split("-")[0];
-    if (supportedLocales.includes(lang)) {
-      return lang;
-    }
+    // Language match (fr-FR -> fr, pt-BR -> pt, fr-CA -> fr)
+    const primary = locale.split("-")[0];
+    const primaryMatch = SUPPORTED_LOCALES.find((supported) => supported.toLowerCase() === primary);
+    if (primaryMatch) return primaryMatch;
 
-    // Chinese variants
-    if (locale.startsWith("zh")) {
-      return "zh-CN";
-    }
+    // zh-TW, zh-HK, zh, and other Chinese tags share the supported zh-CN locale
+    if (locale.startsWith("zh")) return "zh-CN";
   }
 
-  return "en"; // fallback
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Missing Next-Locale uses Accept-Language. A present cookie is kept only on an exact match;
+ * zh-cn is not zh-CN. Unsupported and empty cookies fall back to en and do not use Accept-Language.
+ * next-international rejects zh-cn on nested paths, so folding it only on / would redirect to /zh-CN
+ * and bounce back to /.
+ */
+function resolveRequestLocale(request: NextRequest): SupportedLocale {
+  const cookieLocale = request.cookies.get(NEXT_LOCALE_COOKIE)?.value;
+  const candidate = cookieLocale ?? detectUserLocale(request);
+  if (!candidate || !isSupportedLocale(candidate)) return DEFAULT_LOCALE;
+  return candidate;
 }
 
 /** Locale redirect target. Pathname gains the locale; search and hash stay as received. */
@@ -57,9 +93,11 @@ export function buildLocaleRedirectUrl(request: NextRequest, locale: string): UR
 }
 
 const I18nMiddleware = createI18nMiddleware({
-  locales: ["en", "fr", "es", "zh-CN", "ru", "pt"],
-  defaultLocale: "en",
+  locales: SUPPORTED_LOCALES,
+  defaultLocale: DEFAULT_LOCALE,
   urlMappingStrategy: "rewrite",
+  // The default resolver keeps only the primary tag, so zh-CN becomes "zh" and falls back to English.
+  resolveLocaleFromRequest: detectUserLocale,
 });
 
 export async function proxy(request: NextRequest) {
@@ -102,39 +140,25 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  // If on root path and no locale detected yet, redirect to detected locale
+  const resolvedLocale = resolveRequestLocale(request);
+
+  // Root only auto-redirects until detected-locale is stored. The target matches resolveRequestLocale.
   if (pathname === "/" && !request.cookies.get("detected-locale")) {
-    const url = buildLocaleRedirectUrl(request, detectedLocale);
+    const url = buildLocaleRedirectUrl(request, resolvedLocale);
     const response = NextResponse.redirect(url);
-
-    response.cookies.set("detected-locale", detectedLocale, {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
-
+    response.cookies.set("detected-locale", resolvedLocale, LOCALE_COOKIE_OPTIONS);
     return response;
   }
 
-  // Normal i18n middleware processing
+  // Normal i18n middleware processing. The library reads Next-Locale before detectUserLocale.
   const response = I18nMiddleware(request);
 
-  // Extract current locale from pathname
-  const localeMatch = pathname.match(/^\/([a-z]{2}(?:-[A-Z]{2})?)/);
-  const currentLocale = localeMatch ? localeMatch[1] : detectedLocale;
-
-  // Set Content-Language header for SEO
+  // next-international 1.3.1 sets X-Next-Locale to the locale it applied.
+  const currentLocale = response.headers.get("X-Next-Locale") ?? resolvedLocale;
   response.headers.set("Content-Language", currentLocale);
 
-  // Store detected locale in cookie for future visits
   if (!request.cookies.get("detected-locale")) {
-    response.cookies.set("detected-locale", detectedLocale, {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
+    response.cookies.set("detected-locale", resolvedLocale, LOCALE_COOKIE_OPTIONS);
   }
 
   const searchParams = request.nextUrl.searchParams.toString();

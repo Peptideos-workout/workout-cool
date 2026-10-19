@@ -58,7 +58,7 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
         </span>
       ) : null}
       <Image
-        alt={`${translation.label} illustration`}
+        alt={t("workout_builder.equipment_illustration_alt", { name: translation.label })}
         className="object-contain"
         height={80}
         src={equipment.icon}

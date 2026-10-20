@@ -12,7 +12,7 @@ test("header auth chrome is neutral while the session is pending and unchanged a
 });
 
 test("a session-less pending header falls back to signed-out after the timeout", () => {
-  assert.equal(HEADER_AUTH_PENDING_TIMEOUT_MS, 5000);
+  assert.equal(HEADER_AUTH_PENDING_TIMEOUT_MS, 8000);
   assert.equal(headerAuthChrome(true, false, false), "pending");
   assert.equal(headerAuthChrome(true, false, true), "signed-out");
   assert.equal(headerAuthChrome(true, true, true), "signed-in");

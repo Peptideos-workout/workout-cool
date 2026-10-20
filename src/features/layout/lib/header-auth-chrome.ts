@@ -7,7 +7,7 @@ export const headerAuthChromeState = {
 export type HeaderAuthChrome = (typeof headerAuthChromeState)[keyof typeof headerAuthChromeState];
 
 /** How long a session-less pending header waits before showing signed-out. */
-export const HEADER_AUTH_PENDING_TIMEOUT_MS = 5000;
+export const HEADER_AUTH_PENDING_TIMEOUT_MS = 8000;
 
 /**
  * Which header auth slot to paint.

@@ -1027,11 +1027,65 @@ async function runWebKitTitleModality(parentOrigin, childOrigin, saveShot) {
   }
 }
 
+async function assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engine) {
+  const quitLabel = localeValue("quit_workout");
+  const discardLabel = localeValue("embed_quit_confirm");
+  const title = localeValue("embed_quit_title");
+  const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+  try {
+    await phone.frame.getByRole("button", { name: "Start workout" }).click();
+    await phone.frame.locator("[data-wc-active='1']").waitFor();
+    const firstSession = await phone.frame.locator("[data-wc-session]").getAttribute("data-wc-session");
+    await phone.frame.getByRole("button", { name: quitLabel }).evaluate((element) => {
+      element.dataset.wcMount = "first";
+    });
+    await phone.frame.evaluate(() => {
+      const store = window.__wcSessionStore;
+      const original = store.getState().quitWorkout;
+      window.__wcQuitCalls = 0;
+      store.setState({
+        quitWorkout: () => {
+          window.__wcQuitCalls += 1;
+          original();
+        },
+      });
+    });
+    await phone.frame.getByRole("button", { name: quitLabel }).click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor();
+    await phone.frame.getByRole("button", { name: discardLabel }).click();
+    await phone.frame.locator("[data-wc-active='0']").waitFor();
+    await phone.frame.getByRole("button", { name: "Start workout" }).click();
+    await phone.frame.locator("[data-wc-active='1']").waitFor();
+    const secondSession = await phone.frame.locator("[data-wc-session]").getAttribute("data-wc-session");
+    if (!secondSession || secondSession === firstSession) throw new Error(`${engine} second workout reused ${firstSession}`);
+    const remounted = await phone.frame.getByRole("button", { name: quitLabel }).getAttribute("data-wc-mount");
+    if (remounted === "first") throw new Error(`${engine} quit dialog stayed mounted`);
+    await phone.frame.getByRole("button", { name: quitLabel }).click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor();
+    await phone.frame.getByRole("button", { name: discardLabel }).click();
+    const calls = await phone.frame.evaluate(() => window.__wcQuitCalls || 0);
+    if (calls !== 2) throw new Error(`${engine} second workout quit ran ${calls} times`);
+    await phone.frame.locator("[data-wc-active='0']").waitFor();
+  } finally {
+    await phone.page.close();
+  }
+  console.log(`SECOND_WORKOUT_QUIT ${engine} remount=1 calls=2`);
+}
+
 async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, engine) {
   const quitLabel = localeValue("quit_workout");
   const discardLabel = localeValue("embed_quit_confirm");
   const title = localeValue("embed_quit_title");
   const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+  const consoleLines = [];
+  const onConsole = (message) => {
+    consoleLines.push(`${message.type()}: ${message.text()}`);
+  };
+  const onPageError = (error) => {
+    consoleLines.push(`pageerror: ${error.message}`);
+  };
+  phone.page.on("console", onConsole);
+  phone.page.on("pageerror", onPageError);
   try {
     await phone.frame.getByRole("button", { name: "Start workout" }).click();
     await phone.frame.locator("[data-wc-active='1']").waitFor();
@@ -1098,9 +1152,14 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     await phone.frame.getByRole("button", { name: discardLabel }).click({ force: true });
     if ((await quitCalls()) !== 1) throw new Error(`${engine} success quit ran ${await quitCalls()} times`);
   } finally {
+    phone.page.off("console", onConsole);
+    phone.page.off("pageerror", onPageError);
     await phone.page.close();
   }
+  const reported = consoleLines.filter((line) => /hold|pageerror|uncaught|unhandled|reportError/i.test(line));
+  console.log(`THROWING_QUIT_CONSOLE ${engine} ${JSON.stringify(reported)}`);
   console.log(`THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0`);
+  await assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engine);
 }
 
 async function runFirefoxThrowingQuit(parentOrigin, childOrigin) {

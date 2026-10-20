@@ -57,8 +57,9 @@ export function QuitWorkoutDialog({
       await onQuitWithoutSave();
     } catch (error) {
       failed = true;
-      // The click handler used to throw into the window error event. Re-throwing here is an unhandled rejection.
-      reportError(error);
+      // window.reportError fires the same error event as a thrown click handler. It is missing before Safari 15.4.
+      if (typeof reportError === "function") reportError(error);
+      else console.error(error);
     } finally {
       if (failed) {
         const remaining = DOUBLE_ACTIVATION_GUARD_MS - (Date.now() - lockedAt);

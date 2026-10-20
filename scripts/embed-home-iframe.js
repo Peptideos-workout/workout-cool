@@ -12,7 +12,7 @@ const { join } = require("node:path");
 const { tmpdir } = require("node:os");
 const { createServer: createNetServer } = require("node:net");
 const { createServer, request: httpRequest } = require("node:http");
-const { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } = require("node:fs");
+const { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } = require("node:fs");
 const { spawn } = require("node:child_process");
 
 const PRODUCTION_CSP = "frame-ancestors 'self' https://peptideos.us https://www.peptideos.us";
@@ -256,6 +256,7 @@ function bundleQuitHarness(dir) {
     "workout_builder.confirm_delete": localeValue("confirm_delete"),
     "workout_builder.session.delete": localeValue("delete"),
     "commons.cancel": localeValue("cancel"),
+    "programs.start_session": localeValue("start_session"),
   };
   const i18nStub = join(dir, "i18n-stub.js");
   const builderStub = join(dir, "builder-stub.ts");
@@ -331,13 +332,61 @@ export const useWorkoutSessionService = () => ({
 });
 `,
   );
+  const imageStub = join(dir, "image-stub.jsx");
+  const headersStub = join(dir, "headers-stub.js");
+  const cacheStub = join(dir, "cache-stub.js");
+  const confettiStub = join(dir, "confetti-stub.js");
+  const envStub = join(dir, "env-stub.js");
+  const prismaLibStub = join(dir, "prisma-lib-stub.js");
+  const authClientStub = join(dir, "auth-client-stub.js");
+  const betterAuthStub = join(dir, "better-auth-stub.js");
+  const assetStub = join(dir, "asset-stub.js");
+  const enrollStub = join(dir, "enroll-stub.js");
+  const startSessionStub = join(dir, "start-session-stub.js");
+  const completeSessionStub = join(dir, "complete-session-stub.js");
+  writeFileSync(imageStub, `export default function Image(props) { return <img alt={props.alt || ""} />; }\n`);
+  writeFileSync(
+    headersStub,
+    `export async function headers() { return new Headers(); }
+export async function cookies() { return { get() { return undefined; } }; }
+`,
+  );
+  writeFileSync(cacheStub, `export function revalidatePath() {}\nexport function revalidateTag() {}\n`);
+  writeFileSync(confettiStub, `export default function confetti() {}\n`);
+  writeFileSync(envStub, `export const env = new Proxy({}, { get: () => "" });\n`);
+  writeFileSync(prismaLibStub, `export const prisma = new Proxy({}, { get: () => () => Promise.resolve(null) });\n`);
+  writeFileSync(
+    authClientStub,
+    `export function useSession() { return { data: null, isPending: false }; }
+export const authClient = { useSession };
+export const useIsAdmin = () => false;
+`,
+  );
+  writeFileSync(betterAuthStub, `export const auth = { api: { getSession: async () => null } };\n`);
+  writeFileSync(assetStub, `export default "";\n`);
+  writeFileSync(enrollStub, `export async function enrollInProgram() { return { enrollment: { id: "enroll-1" } }; }\n`);
+  writeFileSync(startSessionStub, `export async function startProgramSession() { return { sessionProgress: { id: "progress-1" } }; }\n`);
+  writeFileSync(
+    completeSessionStub,
+    `export async function completeProgramSession() { return { isCompleted: false, nextWeek: 1, nextSession: "next" }; }\n`,
+  );
   writeFileSync(
     navigationStub,
     `export function useRouter() {
-  return { push() {}, replace() {}, back() {}, prefetch() {} };
+  return {
+    push(href) {
+      window.__wcPushes = window.__wcPushes || [];
+      window.__wcPushes.push(href);
+    },
+    replace() {},
+    back() {},
+    prefetch() {}
+  };
 }
 export function usePathname() { return "/"; }
 export function useSearchParams() { return new URLSearchParams(); }
+export function notFound() {}
+export function redirect() {}
 `,
   );
   writeFileSync(
@@ -349,10 +398,12 @@ const Link = forwardRef(function Link({ children, href, prefetch, ...props }, re
 export default Link;
 `,
   );
+  const programClient = join(process.cwd(), "app/[locale]/(app)/programs/[slug]/session/[sessionSlug]/ProgramSessionClient.tsx");
   writeFileSync(
     entry,
     `import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { ProgramSessionClient } from ${JSON.stringify(programClient)};
 import { useWorkoutSessionStore } from "@/features/workout-session/model/workout-session.store";
 import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
 import { WorkoutSessionList } from "@/features/workout-session/ui/workout-session-list";
@@ -456,6 +507,64 @@ function HistoryHarness() {
   );
 }
 
+function ProgramHarness() {
+  useEffect(() => {
+    const post = () => {
+      window.parent.postMessage({ type: "wc:height", height: document.documentElement.scrollHeight }, "*");
+    };
+    post();
+    const observer = new ResizeObserver(post);
+    observer.observe(document.documentElement);
+    window.__wcPushes = [];
+    const timer = setTimeout(() => document.documentElement.setAttribute("data-wc-ready", "1"), 0);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
+  return (
+    <ProgramSessionClient
+      isAuthenticated={true}
+      isPremium={false}
+      program={{
+        id: "program-1",
+        title: "Starter",
+        titleEn: "Starter",
+        description: "",
+        descriptionEn: "",
+        slug: "starter",
+        slugEn: "starter"
+      }}
+      session={{
+        id: "session-1",
+        title: "Day 1",
+        titleEn: "Day 1",
+        description: "",
+        descriptionEn: "",
+        slug: "day-1",
+        slugEn: "day-1",
+        isPremium: false,
+        exercises: [{
+          id: "pex-1",
+          order: 0,
+          suggestedSets: [],
+          exercise: {
+            id: "ex-1",
+            name: "Squat",
+            nameEn: "Squat",
+            description: "",
+            descriptionEn: "",
+            fullVideoUrl: null,
+            fullVideoImageUrl: null,
+            attributes: []
+          }
+        }]
+      }}
+      week={{ weekNumber: 1 }}
+    />
+  );
+}
+
 const card = new URLSearchParams(location.search).get("card");
 if (card === "history") {
   window.__wcSessions = [{
@@ -475,7 +584,7 @@ if (card === "history") {
   }];
 }
 createRoot(document.getElementById("root")).render(
-  card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : <App />
+  card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : card === "program" ? <ProgramHarness /> : <App />
 );
 `,
   );
@@ -501,6 +610,19 @@ createRoot(document.getElementById("root")).render(
           build.onResolve({ filter: /^@prisma\/client$/ }, () => ({ path: prismaStub }));
           build.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: navigationStub }));
           build.onResolve({ filter: /^next\/link$/ }, () => ({ path: linkStub }));
+          build.onResolve({ filter: /^next\/image$/ }, () => ({ path: imageStub }));
+          build.onResolve({ filter: /^next\/headers$/ }, () => ({ path: headersStub }));
+          build.onResolve({ filter: /^next\/cache$/ }, () => ({ path: cacheStub }));
+          build.onResolve({ filter: /^canvas-confetti$/ }, () => ({ path: confettiStub }));
+          build.onResolve({ filter: /^@\/env$/ }, () => ({ path: envStub }));
+          build.onResolve({ filter: /^@\/shared\/lib\/prisma$/ }, () => ({ path: prismaLibStub }));
+          build.onResolve({ filter: /^@\/features\/auth\/lib\/auth-client$/ }, () => ({ path: authClientStub }));
+          build.onResolve({ filter: /^@\/features\/auth\/lib\/better-auth$/ }, () => ({ path: betterAuthStub }));
+          build.onResolve({ filter: /\/enroll-program\.action$/ }, () => ({ path: enrollStub }));
+          build.onResolve({ filter: /\/start-program-session\.action$/ }, () => ({ path: startSessionStub }));
+          build.onResolve({ filter: /\/complete-program-session\.action$/ }, () => ({ path: completeSessionStub }));
+          build.onResolve({ filter: /^@public\// }, () => ({ path: assetStub }));
+          build.onResolve({ filter: /\.(png|jpe?g|webp|svg|gif)$/ }, () => ({ path: assetStub }));
           build.onResolve({ filter: /^@\/features\/workout-session\/model\/use-workout-sessions$/ }, () => ({ path: sessionsStub }));
           build.onResolve({ filter: /^@\/shared\/lib\/workout-session\/use-workout-session\.service$/ }, () => ({
             path: serviceStub,
@@ -512,8 +634,8 @@ createRoot(document.getElementById("root")).render(
             const rel = args.path.slice(2);
             if (rel === "features/workout-builder/model/workout-builder.store") return { path: builderStub };
             const base = join(srcRoot, rel);
-            const candidates = [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")];
-            const found = candidates.find((candidate) => existsSync(candidate));
+            const candidates = [`${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx"), base];
+            const found = candidates.find((candidate) => existsSync(candidate) && !statSync(candidate).isDirectory());
             return { path: found || base };
           });
         },
@@ -674,6 +796,38 @@ async function storedSession(frame) {
     current: localStorage.getItem("currentWorkoutSessionId"),
     sessions: JSON.parse(localStorage.getItem("workoutSessions") || "[]"),
   }));
+}
+
+async function assertProgramQuit(target, embed) {
+  const startLabel = localeValue("start_session");
+  const quitLabel = localeValue("quit_workout");
+  const confirmLabel = embed ? localeValue("embed_quit_confirm") : localeValue("quit_without_save");
+  await target.evaluate(() => {
+    localStorage.clear();
+    window.__wcPushes = [];
+  });
+  await target.getByRole("button", { name: startLabel }).click();
+  await target.getByRole("button", { name: quitLabel }).waitFor();
+  const started = await storedSession(target);
+  if (!started.current) throw new Error("program start did not save a current session");
+  if (!started.sessions.some((session) => session.id === started.current && session.status === "active")) {
+    throw new Error("program start did not save an active session");
+  }
+  await target.getByRole("button", { name: quitLabel }).click();
+  await target.getByRole("button", { name: confirmLabel }).click();
+  await target.getByRole("button", { name: startLabel }).waitFor();
+  const cleared = await storedSession(target);
+  if (cleared.current !== null) throw new Error("program quit left currentWorkoutSessionId");
+  if (cleared.sessions.length !== 0) throw new Error("program quit left a saved session");
+  if (cleared.sessions.some((session) => session.status === "completed")) throw new Error("program quit marked a session completed");
+  const pushes = await target.evaluate(() => window.__wcPushes || []);
+  if (embed) {
+    if (pushes.length !== 1 || pushes[0] !== "/?embed=1") {
+      throw new Error(`embed program quit pushed ${JSON.stringify(pushes)}`);
+    }
+    return;
+  }
+  if (pushes.length !== 0) throw new Error(`plain program quit pushed ${JSON.stringify(pushes)}`);
 }
 
 async function attachChildFrame(page) {
@@ -1190,6 +1344,23 @@ async function runQuitEmbedHarness(browser) {
       throw new Error("dismissed confirm called removeSession");
     }
     await historyPlain.close();
+
+    const programEmbed = await browser.newPage({ viewport: { width: 390, height: 900 } });
+    await programEmbed.goto(`${childOrigin}/harness.html?embed=1&card=program`, { waitUntil: "domcontentloaded" });
+    await programEmbed.waitForSelector("[data-wc-ready]");
+    if ((await programEmbed.evaluate(() => document.documentElement.getAttribute("data-wc-embed"))) !== "1") {
+      throw new Error("program embed page did not set data-wc-embed");
+    }
+    await assertProgramQuit(programEmbed, true);
+    await programEmbed.close();
+    const programPlain = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await programPlain.goto(`${childOrigin}/harness.html?card=program`, { waitUntil: "domcontentloaded" });
+    await programPlain.waitForSelector("[data-wc-ready]");
+    if ((await programPlain.evaluate(() => document.documentElement.getAttribute("data-wc-embed"))) !== null) {
+      throw new Error("plain program page set data-wc-embed");
+    }
+    await assertProgramQuit(programPlain, false);
+    await programPlain.close();
 
     const probePage = await browser.newPage({ viewport: { width: 390, height: 900 } });
     await probePage.goto(`${parentOrigin}/phone?src=${encodeURIComponent(`${childOrigin}/probe.html`)}`, {

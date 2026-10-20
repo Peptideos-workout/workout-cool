@@ -21,10 +21,20 @@ export function EmbedAuthFallbackView({
       <a className="inline-flex min-h-12 items-center text-lg font-bold" href={dashboardHref} rel="noopener noreferrer" target="_top">
         {EMBED_BACK_TO_DASHBOARD}
       </a>
-      <a className="inline-flex min-h-12 items-center text-lg font-bold" href={loginHref} rel="noopener noreferrer" target="_top">
+      <a
+        className="inline-flex min-h-12 !min-w-12 items-center text-lg font-bold"
+        href={loginHref}
+        rel="noopener noreferrer"
+        target="_top"
+      >
         {loginLabel}
       </a>
-      <a className="inline-flex min-h-12 items-center text-lg font-bold" href={signupHref} rel="noopener noreferrer" target="_top">
+      <a
+        className="inline-flex min-h-12 !min-w-12 items-center text-lg font-bold"
+        href={signupHref}
+        rel="noopener noreferrer"
+        target="_top"
+      >
         {signupLabel}
       </a>
     </div>

@@ -451,6 +451,7 @@ export default {
     conversion_flow_title: "重定向...",
     conversion_flow_message: "成功登录！重定向到结账...",
     redirecting_to_checkout: "重定向到结账",
+    upgrade_to_access_feature: "升级到高级版即可使用此功能",
   },
   breadcrumbs: {
     home: "首页",

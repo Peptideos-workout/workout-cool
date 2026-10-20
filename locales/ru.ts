@@ -455,6 +455,7 @@ export default {
     conversion_flow_title: "Перенаправление...",
     conversion_flow_message: "Успешный вход! Перенаправление на оформление заказа...",
     redirecting_to_checkout: "Перенаправление на оформление заказа",
+    upgrade_to_access_feature: "Перейдите на Премиум, чтобы получить доступ к этой функции",
   },
   bottom_navigation: {
     statistics: "Статистика",

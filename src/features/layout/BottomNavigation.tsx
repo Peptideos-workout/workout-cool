@@ -114,6 +114,7 @@ export function BottomNavigation() {
 
             return (
               <Link
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 py-1",
                   "lg:px-0 rounded-2xl transition-all duration-300 ease-out",

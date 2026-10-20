@@ -451,6 +451,7 @@ export default {
     conversion_flow_title: "A redirecionar...",
     conversion_flow_message: "Sessão iniciada com sucesso! A redirecionar para o checkout...",
     redirecting_to_checkout: "A redirecionar para o checkout",
+    upgrade_to_access_feature: "Atualize para Premium para aceder a esta funcionalidade",
   },
   breadcrumbs: {
     home: "Início",
@@ -1946,7 +1947,7 @@ export default {
     // Info and tooltips
     "1rm_formula_info": "Informações da fórmula 1RM",
     one_rm_formula_tooltip: "Fórmula {formula}: 1RM = Peso × (1 + (Repetições ÷ 30))",
-    volume_calculation: "Volume = Peso × Reps × Séries",
+    volume_calculation: "Volume = Peso × repetições × Séries",
     last_updated: "Última atualização: {date}",
 
     // Premium

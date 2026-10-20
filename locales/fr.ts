@@ -1969,7 +1969,7 @@ export default {
     // Info and tooltips
     "1rm_formula_info": "Informations sur la formule 1RM",
     one_rm_formula_tooltip: "Formule {formula} : 1RM = Poids × (1 + (Répétitions ÷ 30))",
-    volume_calculation: "Volume = Poids × Reps × Séries",
+    volume_calculation: "Volume = Poids × répétitions × Séries",
     last_updated: "Dernière mise à jour : {date}",
 
     // Premium

@@ -353,7 +353,7 @@ export default {
         {
           question: "¿Puedo importar datos de otras aplicaciones?",
           answer:
-            "Pronto. Vamos a soportar la importación de datos en CSV para datos básicos (reps & peso). Si estás cambiando de otra aplicación de fitness, nuestro equipo de soporte puede ayudarte a migrar tu historial de entrenamientos.",
+            "Pronto. Vamos a soportar la importación de datos en CSV para datos básicos (repeticiones y peso). Si estás cambiando de otra aplicación de fitness, nuestro equipo de soporte puede ayudarte a migrar tu historial de entrenamientos.",
         },
         {
           question: "¿Funciona la aplicación sin conexión?",
@@ -449,6 +449,7 @@ export default {
     conversion_flow_title: "Redirigiendo...",
     conversion_flow_message: "¡Sesión iniciada exitosamente! Redirigiendo al checkout...",
     redirecting_to_checkout: "Redirigiendo al checkout",
+    upgrade_to_access_feature: "Pásate a Premium para acceder a esta función",
   },
   breadcrumbs: {
     home: "Inicio",
@@ -617,7 +618,7 @@ export default {
     costs_title: "La realidad de los costos",
     costs_description:
       "Actualmente, las donaciones ni siquiera cubren los costos básicos: servidores, autenticación, infraestructura, base de datos, etc.",
-    open_source_title: "100% Open Source",
+    open_source_title: "100% código abierto",
     open_source_description:
       "Esta app es completamente gratuita y de código abierto. No se genera ganancia - es un proyecto de pasión para ayudar a la comunidad y ayudar a las personas a hacer ejercicio.",
     no_ads: "Sin publicidad",
@@ -1945,7 +1946,7 @@ export default {
     // Info and tooltips
     "1rm_formula_info": "Información de fórmula 1RM",
     one_rm_formula_tooltip: "Fórmula {formula}: 1RM = Peso × (1 + (Repeticiones ÷ 30))",
-    volume_calculation: "Volumen = Peso × Reps × Series",
+    volume_calculation: "Volumen = Peso × Repeticiones × Series",
     last_updated: "Última actualización: {date}",
 
     // Premium

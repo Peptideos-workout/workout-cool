@@ -385,6 +385,8 @@ test("timer, nav, and version chip reserve space", () => {
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
   assert.match(nav, /max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40/);
+  assert.match(nav, /aria-current=\{isActive \? "page" : undefined\}/);
+  assert.match(nav, /data-active=\{isActive \? "true" : "false"\}/);
   assert.match(nav, /max-sm:pb-\[env\(safe-area-inset-bottom\)\]/);
   assert.doesNotMatch(nav, /max-sm:order-3/);
   assert.match(footer, /max-sm:order-2 max-sm:shrink-0/);
@@ -425,6 +427,45 @@ test("timer, nav, and version chip reserve space", () => {
         "max-height: none !important;\\s*overflow: visible !important;\\s*\\}",
     ),
   );
+});
+
+test("premium gate copy exists in every locale", () => {
+  for (const locale of ["en", "fr", "es", "pt", "ru", "zh-CN"]) {
+    const source = read(`locales/${locale}.ts`);
+    const match = source.match(/upgrade_to_access_feature:\s*"([^"]+)"/);
+    assert.ok(match, locale);
+    assert.ok(match[1].trim().length > 0, locale);
+    assert.notEqual(match[1], "premium.upgrade_to_access_feature", locale);
+    assert.notEqual(match[1], "upgrade_to_access_feature", locale);
+  }
+});
+
+test("volume, import, and open-source copy use the locale's own words", () => {
+  const es = read("locales/es.ts");
+  const fr = read("locales/fr.ts");
+  const pt = read("locales/pt.ts");
+  assert.match(es, /Volumen = Peso × Repeticiones × Series/);
+  assert.match(fr, /Volume = Poids × répétitions × Séries/);
+  assert.match(pt, /Volume = Peso × repetições × Séries/);
+  assert.match(es, /datos básicos \(repeticiones y peso\)/);
+  assert.match(es, /open_source_title: "100% código abierto"/);
+  assert.doesNotMatch(es, /Peso × Reps × Series/);
+  assert.doesNotMatch(es, /reps & peso/);
+  assert.doesNotMatch(es, /100% Open Source/);
+  assert.doesNotMatch(fr, /Poids × Reps × Séries/);
+  assert.doesNotMatch(pt, /Peso × Reps × Séries/);
+});
+
+test("embed login and sign up links keep a 48px minimum width", () => {
+  const view = read("src/features/embed/ui/embed-auth-fallback-view.tsx");
+  const tags = [...view.matchAll(/<a[\s\S]*?<\/a>/g)].map((match) => match[0]);
+  const login = tags.find((tag) => tag.includes("{loginLabel}"));
+  const signup = tags.find((tag) => tag.includes("{signupLabel}"));
+  assert.ok(login);
+  assert.ok(signup);
+  assert.match(login, /!min-w-12/);
+  assert.match(signup, /!min-w-12/);
+  assert.equal(view.split("!min-w-12").length - 1, 2);
 });
 
 test("program session rows shrink the text column and keep the status icon", () => {

@@ -89,9 +89,8 @@ function resolveRequestLocale(request: NextRequest): SupportedLocale {
  * Not `//` or deeper paths.
  *
  * Next answers `/{locale}/` with a 308 to `/{locale}` before this proxy runs.
- * Chromium, WebKit, and Firefox keep `Sec-Fetch-Dest: iframe` on that follow, so
- * a browser does not ask the proxy for the slash form. The slash check stays as
- * defense in depth for a request that still reaches the proxy.
+ * Only Chromium was verified: it keeps `Sec-Fetch-Dest: iframe` on that follow.
+ * The slash check stays as defense in depth for a request that still reaches the proxy.
  */
 export function isEmbedHomePath(pathname: string): boolean {
   if (pathname === "/") return true;

@@ -175,6 +175,8 @@ export function ProgramSessionClient({ program, week, session, isAuthenticated, 
   const handleQuitWorkout = () => {
     quitWorkout();
     setHasStartedWorkout(false);
+    const embed = document.documentElement.getAttribute("data-wc-embed") === "1";
+    router.push(embed ? "/?embed=1" : "/");
   };
 
   // Show workout interface if user has started the workout

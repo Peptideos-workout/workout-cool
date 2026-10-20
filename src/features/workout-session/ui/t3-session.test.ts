@@ -11,7 +11,8 @@ const TIMER = "src/features/workout-session/ui/workout-session-timer.tsx";
 const SETS = "src/features/workout-session/ui/workout-session-sets.tsx";
 const SET = "src/features/workout-session/ui/workout-session-set.tsx";
 const QUIT = "src/features/workout-builder/ui/quit-workout-dialog.tsx";
-const FILES = [HEADER, TIMER, SETS, SET, QUIT];
+const CONFIRM = "src/shared/ui/embed-flow-confirm.tsx";
+const FILES = [HEADER, TIMER, SETS, SET, QUIT, CONFIRM];
 
 const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
 
@@ -116,6 +117,7 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   const header = read(HEADER);
   const row = read(SET);
   const quit = read(QUIT);
+  assert.match(quit, /embedQuitButtonClass/);
   assert.match(sets, /\{t\("workout_builder\.exercise\.watch_video"\)\}/);
   assert.match(sets, /!min-h-12 !border !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
   assert.match(sets, /!text-lg !text-\[var\(--wc-dash-text\)\]/);
@@ -123,8 +125,8 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
     "className=\"max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(header, new RegExp(quitClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const dialogQuit =
-    "className=\"w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
-  assert.match(quit, new RegExp(dialogQuit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    "w-full !min-h-12 !bg-[var(--wc-dash-error)] !text-lg !text-[var(--wc-dash-ink)] shadow-none hover:!bg-[var(--wc-dash-error)]";
+  assert.match(read(CONFIRM), new RegExp(dialogQuit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(
     row,
     /aria-label=\{t\("workout_builder\.session\.delete_set"\)\}[\s\S]*className=\{`\$\{plainErrorButton\} !min-h-12 !min-w-12 px-3`\}/,
@@ -143,6 +145,7 @@ test("session contrast pairs meet AA", () => {
   const { light, dark } = tokens();
   const pairs = [
     ["ink", "accent"],
+    ["ink", "error"],
     ["error", "panel"],
     ["error", "card"],
     ["text", "panel"],
@@ -184,6 +187,21 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(quit, /onClick=\{onQuitWithoutSave\}/);
   assert.match(quit, /onClick=\{onClose\}/);
   assert.match(quit, /onOpenChange=\{onClose\}/);
+  assert.match(quit, /useIsEmbedDocument\(\)/);
+  assert.match(quit, /marker="quit"/);
+  assert.match(quit, /<Dialog onOpenChange=\{onClose\} open=\{isOpen\}>/);
+  assert.doesNotMatch(quit, /document\./);
+  assert.doesNotMatch(quit, /window\.confirm|window\.alert|window\.prompt|window\.top/);
+  const confirm = read(CONFIRM);
+  assert.match(confirm, /scrollIntoView\(\{ block: "center" \}\)/);
+  assert.match(confirm, /cancelRef\.current\?\.focus\(\)/);
+  assert.match(confirm, /event\.key === "Escape"/);
+  assert.match(confirm, /data-wc-quit-confirm=\{marker === "quit" \? "" : undefined\}/);
+  assert.match(confirm, /role="dialog"/);
+  assert.match(confirm, /!min-h-12 border border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
+  assert.match(confirm, /!text-lg !text-\[var\(--wc-dash-text\)\] shadow-none hover:!bg-\[var\(--wc-dash-inner\)\]/);
+  assert.match(read("src/shared/lib/use-is-embed-document.ts"), /useState\(false\)/);
+  assert.match(read("src/shared/lib/use-is-embed-document.ts"), /getAttribute\("data-wc-embed"\) === "1"/);
   assert.match(quit, /t\("workout_builder\.session\.quit_workout_title"\)/);
   assert.match(quit, /t\("workout_builder\.session\.progress"\)/);
   assert.match(quit, /t\("workout_builder\.session\.quit_warning"\)/);
@@ -286,6 +304,48 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.doesNotMatch(header, /elapsed_time/);
   assert.match(header, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(quit, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
+  const store = read("src/features/workout-session/model/workout-session.store.ts");
+  const quitStart = store.indexOf("quitWorkout: () => {");
+  const quitStore = store.slice(quitStart, store.indexOf("completeWorkout: () => {", quitStart));
+  assert.match(quitStore, /workoutSessionLocal\.remove\(session\.id\)/);
+  assert.match(quitStore, /workoutSessionLocal\.clearCurrent\(\)/);
+  assert.match(quitStore, /useWorkoutBuilderStore\.getState\(\)\.setStep\(1\)/);
+  assert.match(quitStore, /exercisesCompleted: 0/);
+  assert.doesNotMatch(quitStore, /status: "completed"/);
+  assert.match(read("src/shared/lib/workout-session/workout-session.local.ts"), /function clearCurrent\(\)/);
+  assert.match(read("src/features/workout-builder/model/workout-builder.store.ts"), /setStep: \(step\) => set\(\{ currentStep: step \}\)/);
+  assert.doesNotMatch(read("src/features/workout-builder/model/workout-builder.store.ts"), /workout-session\.store/);
+  const program = read("app/[locale]/(app)/programs/[slug]/session/[sessionSlug]/ProgramSessionClient.tsx");
+  assert.match(program, /router\.push\(embed \? "\/\?embed=1" : "\/"\)/);
+  assert.doesNotMatch(program, /window\.top|window\.confirm/);
+  const list = read("src/features/workout-session/ui/workout-session-list.tsx");
+  assert.match(list, /if \(isEmbed\)/);
+  assert.match(list, /marker="delete"/);
+  assert.match(list, /window\.confirm\(t\("workout_builder\.confirm_delete"\)\)/);
+  assert.match(read("locales/en.ts"), /quit_workout_title: "Quit this workout\?"/);
+  assert.match(read("locales/en.ts"), /quit_warning: "Your progress in this workout won't be saved\."/);
+  assert.match(read("locales/en.ts"), /quit_without_save: "Quit without saving"/);
+  assert.match(read("locales/en.ts"), /continue_workout: "Keep going"/);
+  assert.match(read("locales/es.ts"), /quit_workout_title: "¿Salir de este entrenamiento\?"/);
+  assert.match(read("locales/es.ts"), /quit_warning: "Tu progreso en este entrenamiento no se guardará\."/);
+  assert.match(read("locales/es.ts"), /quit_without_save: "Salir sin guardar"/);
+  assert.match(read("locales/es.ts"), /continue_workout: "Seguir"/);
+  assert.match(read("locales/fr.ts"), /quit_workout_title: "Quitter cet entraînement \?"/);
+  assert.match(read("locales/fr.ts"), /quit_warning: "Votre progression dans cet entraînement ne sera pas enregistrée\."/);
+  assert.match(read("locales/fr.ts"), /quit_without_save: "Quitter sans enregistrer"/);
+  assert.match(read("locales/fr.ts"), /continue_workout: "Continuer"/);
+  assert.match(read("locales/pt.ts"), /quit_workout_title: "Sair deste treino\?"/);
+  assert.match(read("locales/pt.ts"), /quit_warning: "O seu progresso neste treino não será guardado\."/);
+  assert.match(read("locales/pt.ts"), /quit_without_save: "Sair sem guardar"/);
+  assert.match(read("locales/pt.ts"), /continue_workout: "Continuar"/);
+  assert.match(read("locales/ru.ts"), /quit_workout_title: "Выйти из этой тренировки\?"/);
+  assert.match(read("locales/ru.ts"), /quit_warning: "Прогресс в этой тренировке не сохранится\."/);
+  assert.match(read("locales/ru.ts"), /quit_without_save: "Выйти без сохранения"/);
+  assert.match(read("locales/ru.ts"), /continue_workout: "Продолжить"/);
+  assert.match(read("locales/zh-CN.ts"), /quit_workout_title: "退出这次锻炼？"/);
+  assert.match(read("locales/zh-CN.ts"), /quit_warning: "这次锻炼的进度不会保存。"/);
+  assert.match(read("locales/zh-CN.ts"), /quit_without_save: "不保存并退出"/);
+  assert.match(read("locales/zh-CN.ts"), /continue_workout: "继续"/);
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
   assert.match(timer, /isTimerRunning \? <Pause className="h-5 w-5" \/> : <Play className="h-5 w-5" \/>/);

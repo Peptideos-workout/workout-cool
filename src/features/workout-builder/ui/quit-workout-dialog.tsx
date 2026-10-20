@@ -3,6 +3,8 @@
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useI18n } from "locales/client";
 
+import { EmbedFlowConfirm, embedKeepButtonClass, embedQuitButtonClass } from "@/shared/ui/embed-flow-confirm";
+import { useIsEmbedDocument } from "@/shared/lib/use-is-embed-document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +18,28 @@ interface QuitWorkoutDialogProps {
 
 export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercisesCompleted, totalExercises }: QuitWorkoutDialogProps) {
   const t = useI18n();
+  const isEmbed = useIsEmbedDocument();
+
+  if (!isOpen) return null;
+
+  if (isEmbed) {
+    return (
+      <EmbedFlowConfirm
+        body={t("workout_builder.session.quit_warning")}
+        cancelLabel={t("workout_builder.session.continue_workout")}
+        confirmLabel={
+          <>
+            <Trash2 className="mr-2 h-4 w-4" />
+            {t("workout_builder.session.quit_without_save")}
+          </>
+        }
+        marker="quit"
+        onCancel={onClose}
+        onConfirm={onQuitWithoutSave}
+        title={t("workout_builder.session.quit_workout_title")}
+      />
+    );
+  }
 
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
@@ -54,27 +78,12 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {/* Quit without saving */}
-          <Button
-            className="w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
-            onClick={onQuitWithoutSave}
-            size="large"
-            variant="ghost"
-          >
+          <Button className={embedQuitButtonClass} onClick={onQuitWithoutSave} size="large" type="button">
             <Trash2 className="h-4 w-4 mr-2" />
             {t("workout_builder.session.quit_without_save")}
           </Button>
 
-          {/* Cancel */}
-          <Button
-            className={
-              "w-full border border-[var(--wc-dash-border)] shadow-none " +
-              "hover:bg-transparent !min-h-12 !text-lg !text-[var(--wc-dash-text)]"
-            }
-            onClick={onClose}
-            size="large"
-            variant="ghost"
-          >
+          <Button className={embedKeepButtonClass} onClick={onClose} size="large" type="button" variant="ghost">
             {t("workout_builder.session.continue_workout")}
           </Button>
         </div>

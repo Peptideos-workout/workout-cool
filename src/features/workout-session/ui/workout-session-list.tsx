@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Repeat2, Trash2 } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 import { ExerciseAttributeNameEnum } from "@prisma/client";
 
+import { EmbedFlowConfirm } from "@/shared/ui/embed-flow-confirm";
 import { useWorkoutSessionService } from "@/shared/lib/workout-session/use-workout-session.service";
+import { useIsEmbedDocument } from "@/shared/lib/use-is-embed-document";
 import { useWorkoutFeedback } from "@/shared/hooks/use-workout-feedback";
 import { useWorkoutSessions } from "@/features/workout-session/model/use-workout-sessions";
 import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
@@ -30,12 +33,10 @@ export function WorkoutSessionList() {
 
   const { data: sessions = [], refetch } = useWorkoutSessions();
   const activeSession = sessions.find((s) => s.status === "active");
+  const isEmbed = useIsEmbedDocument();
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm(t("workout_builder.confirm_delete"));
-
-    if (!confirmed) return;
-
+  const removeSession = async (id: string) => {
     try {
       feedback.onDelete();
       await remove(id);
@@ -44,6 +45,24 @@ export function WorkoutSessionList() {
       console.error("Error deleting session:", error);
       alert("Error deleting session");
     }
+  };
+
+  const handleDelete = (id: string) => {
+    if (isEmbed) {
+      setPendingDeleteId(id);
+      return;
+    }
+
+    const confirmed = window.confirm(t("workout_builder.confirm_delete"));
+    if (!confirmed) return;
+    void removeSession(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    setPendingDeleteId(null);
+    void removeSession(id);
   };
 
   const handleRepeat = (id: string) => {
@@ -161,7 +180,19 @@ export function WorkoutSessionList() {
                   );
                 })}
               </div>
-              <div className="flex gap-2 items-center mt-2 sm:mt-0">
+              <div className="flex w-full min-w-0 flex-col gap-2 sm:w-72">
+                {pendingDeleteId === session.id ? (
+                  <EmbedFlowConfirm
+                    body={t("workout_builder.confirm_delete")}
+                    cancelLabel={t("commons.cancel")}
+                    confirmLabel={t("workout_builder.session.delete")}
+                    marker="delete"
+                    onCancel={() => setPendingDeleteId(null)}
+                    onConfirm={handleConfirmDelete}
+                    title={t("workout_builder.session.delete")}
+                  />
+                ) : null}
+                <div className="flex gap-2 items-center">
                 {isActive && (
                   <Link className="w-auto flex items-center gap-2 flex-col" href="/" variant="nav">
                     <Play className="w-7 h-7 text-blue-500 dark:text-blue-400" />
@@ -201,6 +232,7 @@ export function WorkoutSessionList() {
                     </Button>
                   </div>
                 )}
+                </div>
               </div>
             </li>
           );

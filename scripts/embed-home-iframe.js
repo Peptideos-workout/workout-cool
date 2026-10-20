@@ -9,9 +9,10 @@
  * Requires `pnpm build` and Playwright's Chromium (`pnpm exec playwright install chromium`).
  */
 const { join } = require("node:path");
+const { tmpdir } = require("node:os");
 const { createServer: createNetServer } = require("node:net");
 const { createServer, request: httpRequest } = require("node:http");
-const { existsSync, readFileSync } = require("node:fs");
+const { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } = require("node:fs");
 const { spawn } = require("node:child_process");
 
 const PRODUCTION_CSP = "frame-ancestors 'self' https://peptideos.us https://www.peptideos.us";
@@ -208,6 +209,514 @@ function assertSignedOut(state, label) {
   if (state.shell || state.steps || state.equipment) throw new Error(`${label} rendered the workout builder`);
 }
 
+function localeValue(name) {
+  const source = readFileSync(join(process.cwd(), "locales/en.ts"), "utf8");
+  const match = source.match(new RegExp(name + ': "([^"]*)"'));
+  if (!match) throw new Error(`missing en locale ${name}`);
+  return match[1];
+}
+
+function loadEsbuild() {
+  try {
+    return require("esbuild");
+  } catch {
+    const nextPkg = require.resolve("next/package.json");
+    return require(require.resolve("esbuild", { paths: [join(nextPkg, "..")] }));
+  }
+}
+
+function builtStyles() {
+  const roots = [join(process.cwd(), ".next", "static", "css"), join(process.cwd(), ".next", "static", "chunks")];
+  const files = roots.flatMap((dir) =>
+    existsSync(dir)
+      ? readdirSync(dir)
+          .filter((name) => name.endsWith(".css"))
+          .map((name) => join(dir, name))
+      : []
+  );
+  if (!files.length) throw new Error("production CSS is missing. Run pnpm build first.");
+  return files.map((file) => readFileSync(file, "utf8")).join("\n");
+}
+
+function bundleQuitHarness(dir) {
+  const copy = {
+    "workout_builder.session.quit_workout": localeValue("quit_workout"),
+    "workout_builder.session.quit_workout_title": localeValue("quit_workout_title"),
+    "workout_builder.session.quit_warning": localeValue("quit_warning"),
+    "workout_builder.session.quit_without_save": localeValue("quit_without_save"),
+    "workout_builder.session.continue_workout": localeValue("continue_workout"),
+    "workout_builder.session.workout_in_progress": localeValue("workout_in_progress"),
+    "workout_builder.session.started_at": localeValue("started_at"),
+    "workout_builder.session.exercise_progress": localeValue("exercise_progress"),
+    "workout_builder.session.total_volume": localeValue("total_volume"),
+    "workout_builder.session.complete": localeValue("complete"),
+    "workout_builder.session.progress": localeValue("progress")
+  };
+  const i18nStub = join(dir, "i18n-stub.js");
+  const builderStub = join(dir, "builder-stub.ts");
+  const prismaStub = join(dir, "prisma-stub.js");
+  const entry = join(dir, "harness.tsx");
+  writeFileSync(
+    i18nStub,
+    `const strings = ${JSON.stringify(copy)};
+export function useI18n() {
+  return (key) => strings[key] ?? key;
+}
+export function useCurrentLocale() {
+  return "en";
+}
+`
+  );
+  writeFileSync(
+    builderStub,
+    `import { create } from "zustand";
+export const useWorkoutBuilderStore = create((set) => ({
+  currentStep: 1,
+  setStep: (step) => set({ currentStep: step })
+}));
+`
+  );
+  writeFileSync(
+    prismaStub,
+    `export const ExerciseAttributeValueEnum = {};
+export const ExerciseAttributeNameEnum = {};
+export function PrismaClient() {}
+`
+  );
+  writeFileSync(
+    entry,
+    `import { useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { useWorkoutSessionStore } from "@/features/workout-session/model/workout-session.store";
+import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
+import { WorkoutSessionHeader } from "@/features/workout-session/ui/workout-session-header";
+
+const exercise = { id: "ex-1", name: "Squat", nameEn: "Squat", attributes: [] };
+
+function App() {
+  const isWorkoutActive = useWorkoutSessionStore((state) => state.isWorkoutActive);
+  const exercisesCompleted = useWorkoutSessionStore((state) => state.exercisesCompleted);
+  const currentStep = useWorkoutBuilderStore((state) => state.currentStep);
+  const sessionId = useWorkoutSessionStore((state) => state.session?.id ?? "");
+
+  useEffect(() => {
+    const post = () => {
+      window.parent.postMessage({ type: "wc:height", height: document.documentElement.scrollHeight }, "*");
+    };
+    post();
+    const observer = new ResizeObserver(post);
+    observer.observe(document.documentElement);
+    document.documentElement.setAttribute("data-wc-ready", "1");
+    window.__wcMarkProgress = () => useWorkoutSessionStore.getState().finishSet(0, 0);
+    return () => observer.disconnect();
+  }, [isWorkoutActive, exercisesCompleted]);
+
+  const start = () => {
+    useWorkoutBuilderStore.getState().setStep(3);
+    useWorkoutSessionStore.getState().startWorkout([exercise], [], []);
+  };
+
+  return (
+    <div
+      data-wc-active={isWorkoutActive ? "1" : "0"}
+      data-wc-completed={String(exercisesCompleted)}
+      data-wc-session={sessionId}
+      data-wc-step={String(currentStep)}
+    >
+      {isWorkoutActive ? (
+        <WorkoutSessionHeader onQuitWorkout={() => useWorkoutSessionStore.getState().quitWorkout()} />
+      ) : (
+        <button type="button" onClick={start}>Start workout</button>
+      )}
+      <div style={{ height: 2400 }} />
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")).render(<App />);
+`
+  );
+
+  const esbuild = loadEsbuild();
+  const srcRoot = join(process.cwd(), "src");
+  return esbuild.build({
+    absWorkingDir: process.cwd(),
+    nodePaths: [join(process.cwd(), "node_modules")],
+    entryPoints: [entry],
+    bundle: true,
+    format: "iife",
+    outfile: join(dir, "harness.js"),
+    platform: "browser",
+    target: "es2022",
+    jsx: "automatic",
+    define: { "process.env.NODE_ENV": '"production"' },
+    plugins: [
+      {
+        name: "wc-harness",
+        setup(build) {
+          build.onResolve({ filter: /^locales\/client$/ }, () => ({ path: i18nStub }));
+          build.onResolve({ filter: /^@prisma\/client$/ }, () => ({ path: prismaStub }));
+          build.onResolve({ filter: /^server-only$/ }, () => ({ path: prismaStub }));
+          build.onResolve({ filter: /\.css$/ }, (args) => ({ path: args.path, namespace: "css-empty" }));
+          build.onLoad({ filter: /.*/, namespace: "css-empty" }, () => ({ contents: "", loader: "js" }));
+          build.onResolve({ filter: /^@\// }, (args) => {
+            const rel = args.path.slice(2);
+            if (rel === "features/workout-builder/model/workout-builder.store") return { path: builderStub };
+            const base = join(srcRoot, rel);
+            const candidates = [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")];
+            const found = candidates.find((candidate) => existsSync(candidate));
+            return { path: found || base };
+          });
+        }
+      }
+    ]
+  });
+}
+
+function harnessHtml() {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>quit harness</title>
+<script>
+  const query = new URLSearchParams(location.search);
+  if (query.get("embed") === "1") document.documentElement.setAttribute("data-wc-embed", "1");
+  if (query.get("dark") === "1") document.documentElement.classList.add("dark");
+</script>
+<link rel="stylesheet" href="/app.css">
+<style>
+  html[data-wc-embed="1"], html[data-wc-embed="1"] body { height: auto !important; overflow: hidden !important; margin: 0; }
+  body { margin: 0; }
+</style></head><body><div id="root"></div><script src="/harness.js"></script></body></html>`;
+}
+
+function probeHtml() {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>modal probe</title>
+<script>document.documentElement.setAttribute("data-wc-embed","1");</script>
+<style>
+  html, body { margin: 0; height: auto; overflow: hidden; }
+  .fixed-box { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 280px; height: 160px; background: white; }
+  .daisy { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; }
+  .daisy.open { display: flex; }
+  .daisy-box { width: 280px; height: 180px; background: white; }
+  .spacer { height: 2400px; }
+</style></head><body>
+<button id="open-fixed" type="button">Open fixed</button>
+<button id="open-dialog" type="button">Open dialog</button>
+<button id="open-daisy" type="button">Open daisy</button>
+<div id="fixed" class="fixed-box" hidden data-probe="fixed">fixed center</div>
+<dialog id="native" data-probe="dialog"><p>Native dialog</p></dialog>
+<div id="daisy" class="daisy" data-probe="daisy"><div class="daisy-box">daisy center</div></div>
+<div class="spacer"></div>
+<script>
+  const post = () => parent.postMessage({ type: "wc:height", height: document.documentElement.scrollHeight }, "*");
+  post();
+  document.getElementById("open-fixed").onclick = () => { document.getElementById("fixed").hidden = false; post(); };
+  document.getElementById("open-dialog").onclick = () => { document.getElementById("native").showModal(); post(); };
+  document.getElementById("open-daisy").onclick = () => { document.getElementById("daisy").classList.add("open"); post(); };
+</script></body></html>`;
+}
+
+function startMappedServer(port, files) {
+  const server = createServer((request, response) => {
+    const url = new URL(request.url || "/", "http://127.0.0.1");
+    if (url.pathname === "/phone") {
+      const src = url.searchParams.get("src") || "";
+      const dark = src.includes("dark=1");
+      const background = dark ? "#0b0f14" : "#f6f3ec";
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      response.end(
+        `<!doctype html><html><head><meta charset="utf-8"><title>phone</title><style>
+          html,body{margin:0;background:${background}}
+          #phone{width:390px;height:844px;overflow:hidden}
+          iframe{width:390px;border:0;height:844px;display:block;background:${background}}
+        </style></head><body><div id="phone"><iframe id="child" name="child" title="workout" src="${src}"></iframe></div>
+        <script>
+          window.addEventListener("message", (event) => {
+            const data = event.data;
+            if (!data || data.type !== "wc:height") return;
+            const frame = document.getElementById("child");
+            const height = Math.max(844, Number(data.height) || 844);
+            frame.style.height = height + "px";
+          });
+        </script></body></html>`
+      );
+      return;
+    }
+    const file = files.get(url.pathname);
+    if (!file) {
+      response.writeHead(404, { "content-type": "text/plain" });
+      response.end("missing");
+      return;
+    }
+    response.writeHead(200, { "content-type": file.type, "cache-control": "no-store" });
+    response.end(file.body);
+  });
+  return new Promise((resolve) => {
+    server.listen(port, "127.0.0.1", () => resolve(server));
+  });
+}
+
+function closeServer(server) {
+  return new Promise((resolve) => server.close(() => resolve()));
+}
+
+function parseColor(value) {
+  const match = String(value).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (!match) return null;
+  return [Number(match[1]), Number(match[2]), Number(match[3]), match[4] === undefined ? 1 : Number(match[4])];
+}
+
+function contrastRatio(foreground, background) {
+  const linear = (amount) => {
+    const unit = amount / 255;
+    return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = (channels) => 0.2126 * linear(channels[0]) + 0.7152 * linear(channels[1]) + 0.0722 * linear(channels[2]);
+  const [hi, lo] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+async function assertInPhone(page, frame, selector) {
+  const phone = await page.locator("#phone").boundingBox();
+  const card = await frame.locator(selector).boundingBox();
+  if (!phone || !card) throw new Error(`${selector} has no box`);
+  const bottom = card.y + card.height;
+  if (card.y < phone.y - 1 || bottom > phone.y + phone.height + 1) {
+    throw new Error(`${selector} outside the 390x844 phone (y=${card.y}, bottom=${bottom}, phone=${phone.height})`);
+  }
+}
+
+async function assertDesign(frame) {
+  const sample = await frame.locator("[data-wc-quit-confirm]").evaluate((root) => {
+    const read = (element) => {
+      let node = element;
+      let background = getComputedStyle(node).backgroundColor;
+      while (node && (background === "transparent" || background === "rgba(0, 0, 0, 0)")) {
+        node = node.parentElement;
+        background = node ? getComputedStyle(node).backgroundColor : background;
+      }
+      const style = getComputedStyle(element);
+      return {
+        fontSize: Number.parseFloat(style.fontSize),
+        height: element.getBoundingClientRect().height,
+        color: style.color,
+        background
+      };
+    };
+    return {
+      title: read(root.querySelector("h3")),
+      body: read(root.querySelector("p")),
+      buttons: [...root.querySelectorAll("button")].map(read)
+    };
+  });
+  for (const part of [sample.title, sample.body, ...sample.buttons]) {
+    if (part.fontSize < 18) throw new Error(`confirm text is ${part.fontSize}px`);
+    const foreground = parseColor(part.color);
+    const background = parseColor(part.background);
+    if (!foreground || !background) throw new Error(`unreadable color ${part.color} on ${part.background}`);
+    const ratio = contrastRatio(foreground, background);
+    if (ratio < 4.5) throw new Error(`contrast ${ratio.toFixed(2)} for ${part.color} on ${part.background}`);
+  }
+  for (const button of sample.buttons) {
+    if (button.height < 48) throw new Error(`confirm target is ${button.height}px`);
+  }
+}
+
+async function storedSession(frame) {
+  return frame.evaluate(() => ({
+    current: localStorage.getItem("currentWorkoutSessionId"),
+    sessions: JSON.parse(localStorage.getItem("workoutSessions") || "[]")
+  }));
+}
+
+async function attachChildFrame(page) {
+  const element = await page.waitForSelector("iframe[name=child]");
+  let frame = await element.contentFrame();
+  const started = Date.now();
+  while (!frame && Date.now() - started < 5000) {
+    await page.waitForTimeout(50);
+    frame = await element.contentFrame();
+  }
+  if (!frame) throw new Error("quit iframe did not attach");
+  return frame;
+}
+
+async function openPhone(browser, parentOrigin, childOrigin, search) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
+  await page.addInitScript(() => {
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scrollIntoView(arg) {
+      if (arg && arg.block === "center") window.__wcScrolled = true;
+      return original.call(this, arg);
+    };
+  });
+  const src = `${childOrigin}/harness.html${search}`;
+  await page.goto(`${parentOrigin}/phone?src=${encodeURIComponent(src)}`, { waitUntil: "domcontentloaded" });
+  const frame = await attachChildFrame(page);
+  await frame.waitForSelector("[data-wc-ready]");
+  await page.waitForFunction(() => {
+    const iframe = document.querySelector("#child");
+    return iframe && Number.parseInt(iframe.style.height, 10) > 1200;
+  });
+  if (!frame.url().includes(childOrigin) || page.url().includes(childOrigin)) {
+    throw new Error(`quit parent and child are not cross-origin (${page.url()} / ${frame.url()})`);
+  }
+  return { page, frame };
+}
+
+async function runQuitEmbedHarness(browser) {
+  const quitLabel = localeValue("quit_workout");
+  const title = localeValue("quit_workout_title");
+  const keepLabel = localeValue("continue_workout");
+  const discardLabel = localeValue("quit_without_save");
+  const dir = join(tmpdir(), `wc-quit-harness-${process.pid}`);
+  mkdirSync(dir, { recursive: true });
+  await bundleQuitHarness(dir);
+  const css = builtStyles();
+  const childPort = await unusedPort();
+  const parentPort = await unusedPort();
+  const files = new Map([
+    ["/harness.js", { type: "text/javascript; charset=utf-8", body: readFileSync(join(dir, "harness.js")) }],
+    ["/app.css", { type: "text/css; charset=utf-8", body: css }],
+    ["/harness.html", { type: "text/html; charset=utf-8", body: harnessHtml() }],
+    ["/probe.html", { type: "text/html; charset=utf-8", body: probeHtml() }]
+  ]);
+  const child = await startMappedServer(childPort, files);
+  const parent = await startMappedServer(parentPort, files);
+  const childOrigin = `http://127.0.0.1:${childPort}`;
+  const parentOrigin = `http://127.0.0.1:${parentPort}`;
+  const shotDir = "/cursor/stores/bot/wc-quit-triage";
+
+  try {
+    const light = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+    await light.frame.getByRole("button", { name: "Start workout" }).click();
+    await light.frame.locator("[data-wc-step='3']").waitFor();
+    await light.frame.locator("[data-wc-active='1']").waitFor();
+    await light.frame.evaluate(() => window.__wcMarkProgress());
+    await light.frame.locator("[data-wc-completed='1']").waitFor();
+    const keptId = await light.frame.locator("[data-wc-session]").getAttribute("data-wc-session");
+    await light.frame.getByRole("button", { name: quitLabel }).click();
+    await light.frame.getByRole("dialog", { name: title }).waitFor();
+    const scrolled = await light.frame.evaluate(() => window.__wcScrolled === true);
+    if (!scrolled) throw new Error("confirm did not scrollIntoView({block:'center'})");
+    const focused = await light.frame.evaluate(() => document.activeElement?.textContent?.trim());
+    if (focused !== keepLabel) throw new Error(`focused ${focused}`);
+    await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
+    await assertDesign(light.frame);
+    if (existsSync(shotDir)) {
+      await light.page.locator("#phone").screenshot({ path: join(shotDir, "confirm-390-light.png") });
+    }
+    await light.frame.getByRole("button", { name: keepLabel }).click();
+    if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("Keep going left the confirm open");
+    if ((await light.frame.locator("[data-wc-session]").getAttribute("data-wc-session")) !== keptId) {
+      throw new Error("Keep going replaced the session");
+    }
+    const keptStore = await storedSession(light.frame);
+    if (keptStore.current !== keptId) throw new Error("Keep going cleared the current session");
+    if (!keptStore.sessions.some((session) => session.id === keptId && session.status === "active")) {
+      throw new Error("Keep going did not keep the active session");
+    }
+    await light.frame.getByRole("button", { name: quitLabel }).click();
+    await light.frame.locator("[data-wc-quit-confirm]").waitFor();
+    await light.frame.locator("[data-wc-quit-confirm]").press("Escape");
+    if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("Escape left the confirm open");
+    if ((await light.frame.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") throw new Error("Escape ended the session");
+    await light.frame.getByRole("button", { name: quitLabel }).click();
+    await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
+    await light.frame.getByRole("button", { name: discardLabel }).click();
+    await light.frame.locator("[data-wc-active='0']").waitFor();
+    await light.frame.locator("[data-wc-step='1']").waitFor();
+    await light.frame.locator("[data-wc-completed='0']").waitFor();
+    const cleared = await storedSession(light.frame);
+    if (cleared.current !== null) throw new Error("current-session key remains after quit");
+    if (cleared.sessions.some((session) => session.status === "completed" || session.id === keptId)) {
+      throw new Error("quit left a completed or stale session");
+    }
+    await light.frame.getByRole("button", { name: "Start workout" }).click();
+    await light.frame.locator("[data-wc-active='1']").waitFor();
+    const nextId = await light.frame.locator("[data-wc-session]").getAttribute("data-wc-session");
+    const nextCompleted = await light.frame.locator("[data-wc-completed]").getAttribute("data-wc-completed");
+    const nextStore = await storedSession(light.frame);
+    const nextSet = nextStore.sessions[0]?.exercises?.[0]?.sets?.[0]?.completed;
+    if (!nextId || nextId === keptId) throw new Error("next workout reused the quit session");
+    if (nextCompleted !== "0" || nextSet !== false) throw new Error("next workout kept stale progress");
+    if (nextStore.current !== nextId) throw new Error("next workout did not become the current session");
+    if (nextStore.sessions.some((session) => session.status === "completed")) throw new Error("next workout stored a completed session");
+    await light.page.close();
+
+    const dark = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&dark=1");
+    await dark.frame.evaluate(() => localStorage.clear());
+    await dark.frame.getByRole("button", { name: "Start workout" }).click();
+    await dark.frame.getByRole("button", { name: quitLabel }).click();
+    await dark.frame.getByRole("dialog", { name: title }).waitFor();
+    await assertInPhone(dark.page, dark.frame, "[data-wc-quit-confirm]");
+    await assertDesign(dark.frame);
+    if (existsSync(shotDir)) {
+      await dark.page.locator("#phone").screenshot({ path: join(shotDir, "confirm-390-dark.png") });
+    }
+    await dark.page.close();
+
+    const plain = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await plain.goto(`${childOrigin}/harness.html`, { waitUntil: "domcontentloaded" });
+    await plain.evaluate(() => localStorage.clear());
+    await plain.reload({ waitUntil: "domcontentloaded" });
+    await plain.waitForSelector("[data-wc-ready]");
+    await plain.getByRole("button", { name: "Start workout" }).click();
+    await plain.getByRole("button", { name: quitLabel }).click();
+    const radix = plain.getByRole("dialog");
+    await radix.waitFor();
+    if ((await plain.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("non-embed rendered the in-flow confirm");
+    const position = await radix.evaluate((element) => getComputedStyle(element).position);
+    if (position !== "fixed") throw new Error(`non-embed dialog position ${position}`);
+    await plain.getByRole("button", { name: keepLabel }).click();
+    if ((await plain.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
+      throw new Error("non-embed Keep going ended the session");
+    }
+    await plain.close();
+
+    const probePage = await browser.newPage({ viewport: { width: 390, height: 900 } });
+    await probePage.goto(`${parentOrigin}/phone?src=${encodeURIComponent(`${childOrigin}/probe.html`)}`, {
+      waitUntil: "domcontentloaded"
+    });
+    const probe = await attachChildFrame(probePage);
+    await probePage.waitForFunction(() => {
+      const iframe = document.querySelector("#child");
+      return iframe && Number.parseInt(iframe.style.height, 10) > 1200;
+    });
+    const phone = await probePage.locator("#phone").boundingBox();
+    const measured = await probe.evaluate(() => {
+      const boxOf = (element) => {
+        const box = element.getBoundingClientRect();
+        return { top: box.top, height: box.height, center: box.top + box.height / 2 };
+      };
+      document.getElementById("open-fixed").click();
+      const fixed = boxOf(document.querySelector("[data-probe='fixed']"));
+      document.getElementById("fixed").hidden = true;
+      document.getElementById("open-dialog").click();
+      const dialog = boxOf(document.querySelector("[data-probe='dialog']"));
+      const dialogText = boxOf(document.querySelector("[data-probe='dialog'] p"));
+      document.getElementById("native").close();
+      document.getElementById("open-daisy").click();
+      const daisy = boxOf(document.querySelector(".daisy-box"));
+      return { fixed, dialog, dialogText, daisy, iframeHeight: window.innerHeight };
+    });
+    const probes = Object.entries(measured)
+      .filter((entry) => entry[0] !== "iframeHeight")
+      .map(([kind, box]) => ({
+        kind,
+        top: box.top,
+        height: box.height,
+        center: box.center,
+        offScreen: Boolean(phone && box.center > phone.y + phone.height)
+      }));
+    probes.push({ kind: "iframeHeight", height: measured.iframeHeight });
+    console.log(`QUIT_PROBES ${JSON.stringify(probes)}`);
+    await probePage.close();
+    console.log("embed iframe: quit confirm stays in the 390x844 frame and quit clears the session");
+  } finally {
+    await closeServer(parent);
+    await closeServer(child);
+  }
+}
+
 async function main() {
   assertProductionSources();
   if (!existsSync(join(process.cwd(), ".next", "BUILD_ID"))) {
@@ -271,6 +780,7 @@ async function main() {
       assertHop(hop, { status: 200, referer: `${parentOrigin}/` }, "/en?embed=1");
     }
     console.log("embed iframe: /en/?embed=1 and /en?embed=1 rendered the signed-out document");
+    await runQuitEmbedHarness(browser);
   } finally {
     if (browser) await browser.close();
     if (parent) await new Promise((resolve) => parent.close(resolve));

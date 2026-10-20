@@ -79,7 +79,8 @@ test("robots uses the configured WC origin and disallows locale and unprefixed s
 
 test("public pages tolerate a missing session (no session-dependent crash)", () => {
   const header = read("src/features/layout/Header.tsx");
-  assert.match(header, /!session\.data/);
+  assert.match(header, /headerAuthChrome\(session\.isPending, Boolean\(session\.data\)\)/);
+  assert.match(header, /authChrome === "signed-out"/);
   assert.match(header, /getConfiguredPeptideOsLoginUrl\(\)/);
   assert.match(header, /getConfiguredPeptideOsSignupUrl\(\)/);
   assert.doesNotMatch(header, /peptideos\.us\/login\?redirect=/);

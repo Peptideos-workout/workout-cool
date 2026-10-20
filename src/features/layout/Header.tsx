@@ -11,6 +11,7 @@ import { SiteConfig } from "@/shared/config/site-config";
 import { ChangePasswordMenuItem } from "@/features/update-password/ui/change-password-menu-item";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
+import { headerAuthChrome } from "@/features/layout/lib/header-auth-chrome";
 import { assignCheckoutUrl } from "@/features/embed/lib/embed-mode";
 import { useLogout } from "@/features/auth/model/useLogout";
 import { getConfiguredPeptideOsLoginUrl, getConfiguredPeptideOsSignupUrl } from "@/features/auth/lib/configured-peptideos-signup";
@@ -24,6 +25,7 @@ export const Header = () => {
   const logout = useLogout();
   const t = useI18n();
   const isPremium = useIsPremium();
+  const authChrome = headerAuthChrome(session.isPending, Boolean(session.data));
 
   // Get user initials for avatar
   const userAvatar = session.data?.user?.email?.substring(0, 2).toUpperCase() || "";
@@ -90,7 +92,16 @@ export const Header = () => {
             <LanguageSelector />
           </div>
 
-          {!session.data ? (
+          {authChrome === "pending" ? (
+            <div
+              aria-hidden="true"
+              className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2"
+              data-wc-header-auth="pending"
+            >
+              <span className="inline-flex h-12 min-h-12 min-w-12 shrink-0 rounded-2xl border border-[var(--wc-dash-secondary)] bg-[var(--wc-dash-panel)]" />
+              <span className="inline-flex h-12 min-h-12 min-w-[6.5rem] shrink-0 rounded-2xl border border-[var(--wc-dash-secondary)] bg-[var(--wc-dash-panel)]" />
+            </div>
+          ) : authChrome === "signed-out" ? (
             <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
               <Link
                 className="!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center"

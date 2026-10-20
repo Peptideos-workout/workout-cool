@@ -84,12 +84,33 @@ export function embedSignedOutFallbackHtml(
   const signup = escapeHtml(links.signupHref);
   const dashboard = escapeHtml(links.dashboardHref);
   const session = options?.postSession === false ? "" : `<script>${embedSignedOutSessionBootstrap()}</script>`;
+  const style = `<style>
+    body { margin: 0; background: #ffffff; color: #10211e; font-family: system-ui, sans-serif; }
+    main a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      font-size: 18px;
+      line-height: 1.25;
+      min-height: 48px;
+      min-width: 48px;
+      padding: 8px 12px;
+      color: #075e56;
+      background: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0b0f14; color: #f2f5f8; }
+      main a { color: #5eead4; background: #0b0f14; }
+    }
+  </style>`;
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Signed out</title>
+    ${style}
     <script>${embedTopLevelEmbedQueryEscape()}</script>
     <script>${embedBootScript()}</script>
     ${session}

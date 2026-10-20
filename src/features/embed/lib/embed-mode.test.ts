@@ -28,6 +28,9 @@ import {
 } from "./embed-mode";
 import { embedBootScript } from "./embed-boot-script";
 
+import { FRAME_ANCESTORS_CSP } from "@/shared/lib/frame-ancestors";
+import { resolvePeptideOsLoginUrl, resolvePeptideOsSignupUrl } from "@/features/auth/lib/peptideos-signup-url";
+
 const APP = "https://workouts.peptideos.us";
 const POS = "https://peptideos.us";
 
@@ -769,6 +772,66 @@ test("an embedded gated request gets a frameable signed-out document and no X-Fr
   assert.doesNotMatch(html, /postMessage\([^)]*["']\*["']/);
   assert.doesNotMatch(embedSignedOutSessionBootstrap(), /setTimeout/);
   assert.match(readFileSync("proxy.ts", "utf8"), /embedNeedsFallback/);
+});
+
+function contrastRatio(foreground: string, background: string): number {
+  const channel = (hex: string) => {
+    const value = parseInt(hex.slice(1), 16);
+    return [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((part) => {
+      const unit = part / 255;
+      return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+    });
+  };
+  const luminance = (hex: string) => {
+    const [red, green, blue] = channel(hex);
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  };
+  const lighter = Math.max(luminance(foreground), luminance(background));
+  const darker = Math.min(luminance(foreground), luminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+test("signed-out document links are 18px, 48px targets, and themed without changing CSP or hrefs", async () => {
+  const response = embedSignedOutDocumentResponse(POS, APP);
+  const html = await response.text();
+  const style = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? "";
+  const fontSize = Number(style.match(/font-size:\s*(\d+)px/)?.[1]);
+  const minHeight = Number(style.match(/min-height:\s*(\d+)px/)?.[1]);
+  const minWidth = Number(style.match(/min-width:\s*(\d+)px/)?.[1]);
+  assert.ok(fontSize >= 18);
+  assert.ok(minHeight >= 48);
+  assert.ok(minWidth >= 48);
+  assert.match(style, /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)/);
+
+  const darkAt = style.indexOf("@media");
+  const light = style.slice(0, darkAt);
+  const dark = style.slice(darkAt);
+  const color = (block: string, selector: string) => {
+    const body = block.slice(block.indexOf(selector));
+    return {
+      text: body.match(/color:\s*(#[0-9a-fA-F]{6})/)?.[1] ?? "",
+      background: body.match(/background:\s*(#[0-9a-fA-F]{6})/)?.[1] ?? ""
+    };
+  };
+  for (const block of [light, dark]) {
+    const page = color(block, "body");
+    const link = color(block, "main a");
+    assert.ok(contrastRatio(page.text, page.background) >= 4.5);
+    assert.ok(contrastRatio(link.text, link.background) >= 4.5);
+  }
+
+  assert.equal(response.headers.get("content-security-policy"), FRAME_ANCESTORS_CSP);
+  const source = readFileSync("src/features/embed/lib/embed-signed-out-document.ts", "utf8");
+  assert.equal(source.includes("style-src"), false);
+  assert.equal(source.includes("unsafe-inline"), false);
+  const login = resolvePeptideOsLoginUrl(POS, APP);
+  const signup = resolvePeptideOsSignupUrl(POS, APP);
+  const dashboard = new URL("/dashboard", `${POS}/`).toString();
+  const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map((match) => match[1].replace(/&amp;/g, "&"));
+  assert.deepEqual(hrefs, [login, signup, dashboard]);
+  assert.match(source, /href="\$\{login\}"/);
+  assert.match(source, /href="\$\{signup\}"/);
+  assert.match(source, /href="\$\{dashboard\}"/);
 });
 
 test("a framed sign-out fallback posts no messages", async () => {

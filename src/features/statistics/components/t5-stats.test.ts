@@ -445,8 +445,8 @@ test("volume, import, and open-source copy use the locale's own words", () => {
   const fr = read("locales/fr.ts");
   const pt = read("locales/pt.ts");
   assert.match(es, /Volumen = Peso × Repeticiones × Series/);
-  assert.match(fr, /Volume = Poids × répétitions × Séries/);
-  assert.match(pt, /Volume = Peso × repetições × Séries/);
+  assert.match(fr, /Volume = Poids × Répétitions × Séries/);
+  assert.match(pt, /Volume = Peso × Repetições × Séries/);
   assert.match(es, /datos básicos \(repeticiones y peso\)/);
   assert.match(es, /open_source_title: "100% código abierto"/);
   assert.doesNotMatch(es, /Peso × Reps × Series/);

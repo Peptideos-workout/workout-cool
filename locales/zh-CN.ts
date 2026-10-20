@@ -451,6 +451,7 @@ export default {
     conversion_flow_title: "重定向...",
     conversion_flow_message: "成功登录！重定向到结账...",
     redirecting_to_checkout: "重定向到结账",
+    upgrade_to_access_feature: "升级到高级版即可使用此功能",
   },
   breadcrumbs: {
     home: "首页",
@@ -1829,10 +1830,6 @@ export default {
     title: "统计数据",
     page_subtitle: "通过高级分析和个性化洞察，追踪您的健身之旅。",
     select_exercise: "选择练习",
-    active_daily_users: "每日活跃用户",
-    success_rate: "成功率",
-    user_rating: "用户评分",
-
     // Tabs
     tabs: {
       video: "视频",
@@ -1842,6 +1839,11 @@ export default {
     // Chart titles and labels
     weight: "重量",
     volume: "训练量",
+    one_rm_est: "估算1RM",
+    sessions: "训练次数",
+    "set_count#zero": "{count} 组",
+    "set_count#one": "{count} 组",
+    "set_count#other": "{count} 组",
     weight_progression: "重量进展",
     weight_progression_chart: "重量进展图表",
     weekly_volume: "每周训练量",
@@ -1878,6 +1880,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "1RM公式信息",
+    one_rm_formula_tooltip: "{formula} 公式：1RM = 重量 × (1 + (次数 ÷ 30))",
     volume_calculation: "训练量 = 重量 × 次数 × 组数",
     last_updated: "最后更新：{date}",
 
@@ -1887,11 +1890,7 @@ export default {
     // StatisticsPreviewOverlay
     premium_statistics: "高级统计",
     premium_statistics_description: "通过每个练习的高级分析，获得关于您健身之旅的详细见解。",
-    total_volume: "总训练量",
-    pr_increase: "PR 增加",
-    weight_progress: "重量进展",
     upgrade_now: "立即升级",
-    rating: "4.8/5 评分",
     no_ads: "无广告",
     cancel_anytime: "随时取消",
     preview_notice: "这只是预览！👀",

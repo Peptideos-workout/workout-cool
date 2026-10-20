@@ -1,22 +1,15 @@
-import { useTheme } from "next-themes";
-
 export function useChartTheme() {
-  const { theme, systemTheme } = useTheme();
-  const currentTheme = theme === "system" ? systemTheme : theme;
-  const isDark = currentTheme === "dark";
-
   return {
-    isDark,
     colors: {
-      background: isDark ? "#1f2937" : "#ffffff",
-      cardBackground: isDark ? "#374151" : "#ffffff",
-      text: isDark ? "#f9fafb" : "#374151",
-      textSecondary: isDark ? "#d1d5db" : "#6b7280",
-      textMuted: isDark ? "#9ca3af" : "#6b7280",
-      border: isDark ? "#4b5563" : "#e5e7eb",
-      grid: isDark ? "#4b5563" : "#e5e7eb",
-      tooltipBackground: isDark ? "#374151" : "#ffffff",
-      tooltipBorder: isDark ? "#4b5563" : "#e5e7eb",
+      background: "var(--wc-dash-panel)",
+      cardBackground: "var(--wc-dash-card)",
+      text: "var(--wc-dash-text)",
+      textSecondary: "var(--wc-dash-secondary)",
+      textMuted: "var(--wc-dash-secondary)",
+      border: "var(--wc-dash-border)",
+      grid: "var(--wc-dash-border)",
+      tooltipBackground: "var(--wc-dash-panel)",
+      tooltipBorder: "var(--wc-dash-border)",
     },
   };
 }

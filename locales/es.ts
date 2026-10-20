@@ -353,7 +353,7 @@ export default {
         {
           question: "¿Puedo importar datos de otras aplicaciones?",
           answer:
-            "Pronto. Vamos a soportar la importación de datos en CSV para datos básicos (reps & peso). Si estás cambiando de otra aplicación de fitness, nuestro equipo de soporte puede ayudarte a migrar tu historial de entrenamientos.",
+            "Pronto. Vamos a soportar la importación de datos en CSV para datos básicos (repeticiones y peso). Si estás cambiando de otra aplicación de fitness, nuestro equipo de soporte puede ayudarte a migrar tu historial de entrenamientos.",
         },
         {
           question: "¿Funciona la aplicación sin conexión?",
@@ -449,6 +449,7 @@ export default {
     conversion_flow_title: "Redirigiendo...",
     conversion_flow_message: "¡Sesión iniciada exitosamente! Redirigiendo al checkout...",
     redirecting_to_checkout: "Redirigiendo al checkout",
+    upgrade_to_access_feature: "Pásate a Premium para acceder a esta función",
   },
   breadcrumbs: {
     home: "Inicio",
@@ -617,7 +618,7 @@ export default {
     costs_title: "La realidad de los costos",
     costs_description:
       "Actualmente, las donaciones ni siquiera cubren los costos básicos: servidores, autenticación, infraestructura, base de datos, etc.",
-    open_source_title: "100% Open Source",
+    open_source_title: "100% código abierto",
     open_source_description:
       "Esta app es completamente gratuita y de código abierto. No se genera ganancia - es un proyecto de pasión para ayudar a la comunidad y ayudar a las personas a hacer ejercicio.",
     no_ads: "Sin publicidad",
@@ -1894,10 +1895,6 @@ export default {
     title: "Estadísticas",
     page_subtitle: "Sigue tu viaje fitness con análisis avanzados y perspectivas personalizadas.",
     select_exercise: "Seleccionar Ejercicio",
-    active_daily_users: "Usuarios Activos Diarios",
-    success_rate: "Tasa de Éxito",
-    user_rating: "Calificación de Usuario",
-
     // Tabs
     tabs: {
       video: "Video",
@@ -1907,6 +1904,11 @@ export default {
     // Chart titles and labels
     weight: "Peso",
     volume: "Volumen",
+    one_rm_est: "1RM est.",
+    sessions: "Sesiones",
+    "set_count#zero": "{count} series",
+    "set_count#one": "{count} serie",
+    "set_count#other": "{count} series",
     weight_progression: "Progresión de Peso",
     weight_progression_chart: "Gráfico de progresión de peso",
     weekly_volume: "Volumen Semanal",
@@ -1943,7 +1945,8 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Información de fórmula 1RM",
-    volume_calculation: "Volumen = Peso × Reps × Series",
+    one_rm_formula_tooltip: "Fórmula {formula}: 1RM = Peso × (1 + (Repeticiones ÷ 30))",
+    volume_calculation: "Volumen = Peso × Repeticiones × Series",
     last_updated: "Última actualización: {date}",
 
     // Premium
@@ -1952,11 +1955,7 @@ export default {
     // StatisticsPreviewOverlay
     premium_statistics: "Estadísticas Premium",
     premium_statistics_description: "Obtén información detallada sobre tu viaje fitness con análisis avanzados para cada ejercicio.",
-    total_volume: "Volumen Total",
-    pr_increase: "Aumento de PR",
-    weight_progress: "Progreso de Peso",
     upgrade_now: "Actualizar Ahora",
-    rating: "Calificación 4.8/5",
     no_ads: "Sin anuncios",
     cancel_anytime: "Cancelar en cualquier momento",
     preview_notice: "¡Esto es solo una vista previa! 👀",

@@ -89,7 +89,11 @@ export function BottomNavigation() {
   return (
     <nav
       aria-label={t("bottom_navigation.label")}
-      className="relative bg-white/90 dark:bg-[color-mix(in_srgb,var(--wc-dash-card)_90%,transparent)] backdrop-blur-xl border-t border-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)] dark:border-slate-700/50 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-40"
+      className={
+        "relative shrink-0 border-t border-[color-mix(in_srgb,var(--wc-dash-accent)_15%,transparent)] bg-white/90 backdrop-blur-xl " +
+        "dark:border-slate-700/50 dark:bg-[color-mix(in_srgb,var(--wc-dash-card)_90%,transparent)] " +
+        "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:pb-[env(safe-area-inset-bottom)]"
+      }
       data-wc-chrome="nav"
     >
       {/* Subtle background gradient */}
@@ -110,6 +114,7 @@ export function BottomNavigation() {
 
             return (
               <Link
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 py-1",
                   "lg:px-0 rounded-2xl transition-all duration-300 ease-out",

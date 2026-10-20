@@ -5,7 +5,6 @@ import { useI18n } from "locales/client";
 
 import { cn } from "@/shared/lib/utils";
 import { StatisticsTimeframe } from "@/shared/constants/statistics";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TimeframeSelectorProps {
   selected: StatisticsTimeframe;
@@ -20,21 +19,39 @@ const TIMEFRAME_OPTIONS = [
   { value: "1year" as StatisticsTimeframe, labelKey: "statistics.timeframes.1year" },
 ];
 
+const tile =
+  "inline-flex min-h-12 items-center justify-center rounded-xl border px-3 text-lg font-semibold " +
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--wc-dash-link)]";
+
 export function TimeframeSelector({ selected, onSelect, className }: TimeframeSelectorProps) {
   const t = useI18n();
 
   return (
-    <Select onValueChange={(value) => onSelect(value as StatisticsTimeframe)} value={selected}>
-      <SelectTrigger className={cn("w-32", className)}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {TIMEFRAME_OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+    <div aria-label={t("statistics.timeframe")} className={cn("flex flex-wrap gap-2", className)} role="group">
+      {TIMEFRAME_OPTIONS.map((option) => {
+        const isSelected = selected === option.value;
+        return (
+          <button
+            aria-pressed={isSelected}
+            className={cn(
+              tile,
+              isSelected
+                ? "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]"
+                : "border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] text-[var(--wc-dash-text)]",
+            )}
+            key={option.value}
+            onClick={() => onSelect(option.value)}
+            type="button"
+          >
+            {isSelected ? (
+              <span aria-hidden="true" className="mr-2">
+                ✓
+              </span>
+            ) : null}
             {t(option.labelKey as keyof typeof t)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+          </button>
+        );
+      })}
+    </div>
   );
 }

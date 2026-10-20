@@ -208,6 +208,8 @@ test("embed auth fallback opens PeptideOS at the top and uses the exact back lab
   }
   assert.match(html, />Log in</);
   assert.match(html, />Sign up</);
+  assert.match(html.match(/<a[^>]*>Log in<\/a>/)?.[0] ?? "", /!min-w-12/);
+  assert.match(html.match(/<a[^>]*>Sign up<\/a>/)?.[0] ?? "", /!min-w-12/);
   assert.match(html, /data-wc-embed-fallback/);
 });
 

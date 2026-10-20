@@ -186,8 +186,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
+    <div className="relative flex flex-col">
+      <div className="pb-16">
         <Breadcrumbs items={breadcrumbItems} />
         {(env.NEXT_PUBLIC_TOP_PROGRAM_DETAILS_BANNER_AD_SLOT || env.NEXT_PUBLIC_EZOIC_TOP_PROGRAM_DETAILS_PLACEMENT_ID) && (
           <HorizontalTopBanner
@@ -512,7 +512,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       return (
                         <div
                           className={`
-                            flex min-h-12 cursor-pointer items-center gap-4 rounded-xl border-2
+                            flex min-h-12 min-w-0 cursor-pointer items-center gap-4 rounded-xl border-2
                             bg-[var(--wc-dash-card)] p-4 text-[var(--wc-dash-text)] transition-all
                             duration-200 ease-in-out ${
                               isCompleted
@@ -556,11 +556,13 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                           </div>
 
                           {/* Session Info */}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
                               <h4
                                 className={`
-                                  text-lg font-bold ${isCompleted ? "text-[var(--wc-dash-accent)]" : "text-[var(--wc-dash-text)]"}`}
+                                  min-w-0 break-words text-lg font-bold ${
+                                    isCompleted ? "text-[var(--wc-dash-accent)]" : "text-[var(--wc-dash-text)]"
+                                  }`}
                               >
                                 {sessionName}
                               </h4>
@@ -605,7 +607,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                           </div>
 
                           {/* Status Icon */}
-                          <div className="flex h-12 w-12 items-center justify-center">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center">
                             {isCompleted ? (
                               <CheckCircle2 className="h-6 w-6 text-[var(--wc-dash-accent)]" size={24} />
                             ) : (

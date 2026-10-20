@@ -65,7 +65,12 @@ export function FavoriteExerciseButton({ exerciseId, className }: FavoriteExerci
   }
 
   return (
-    <StarButton className={cn("mb-2 max-w-full", className)} isActive={isFavorite} isLoading={isLoading} onClick={handleToggleFavorite}>
+    <StarButton
+      className={cn("mb-2 max-w-full !min-h-12 !border-[var(--wc-dash-border)] !bg-[var(--wc-dash-card)]", className)}
+      isActive={isFavorite}
+      isLoading={isLoading}
+      onClick={handleToggleFavorite}
+    >
       <span className="min-w-0 text-lg text-[var(--wc-dash-secondary)]">{text}</span>
     </StarButton>
   );

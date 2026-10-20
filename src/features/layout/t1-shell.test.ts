@@ -249,8 +249,9 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(globals, /--wc-nav-h:\s*calc\(var\(--wc-nav-rows\) \* var\(--wc-nav-row-h\)\)/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-rows:\s*2/);
   assert.match(globals, /@media \(min-width: 448px\) \{[\s\S]*--wc-nav-row-h:\s*67px/);
-  assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\]/);
-  assert.match(main, /max-sm:pb-\[var\(--wc-nav-h\)\][\s\S]*data-wc-shell=""/);
+  assert.match(main, /max-sm:min-h-screen/);
+  assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(main, /max-sm:pb-\[calc\(var\(--wc-nav-h\)\+25px\+env\(safe-area-inset-bottom\)\)\][\s\S]*data-wc-shell=""/);
   const mainMarker = main.indexOf("data-wc-main=\"\"");
   assert.ok(mainMarker > 0);
   assert.doesNotMatch(main.slice(mainMarker - 180, mainMarker), /pb-\[var\(--wc-nav-h\)\]/);
@@ -259,24 +260,25 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.doesNotMatch(version, /z-50/);
   assert.match(version, /relative z-20 w-fit self-start/);
   assert.doesNotMatch(version, /w-full/);
+  assert.doesNotMatch(version, /left-1\/2/);
   assert.doesNotMatch(version, /sm:left-4/);
   assert.doesNotMatch(version, /sm:bottom-/);
   assert.doesNotMatch(version, /max-sm:bottom-/);
   assert.doesNotMatch(version, /\babsolute\b/);
   assert.match(main, /sm:pb-12/);
   assert.doesNotMatch(version, /\bfixed\b/);
-  assert.match(footer, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(footer, /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(footer, /disabled:pointer-events-auto/);
   assert.doesNotMatch(footer, /max-sm:bottom-14/);
   assert.match(
     read("src/features/workout-session/ui/workout-session-timer.tsx"),
-    new RegExp(
-      "fixed bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+96px\\)\\] left-1\\/2 z-50 mb-0 " +
-        "max-w-\\[calc\\(100vw-16px\\)\\] -translate-x-1\\/2 sm:bottom-\\[320px\\]",
-    ),
+    /max-sm:bottom-\[calc\(var\(--wc-nav-h\)\+env\(safe-area-inset-bottom\)\+96px\)\] max-sm:left-1\/2 max-sm:-translate-x-1\/2 max-sm:z-50 max-sm:mb-0 sm:fixed sm:right-6 sm:bottom-\[320px\] sm:left-auto sm:translate-x-0 sm:z-50 sm:mb-0/,
   );
-  assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-20/);
+  assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-28/);
+  assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /\+33px/);
   assert.doesNotMatch(main, /max-sm:pb-36/);
+  assert.doesNotMatch(main, /134px/);
+  assert.doesNotMatch(version, /136px/);
   assert.doesNotMatch(version, /bottom-36/);
   for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {
     assert.match(read(`locales/${locale}.ts`), /label:\s*"/);

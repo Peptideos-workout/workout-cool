@@ -1917,9 +1917,6 @@ export default {
     title: "Statistiques",
     page_subtitle: "Suivez votre parcours fitness avec des analyses avancées et des informations personnalisées.",
     select_exercise: "Sélectionner un exercice",
-    active_daily_users: "Utilisateurs actifs quotidiens",
-    success_rate: "Taux de réussite",
-    user_rating: "Note des utilisateurs",
 
     // Tabs
     tabs: {
@@ -1930,6 +1927,11 @@ export default {
     // Chart titles and labels
     weight: "Poids",
     volume: "Volume",
+    one_rm_est: "1RM est.",
+    sessions: "Séances",
+    "set_count#zero": "{count} séries",
+    "set_count#one": "{count} série",
+    "set_count#other": "{count} séries",
     weight_progression: "Progression du Poids",
     weight_progression_chart: "Graphique de progression du poids",
     weekly_volume: "Volume Hebdomadaire",
@@ -1966,7 +1968,8 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Informations sur la formule 1RM",
-    volume_calculation: "Volume = Poids × Reps × Séries",
+    one_rm_formula_tooltip: "Formule {formula} : 1RM = Poids × (1 + (Répétitions ÷ 30))",
+    volume_calculation: "Volume = Poids × Répétitions × Séries",
     last_updated: "Dernière mise à jour : {date}",
 
     // Premium
@@ -1976,11 +1979,7 @@ export default {
     premium_statistics: "Statistiques Premium",
     premium_statistics_description:
       "Obtenez des informations détaillées sur votre parcours fitness avec des analyses avancées pour chaque exercice.",
-    total_volume: "Volume Total",
-    pr_increase: "Augmentation PR",
-    weight_progress: "Progression du Poids",
     upgrade_now: "Mettre à Niveau Maintenant",
-    rating: "Note 4.8/5",
     no_ads: "Pas de publicités",
     cancel_anytime: "Annuler à tout moment",
     preview_notice: "Ceci n'est qu'un aperçu ! 👀",

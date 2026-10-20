@@ -168,7 +168,7 @@ export function WorkoutSessionSets({
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-3 pb-8 sm:px-6">
+    <div className="mx-auto w-full max-w-3xl px-3 max-sm:pb-[calc(var(--wc-nav-h)+168px)] sm:px-6 sm:pb-40">
       <div className="mb-6">
         <PremiumUpsellAlert />
       </div>
@@ -319,7 +319,7 @@ export function WorkoutSessionSets({
         })}
       </ol>
       {isWorkoutActive && (
-        <div className="flex justify-center mt-8 mb-24">
+        <div className="flex justify-center mt-8 mb-4">
           <Button
             aria-label={t("workout_builder.session.finish_session")}
             className={`${accentButton} px-8 font-bold`}

@@ -49,7 +49,7 @@ export function ExerciseCharts({ timeframe, exerciseId, unit = "kg", className }
           {/* Weight Progression Chart */}
           <div className="">
             {weightProgressionQuery.isLoading ? (
-              <div className="flex h-[300px] items-center justify-center rounded-lg bg-white shadow-sm">
+              <div className="flex h-[300px] items-center justify-center rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)]">
                 <Loader />
               </div>
             ) : weightProgressionQuery.isError ? (
@@ -64,7 +64,7 @@ export function ExerciseCharts({ timeframe, exerciseId, unit = "kg", className }
           {/* One Rep Max Chart */}
           <div>
             {oneRepMaxQuery.isLoading ? (
-              <div className="flex h-[300px] items-center justify-center rounded-lg bg-white shadow-sm">
+              <div className="flex h-[300px] items-center justify-center rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)]">
                 <Loader />
               </div>
             ) : oneRepMaxQuery.isError ? (
@@ -86,7 +86,7 @@ export function ExerciseCharts({ timeframe, exerciseId, unit = "kg", className }
           {/* Volume Chart */}
           <div>
             {volumeQuery.isLoading ? (
-              <div className="flex h-[300px] items-center justify-center rounded-lg bg-white shadow-sm">
+              <div className="flex h-[300px] items-center justify-center rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)]">
                 <Loader />
               </div>
             ) : volumeQuery.isError ? (
@@ -100,7 +100,7 @@ export function ExerciseCharts({ timeframe, exerciseId, unit = "kg", className }
         </div>
 
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-lg text-[var(--wc-dash-secondary)]">
           {t("statistics.last_updated", {
             date: formatDate(new Date(), locale),
           })}

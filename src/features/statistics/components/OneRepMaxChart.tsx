@@ -75,8 +75,8 @@ export function OneRepMaxChart({
             color: colors.text,
           }}
         >
-          <p className="font-medium">{label}</p>
-          <p className="text-purple-600">
+          <p className="text-lg font-medium">{label}</p>
+          <p className="text-lg text-[var(--wc-dash-accent)]">
             1RM: {payload[0].value.toFixed(1)} {unit}
           </p>
         </div>
@@ -88,48 +88,54 @@ export function OneRepMaxChart({
   return (
     <div
       aria-label={t("statistics.one_rep_max_chart")}
-      className={cn("rounded-lg p-4 shadow-sm relative border border-gray-400 dark:border-gray-600", className)}
+      className={cn("relative rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-4", className)}
       role="img"
       style={{ backgroundColor: colors.cardBackground }}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="text-lg font-semibold" style={{ color: colors.text }}>
           {t("statistics.estimated_1rm")}
         </h3>
-        <div className="tooltip tooltip-left z-50" data-tip={`${formula} Formula: 1RM = Weight × (1 + (Reps ÷ 30))`}>
-          <button aria-label={t("statistics.1rm_formula_info")} className="rounded-full p-1 hover:bg-gray-100 transition-colors">
-            <Info className="h-4 w-4" style={{ color: colors.textSecondary }} />
+        <div className="tooltip tooltip-left z-50" data-tip={t("statistics.one_rm_formula_tooltip", { formula })}>
+          <button
+            aria-label={t("statistics.1rm_formula_info")}
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-full transition-colors"
+          >
+            <Info className="h-5 w-5" style={{ color: colors.textSecondary }} />
           </button>
         </div>
       </div>
 
       <div style={{ opacity: hasData ? 1 : 0.2 }}>
         <ResponsiveContainer height={height} width="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: 28, bottom: 8 }}>
             <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" />
             <XAxis
               axisLine={{ stroke: colors.border }}
               dataKey="formattedDate"
-              tick={{ fontSize: 12, fill: colors.textMuted }}
+              minTickGap={48}
+              tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
             />
             <YAxis
               axisLine={{ stroke: colors.border }}
               label={{
-                value: `1RM (${unit})`,
+                value: `${t("statistics.one_rm_est")} (${unit})`,
                 angle: -90,
                 position: "insideLeft",
-                style: { textAnchor: "middle", fill: colors.text },
+                offset: 16,
+                style: { textAnchor: "middle", fill: colors.text, fontSize: 18 },
               }}
-              tick={{ fontSize: 12, fill: colors.textMuted }}
+              tick={{ fontSize: 18, fill: colors.textMuted }}
               tickLine={{ stroke: colors.border }}
+              width={104}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
-              activeDot={{ r: 6, fill: "#8B5CF6" }}
+              activeDot={{ r: 6, fill: "var(--wc-dash-accent)" }}
               dataKey="estimatedOneRepMax"
-              dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 4 }}
-              stroke="#8B5CF6"
+              dot={{ fill: "var(--wc-dash-accent)", strokeWidth: 2, r: 4 }}
+              stroke="var(--wc-dash-accent)"
               strokeWidth={2}
               type="monotone"
             />
@@ -143,7 +149,7 @@ export function OneRepMaxChart({
             <p className="text-lg font-semibold" style={{ color: colors.text }}>
               {t("statistics.no_1rm_data")}
             </p>
-            <p className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
+            <p className="mt-2 text-lg" style={{ color: colors.textSecondary }}>
               {t("statistics.complete_sets_with_weight")}
             </p>
           </div>

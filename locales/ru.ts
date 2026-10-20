@@ -455,6 +455,7 @@ export default {
     conversion_flow_title: "Перенаправление...",
     conversion_flow_message: "Успешный вход! Перенаправление на оформление заказа...",
     redirecting_to_checkout: "Перенаправление на оформление заказа",
+    upgrade_to_access_feature: "Перейдите на Премиум, чтобы получить доступ к этой функции",
   },
   bottom_navigation: {
     statistics: "Статистика",
@@ -1889,10 +1890,6 @@ export default {
     title: "Статистика",
     page_subtitle: "Отслеживайте свой фитнес-путь с помощью расширенной аналитики и персонализированных рекомендаций.",
     select_exercise: "Выбрать Упражнение",
-    active_daily_users: "Активные Ежедневные Пользователи",
-    success_rate: "Показатель Успеха",
-    user_rating: "Рейтинг Пользователей",
-
     // Tabs
     tabs: {
       video: "Видео",
@@ -1902,6 +1899,11 @@ export default {
     // Chart titles and labels
     weight: "Вес",
     volume: "Объем",
+    one_rm_est: "Оценка 1ПМ",
+    sessions: "Сессии",
+    "set_count#zero": "{count} подходов",
+    "set_count#one": "{count} подход",
+    "set_count#other": "{count} подходов",
     weight_progression: "Прогресс Веса",
     weight_progression_chart: "График прогресса веса",
     weekly_volume: "Недельный Объем",
@@ -1938,6 +1940,7 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Информация о формуле 1RM",
+    one_rm_formula_tooltip: "Формула {formula}: 1RM = Вес × (1 + (Повторения ÷ 30))",
     volume_calculation: "Объем = Вес × Повторы × Подходы",
     last_updated: "Последнее обновление: {date}",
 
@@ -1947,11 +1950,7 @@ export default {
     // StatisticsPreviewOverlay
     premium_statistics: "Премиум Статистика",
     premium_statistics_description: "Получите подробную информацию о вашем фитнес-пути с расширенной аналитикой для каждого упражнения.",
-    total_volume: "Общий Объем",
-    pr_increase: "Увеличение ПР",
-    weight_progress: "Прогресс Веса",
     upgrade_now: "Обновить Сейчас",
-    rating: "Рейтинг 4.8/5",
     no_ads: "Без рекламы",
     cancel_anytime: "Отменить в любое время",
     preview_notice: "Это всего лишь предварительный просмотр! 👀",

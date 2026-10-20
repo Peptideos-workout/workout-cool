@@ -451,6 +451,7 @@ export default {
     conversion_flow_title: "A redirecionar...",
     conversion_flow_message: "Sessão iniciada com sucesso! A redirecionar para o checkout...",
     redirecting_to_checkout: "A redirecionar para o checkout",
+    upgrade_to_access_feature: "Atualize para Premium para aceder a esta funcionalidade",
   },
   breadcrumbs: {
     home: "Início",
@@ -1895,10 +1896,6 @@ export default {
     title: "Estatísticas",
     page_subtitle: "Acompanhe sua jornada fitness com análises avançadas e insights personalizados.",
     select_exercise: "Selecionar Exercício",
-    active_daily_users: "Usuários Ativos Diários",
-    success_rate: "Taxa de Sucesso",
-    user_rating: "Avaliação do Usuário",
-
     // Tabs
     tabs: {
       video: "Vídeo",
@@ -1908,6 +1905,11 @@ export default {
     // Chart titles and labels
     weight: "Peso",
     volume: "Volume",
+    one_rm_est: "1RM est.",
+    sessions: "Sessões",
+    "set_count#zero": "{count} séries",
+    "set_count#one": "{count} série",
+    "set_count#other": "{count} séries",
     weight_progression: "Progressão de Peso",
     weight_progression_chart: "Gráfico de progressão de peso",
     weekly_volume: "Volume Semanal",
@@ -1944,7 +1946,8 @@ export default {
 
     // Info and tooltips
     "1rm_formula_info": "Informações da fórmula 1RM",
-    volume_calculation: "Volume = Peso × Reps × Séries",
+    one_rm_formula_tooltip: "Fórmula {formula}: 1RM = Peso × (1 + (Repetições ÷ 30))",
+    volume_calculation: "Volume = Peso × Repetições × Séries",
     last_updated: "Última atualização: {date}",
 
     // Premium
@@ -1953,11 +1956,7 @@ export default {
     // StatisticsPreviewOverlay
     premium_statistics: "Estatísticas Premium",
     premium_statistics_description: "Obtenha insights detalhados sobre sua jornada fitness com análises avançadas para cada exercício.",
-    total_volume: "Volume Total",
-    pr_increase: "Aumento de PR",
-    weight_progress: "Progresso de Peso",
     upgrade_now: "Atualizar Agora",
-    rating: "Avaliação 4.8/5",
     no_ads: "Sem anúncios",
     cancel_anytime: "Cancelar a qualquer momento",
     preview_notice: "Isto é apenas uma pré-visualização! 👀",

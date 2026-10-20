@@ -20,6 +20,7 @@ interface EmbedFlowConfirmProps {
   onConfirm: () => void;
   onCancel: () => void;
   marker?: "quit" | "delete";
+  confirmDisabled?: boolean;
   className?: string;
 }
 
@@ -31,19 +32,31 @@ export function EmbedFlowConfirm({
   onConfirm,
   onCancel,
   marker,
+  confirmDisabled = false,
   className,
 }: EmbedFlowConfirmProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const onCancelRef = useRef(onCancel);
   const titleId = useId();
+  const descriptionId = useId();
   onCancelRef.current = onCancel;
 
+  const restoreTrigger = () => {
+    const trigger = triggerRef.current;
+    if (trigger?.isConnected) trigger.focus();
+  };
+
   useEffect(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active !== document.body) triggerRef.current = active;
     cardRef.current?.scrollIntoView({ block: "center" });
     cancelRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancelRef.current();
+      if (event.key !== "Escape") return;
+      restoreTrigger();
+      onCancelRef.current();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -51,6 +64,7 @@ export function EmbedFlowConfirm({
 
   return (
     <div
+      aria-describedby={descriptionId}
       aria-labelledby={titleId}
       className={cn("mb-4 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4", className)}
       data-wc-delete-confirm={marker === "delete" ? "" : undefined}
@@ -62,12 +76,23 @@ export function EmbedFlowConfirm({
       <h3 className="text-lg font-bold text-[var(--wc-dash-text)]" id={titleId}>
         {title}
       </h3>
-      <p className="mt-3 text-lg leading-relaxed text-[var(--wc-dash-secondary)]">{body}</p>
+      <p className="mt-3 text-lg leading-relaxed text-[var(--wc-dash-secondary)]" id={descriptionId}>
+        {body}
+      </p>
       <div className="mt-4 space-y-3">
-        <Button className={embedQuitButtonClass} onClick={onConfirm} type="button">
+        <Button className={embedQuitButtonClass} disabled={confirmDisabled} onClick={onConfirm} type="button">
           {confirmLabel}
         </Button>
-        <Button className={embedKeepButtonClass} onClick={onCancel} ref={cancelRef} type="button" variant="ghost">
+        <Button
+          className={embedKeepButtonClass}
+          onClick={() => {
+            restoreTrigger();
+            onCancel();
+          }}
+          ref={cancelRef}
+          type="button"
+          variant="ghost"
+        >
           {cancelLabel}
         </Button>
       </div>

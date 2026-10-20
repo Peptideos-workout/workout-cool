@@ -2,6 +2,8 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
+import { quitProgramSession } from "../../programs/lib/quit-program-session";
+
 function read(path: string) {
   return readFileSync(path, "utf8");
 }
@@ -121,6 +123,7 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   assert.match(sets, /\{t\("workout_builder\.exercise\.watch_video"\)\}/);
   assert.match(sets, /!min-h-12 !border !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
   assert.match(sets, /!text-lg !text-\[var\(--wc-dash-text\)\]/);
+  // prettier-ignore
   const quitClass =
     "className=\"max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(header, new RegExp(quitClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -161,6 +164,37 @@ test("session contrast pairs meet AA", () => {
     assert.ok(contrast(light[foreground], light[background]) >= 4.5, `light ${foreground} on ${background}`);
     assert.ok(contrast(dark[foreground], dark[background]) >= 4.5, `dark ${foreground} on ${background}`);
   }
+});
+
+test("program quit navigates only inside embed", () => {
+  const run = (isEmbed: boolean) => {
+    const pushes: string[] = [];
+    let quitCalls = 0;
+    let started = true;
+    quitProgramSession({
+      isEmbed,
+      quitWorkout: () => {
+        quitCalls += 1;
+      },
+      setHasStartedWorkout: (value) => {
+        started = value;
+      },
+      push: (href) => {
+        pushes.push(href);
+      },
+    });
+    return { quitCalls, started, pushes };
+  };
+
+  const plain = run(false);
+  assert.equal(plain.quitCalls, 1);
+  assert.equal(plain.started, false);
+  assert.deepEqual(plain.pushes, []);
+
+  const embed = run(true);
+  assert.equal(embed.quitCalls, 1);
+  assert.equal(embed.started, false);
+  assert.deepEqual(embed.pushes, ["/?embed=1"]);
 });
 
 test("session handlers, disabled expressions, conditionals, and copy stay locked with regex matches", () => {
@@ -279,7 +313,10 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
   assert.match(sets, /px-3 max-sm:pb-\[calc\(var\(--wc-nav-h\)\+168px\)\] sm:px-6 sm:pb-40/);
   assert.doesNotMatch(sets, /\[html\[data-wc-embed='1'\]_&\]:pb-8/);
-  assert.match(header, /<h2 className="mb-3 text-2xl font-bold text-\[var\(--wc-dash-text\)\]">\{t\("workout_builder\.session\.workout_in_progress"\)\}<\/h2>/);
+  assert.match(
+    header,
+    /<h2 className="mb-3 text-2xl font-bold text-\[var\(--wc-dash-text\)\]">\{t\("workout_builder\.session\.workout_in_progress"\)\}<\/h2>/,
+  );
   assert.match(sets, /\{t\("workout_builder\.session\.next_exercise"\)\}\n\s+<ArrowRight className="h-5 w-5" \/>/);
   assert.doesNotMatch(sets, /<ArrowRight className="h-5 w-5" \/>\n\s+\{t\("workout_builder\.session\.next_exercise"\)\}/);
   assert.match(row, /\+ \{t\("workout_builder\.session\.add_row"\)\}/);
@@ -291,7 +328,10 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(sets, /min-w-0 flex-1 !whitespace-normal/);
   assert.match(sets, /details\?\.fullVideoUrl \? \([\s\S]*workout_builder\.exercise\.watch_video/);
   assert.match(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /text-lg text-\[var\(--wc-dash-secondary\)\]/);
-  assert.match(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /!min-h-12 !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-card\)\]/);
+  assert.match(
+    read("src/features/workout-builder/ui/favorite-exercise-button.tsx"),
+    /!min-h-12 !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-card\)\]/,
+  );
   assert.doesNotMatch(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /text-sm text-slate-500/);
   assert.match(sets, /aria-label=\{t\("workout_builder\.session\.add_set"\)\}/);
   assert.match(sets, /aria-label=\{t\("workout_builder\.session\.next_exercise"\)\}/);
@@ -321,7 +361,8 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(read("src/features/workout-builder/model/workout-builder.store.ts"), /setStep: \(step\) => set\(\{ currentStep: step \}\)/);
   assert.doesNotMatch(read("src/features/workout-builder/model/workout-builder.store.ts"), /workout-session\.store/);
   const program = read("app/[locale]/(app)/programs/[slug]/session/[sessionSlug]/ProgramSessionClient.tsx");
-  assert.match(program, /router\.push\(embed \? "\/\?embed=1" : "\/"\)/);
+  assert.match(program, /quitProgramSession\(\{/);
+  assert.doesNotMatch(program, /router\.push\(embed \? "\/\?embed=1" : "\/"\)/);
   assert.doesNotMatch(program, /window\.top|window\.confirm/);
   const list = read("src/features/workout-session/ui/workout-session-list.tsx");
   assert.match(list, /if \(isEmbed\)/);

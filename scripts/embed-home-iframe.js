@@ -26,7 +26,7 @@ const PLACEHOLDER_ENV = {
   NEXT_PUBLIC_APP_URL: "https://workouts.example.test",
   BETTER_AUTH_SECRET: "test-better-auth-secret",
   GOOGLE_CLIENT_ID: "test-google-client-id",
-  GOOGLE_CLIENT_SECRET: "test-google-client-secret"
+  GOOGLE_CLIENT_SECRET: "test-google-client-secret",
 };
 
 function unusedPort() {
@@ -72,7 +72,7 @@ function startParent(port, slashSrc, plainSrc) {
       `<!doctype html><html><head><meta charset="utf-8"><title>embed parent</title></head><body>` +
         `<iframe id="slash" name="slash" title="slash" src="${slashSrc}"></iframe>` +
         `<iframe id="plain" name="plain" title="plain" src="${plainSrc}"></iframe>` +
-        `</body></html>`
+        `</body></html>`,
     );
   });
   return new Promise((resolve) => {
@@ -89,7 +89,7 @@ function startForwarder(port, upstreamPort, parentOrigin, hops) {
         port: upstreamPort,
         path: incoming.url,
         method: incoming.method,
-        headers
+        headers,
       },
       (upstreamResponse) => {
         const chunks = [];
@@ -100,10 +100,7 @@ function startForwarder(port, upstreamPort, parentOrigin, hops) {
           const originalCsp = headersOut["content-security-policy"];
           const csp = Array.isArray(originalCsp) ? originalCsp.join("; ") : originalCsp || "";
           if (csp) {
-            headersOut["content-security-policy"] = csp.replace(
-              "frame-ancestors 'self'",
-              `frame-ancestors 'self' ${parentOrigin}`
-            );
+            headersOut["content-security-policy"] = csp.replace("frame-ancestors 'self'", `frame-ancestors 'self' ${parentOrigin}`);
           }
           delete headersOut["transfer-encoding"];
           headersOut["content-length"] = String(body.length);
@@ -115,12 +112,12 @@ function startForwarder(port, upstreamPort, parentOrigin, hops) {
             cookie: incoming.headers.cookie || "",
             status: upstreamResponse.statusCode || 0,
             location: upstreamResponse.headers.location || "",
-            csp
+            csp,
           });
           outgoing.writeHead(upstreamResponse.statusCode || 502, headersOut);
           outgoing.end(body);
         });
-      }
+      },
     );
     upstream.on("error", (error) => {
       outgoing.writeHead(502, { "content-type": "text/plain" });
@@ -199,7 +196,7 @@ async function frameState(frame) {
     fallback: Boolean(document.querySelector("[data-wc-embed-fallback]")),
     shell: Boolean(document.querySelector("[data-wc-shell]")),
     steps: Boolean(document.querySelector("[data-wc-steps]")),
-    equipment: Boolean(document.querySelector("[data-wc-equipment-bar]"))
+    equipment: Boolean(document.querySelector("[data-wc-equipment-bar]")),
   }));
 }
 
@@ -232,7 +229,7 @@ function builtStyles() {
       ? readdirSync(dir)
           .filter((name) => name.endsWith(".css"))
           .map((name) => join(dir, name))
-      : []
+      : [],
   );
   if (!files.length) throw new Error("production CSS is missing. Run pnpm build first.");
   return files.map((file) => readFileSync(file, "utf8")).join("\n");
@@ -254,11 +251,15 @@ function bundleQuitHarness(dir) {
     "workout_builder.session.delete_workout_title": localeValue("delete_workout_title"),
     "workout_builder.confirm_delete": localeValue("confirm_delete"),
     "workout_builder.session.delete": localeValue("delete"),
-    "commons.cancel": localeValue("cancel")
+    "commons.cancel": localeValue("cancel"),
   };
   const i18nStub = join(dir, "i18n-stub.js");
   const builderStub = join(dir, "builder-stub.ts");
   const prismaStub = join(dir, "prisma-stub.js");
+  const sessionsStub = join(dir, "sessions-stub.js");
+  const serviceStub = join(dir, "service-stub.js");
+  const navigationStub = join(dir, "navigation-stub.js");
+  const linkStub = join(dir, "link-stub.jsx");
   const entry = join(dir, "harness.tsx");
   writeFileSync(
     i18nStub,
@@ -269,7 +270,7 @@ export function useI18n() {
 export function useCurrentLocale() {
   return "en";
 }
-`
+`,
   );
   writeFileSync(
     builderStub,
@@ -278,14 +279,64 @@ export const useWorkoutBuilderStore = create((set) => ({
   currentStep: 1,
   setStep: (step) => set({ currentStep: step })
 }));
-`
+`,
   );
   writeFileSync(
     prismaStub,
     `export const ExerciseAttributeValueEnum = {};
 export const ExerciseAttributeNameEnum = {};
 export function PrismaClient() {}
-`
+`,
+  );
+  writeFileSync(
+    sessionsStub,
+    `export function useWorkoutSessions() {
+  return {
+    data: [{
+      id: "hist-1",
+      status: "completed",
+      startedAt: "2026-01-02T15:04:00.000Z",
+      endedAt: "2026-01-02T16:00:00.000Z",
+      muscles: [],
+      exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
+    }],
+    refetch() {}
+  };
+}
+`,
+  );
+  writeFileSync(
+    serviceStub,
+    `import { workoutSessionLocal } from "@/shared/lib/workout-session/workout-session.local";
+export const useWorkoutSessionService = () => ({
+  getAll: async () => workoutSessionLocal.getAll(),
+  add: async (session) => workoutSessionLocal.add(session),
+  update: async () => {},
+  complete: async () => {},
+  remove: async (id) => {
+    window.__wcRemoveCalls = (window.__wcRemoveCalls || 0) + 1;
+    workoutSessionLocal.remove(id);
+  }
+});
+`,
+  );
+  writeFileSync(
+    navigationStub,
+    `export function useRouter() {
+  return { push() {}, replace() {}, back() {}, prefetch() {} };
+}
+export function usePathname() { return "/"; }
+export function useSearchParams() { return new URLSearchParams(); }
+`,
+  );
+  writeFileSync(
+    linkStub,
+    `import { forwardRef } from "react";
+const Link = forwardRef(function Link({ children, href, prefetch, ...props }, ref) {
+  return <a href={typeof href === "string" ? href : "#"} ref={ref} {...props}>{children}</a>;
+});
+export default Link;
+`,
   );
   writeFileSync(
     entry,
@@ -293,6 +344,7 @@ export function PrismaClient() {}
 import { createRoot } from "react-dom/client";
 import { useWorkoutSessionStore } from "@/features/workout-session/model/workout-session.store";
 import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
+import { WorkoutSessionList } from "@/features/workout-session/ui/workout-session-list";
 import { WorkoutSessionHeader } from "@/features/workout-session/ui/workout-session-header";
 import { EmbedFlowConfirm } from "@/shared/ui/embed-flow-confirm";
 import { useI18n } from "locales/client";
@@ -313,6 +365,7 @@ function App() {
     const observer = new ResizeObserver(post);
     observer.observe(document.documentElement);
     document.documentElement.setAttribute("data-wc-ready", "1");
+    window.__wcSessionStore = useWorkoutSessionStore;
     window.__wcMarkProgress = () => useWorkoutSessionStore.getState().finishSet(0, 0);
     return () => observer.disconnect();
   }, [isWorkoutActive, exercisesCompleted]);
@@ -367,9 +420,34 @@ function DeletePreview() {
   );
 }
 
+function HistoryHarness() {
+  useEffect(() => {
+    const post = () => {
+      window.parent.postMessage({ type: "wc:height", height: document.documentElement.scrollHeight }, "*");
+    };
+    post();
+    const observer = new ResizeObserver(post);
+    observer.observe(document.documentElement);
+    window.__wcRemoveCalls = 0;
+    const timer = setTimeout(() => document.documentElement.setAttribute("data-wc-ready", "1"), 0);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
+  return (
+    <div>
+      <WorkoutSessionList />
+      <div style={{ height: 2400 }} />
+    </div>
+  );
+}
+
 const card = new URLSearchParams(location.search).get("card");
-createRoot(document.getElementById("root")).render(card === "delete" ? <DeletePreview /> : <App />);
-`
+createRoot(document.getElementById("root")).render(
+  card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : <App />
+);
+`,
   );
 
   const esbuild = loadEsbuild();
@@ -391,6 +469,12 @@ createRoot(document.getElementById("root")).render(card === "delete" ? <DeletePr
         setup(build) {
           build.onResolve({ filter: /^locales\/client$/ }, () => ({ path: i18nStub }));
           build.onResolve({ filter: /^@prisma\/client$/ }, () => ({ path: prismaStub }));
+          build.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: navigationStub }));
+          build.onResolve({ filter: /^next\/link$/ }, () => ({ path: linkStub }));
+          build.onResolve({ filter: /^@\/features\/workout-session\/model\/use-workout-sessions$/ }, () => ({ path: sessionsStub }));
+          build.onResolve({ filter: /^@\/shared\/lib\/workout-session\/use-workout-session\.service$/ }, () => ({
+            path: serviceStub,
+          }));
           build.onResolve({ filter: /^server-only$/ }, () => ({ path: prismaStub }));
           build.onResolve({ filter: /\.css$/ }, (args) => ({ path: args.path, namespace: "css-empty" }));
           build.onLoad({ filter: /.*/, namespace: "css-empty" }, () => ({ contents: "", loader: "js" }));
@@ -402,9 +486,9 @@ createRoot(document.getElementById("root")).render(card === "delete" ? <DeletePr
             const found = candidates.find((candidate) => existsSync(candidate));
             return { path: found || base };
           });
-        }
-      }
-    ]
+        },
+      },
+    ],
   });
 }
 
@@ -471,7 +555,7 @@ function startMappedServer(port, files) {
             const height = Math.max(844, Number(data.height) || 844);
             frame.style.height = height + "px";
           });
-        </script></body></html>`
+        </script></body></html>`,
       );
       return;
     }
@@ -533,13 +617,13 @@ async function assertDesign(frame) {
         fontSize: Number.parseFloat(style.fontSize),
         height: element.getBoundingClientRect().height,
         color: style.color,
-        background
+        background,
       };
     };
     return {
       title: read(root.querySelector("h3")),
       body: read(root.querySelector("p")),
-      buttons: [...root.querySelectorAll("button")].map(read)
+      buttons: [...root.querySelectorAll("button")].map(read),
     };
   });
   for (const part of [sample.title, sample.body, ...sample.buttons]) {
@@ -558,7 +642,7 @@ async function assertDesign(frame) {
 async function storedSession(frame) {
   return frame.evaluate(() => ({
     current: localStorage.getItem("currentWorkoutSessionId"),
-    sessions: JSON.parse(localStorage.getItem("workoutSessions") || "[]")
+    sessions: JSON.parse(localStorage.getItem("workoutSessions") || "[]"),
   }));
 }
 
@@ -597,6 +681,30 @@ async function openPhone(browser, parentOrigin, childOrigin, search) {
   return { page, frame };
 }
 
+async function focusedName(target) {
+  return target.evaluate(() => {
+    const element = document.activeElement;
+    if (!element || element === document.body) return "";
+    return (element.getAttribute("aria-label") || element.textContent || "").replace(/\s+/g, " ").trim();
+  });
+}
+
+async function installListenerSpy(frame) {
+  await frame.evaluate(() => {
+    window.__wcKeydown = 0;
+    const add = document.addEventListener.bind(document);
+    const remove = document.removeEventListener.bind(document);
+    document.addEventListener = (type, listener, options) => {
+      if (type === "keydown") window.__wcKeydown += 1;
+      return add(type, listener, options);
+    };
+    document.removeEventListener = (type, listener, options) => {
+      if (type === "keydown") window.__wcKeydown -= 1;
+      return remove(type, listener, options);
+    };
+  });
+}
+
 async function runQuitEmbedHarness(browser) {
   const quitLabel = localeValue("quit_workout");
   const title = localeValue("quit_workout_title");
@@ -615,7 +723,7 @@ async function runQuitEmbedHarness(browser) {
       ["/harness.js", { type: "text/javascript; charset=utf-8", body: readFileSync(join(dir, "harness.js")) }],
       ["/app.css", { type: "text/css; charset=utf-8", body: css }],
       ["/harness.html", { type: "text/html; charset=utf-8", body: harnessHtml() }],
-      ["/probe.html", { type: "text/html; charset=utf-8", body: probeHtml() }]
+      ["/probe.html", { type: "text/html; charset=utf-8", body: probeHtml() }],
     ]);
     child = await startMappedServer(childPort, files);
     parent = await startMappedServer(parentPort, files);
@@ -636,17 +744,46 @@ async function runQuitEmbedHarness(browser) {
     await light.frame.evaluate(() => window.__wcMarkProgress());
     await light.frame.locator("[data-wc-completed='1']").waitFor();
     const keptId = await light.frame.locator("[data-wc-session]").getAttribute("data-wc-session");
+    await installListenerSpy(light.frame);
+    await light.frame.evaluate(() => {
+      const store = window.__wcSessionStore;
+      window.__wcCompleteCalls = 0;
+      const original = store.getState().completeWorkout;
+      store.setState({
+        completeWorkout: () => {
+          window.__wcCompleteCalls += 1;
+          return original();
+        },
+      });
+    });
+    const keydownBefore = await light.frame.evaluate(() => window.__wcKeydown);
     await light.frame.getByRole("button", { name: quitLabel }).click();
     await light.frame.getByRole("dialog", { name: title }).waitFor();
+    const keydownDuring = await light.frame.evaluate(() => window.__wcKeydown);
+    if (keydownDuring !== keydownBefore + 1) throw new Error(`keydown listeners ${keydownDuring} from ${keydownBefore}`);
     const scrolled = await light.frame.evaluate(() => window.__wcScrolled === true);
     if (!scrolled) throw new Error("confirm did not scrollIntoView({block:'center'})");
     const focused = await light.frame.evaluate(() => document.activeElement?.textContent?.trim());
     if (focused !== keepLabel) throw new Error(`focused ${focused}`);
+    const described = await light.frame.locator("[data-wc-quit-confirm]").evaluate((element) => {
+      const id = element.getAttribute("aria-describedby");
+      return id ? (document.getElementById(id)?.textContent?.trim() ?? "") : "";
+    });
+    if (described !== localeValue("quit_warning")) throw new Error(`quit describedby ${described}`);
     await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
     await assertDesign(light.frame);
     await saveShot(light.page, "confirm-390-light.png");
     await light.frame.getByRole("button", { name: keepLabel }).click();
+    if ((await focusedName(light.frame)).includes(quitLabel) === false) {
+      throw new Error(`Keep going left focus on ${await focusedName(light.frame)}`);
+    }
     if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("Keep going left the confirm open");
+    const keydownAfter = await light.frame.evaluate(() => window.__wcKeydown);
+    if (keydownAfter !== keydownBefore) throw new Error(`Escape listener leaked (${keydownAfter} vs ${keydownBefore})`);
+    await light.frame.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    if ((await light.frame.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
+      throw new Error("Escape after unmount ended the session");
+    }
     if ((await light.frame.locator("[data-wc-session]").getAttribute("data-wc-session")) !== keptId) {
       throw new Error("Keep going replaced the session");
     }
@@ -660,9 +797,33 @@ async function runQuitEmbedHarness(browser) {
     await light.frame.locator("[data-wc-quit-confirm]").press("Escape");
     if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("Escape left the confirm open");
     if ((await light.frame.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") throw new Error("Escape ended the session");
+    if ((await focusedName(light.frame)).includes(quitLabel) === false) {
+      throw new Error(`Escape left focus on ${await focusedName(light.frame)}`);
+    }
     await light.frame.getByRole("button", { name: quitLabel }).click();
     await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
-    await light.frame.getByRole("button", { name: discardLabel }).click();
+    const quitCalls = await light.frame.evaluate((label) => {
+      const store = window.__wcSessionStore;
+      window.__wcQuitCalls = 0;
+      const original = store.getState().quitWorkout;
+      store.setState({
+        quitWorkout: () => {
+          window.__wcQuitCalls += 1;
+          return original();
+        },
+      });
+      const confirm = [...document.querySelectorAll("[data-wc-quit-confirm] button")].find((button) =>
+        (button.textContent || "").includes(label),
+      );
+      const key = Object.keys(confirm).find((name) => name.startsWith("__reactProps"));
+      const onClick = key && confirm[key].onClick;
+      if (!onClick) throw new Error("quit confirm click handler missing");
+      onClick();
+      onClick();
+      return { quitCalls: window.__wcQuitCalls, completeCalls: window.__wcCompleteCalls };
+    }, discardLabel);
+    if (quitCalls.quitCalls !== 1) throw new Error(`quit confirm ran ${quitCalls.quitCalls} times`);
+    if (quitCalls.completeCalls !== 0) throw new Error(`quit called completeWorkout ${quitCalls.completeCalls} times`);
     await light.frame.locator("[data-wc-active='0']").waitFor();
     await light.frame.locator("[data-wc-step='1']").waitFor();
     await light.frame.locator("[data-wc-completed='0']").waitFor();
@@ -717,15 +878,78 @@ async function runQuitEmbedHarness(browser) {
     if ((await plain.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("non-embed rendered the in-flow confirm");
     const position = await radix.evaluate((element) => getComputedStyle(element).position);
     if (position !== "fixed") throw new Error(`non-embed dialog position ${position}`);
+    await plain.keyboard.press("Escape");
+    await plain.getByRole("dialog").waitFor({ state: "hidden" });
+    if ((await focusedName(plain)).includes(quitLabel) === false) {
+      throw new Error(`non-embed Escape left focus on ${await focusedName(plain)}`);
+    }
+    if ((await plain.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
+      throw new Error("non-embed Escape ended the session");
+    }
+    if ((await plain.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("non-embed Escape rendered the in-flow confirm");
+    await plain.getByRole("button", { name: quitLabel }).click();
     await plain.getByRole("button", { name: keepLabel }).click();
     if ((await plain.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
       throw new Error("non-embed Keep going ended the session");
     }
     await plain.close();
 
+    const deleteLabel = localeValue("delete");
+    const cancelLabel = localeValue("cancel");
+    const history = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
+    history.page.on("dialog", (dialog) => dialog.dismiss());
+    await history.frame.getByRole("button", { name: deleteLabel }).click();
+    if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
+      throw new Error("embed delete called removeSession before confirm");
+    }
+    await history.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
+    await assertInPhone(history.page, history.frame, "[data-wc-delete-confirm]");
+    await history.frame.getByRole("button", { name: cancelLabel }).click();
+    if ((await history.frame.locator("[data-wc-delete-confirm]").count()) !== 0) throw new Error("Cancel left the delete card open");
+    if ((await focusedName(history.frame)) !== deleteLabel) {
+      throw new Error(`Cancel left focus on ${await focusedName(history.frame)}`);
+    }
+    await history.frame.getByRole("button", { name: deleteLabel }).click();
+    await history.frame.locator("[data-wc-delete-confirm]").press("Escape");
+    if ((await history.frame.locator("[data-wc-delete-confirm]").count()) !== 0) throw new Error("Escape left the delete card open");
+    if ((await focusedName(history.frame)) !== deleteLabel) {
+      throw new Error(`delete Escape left focus on ${await focusedName(history.frame)}`);
+    }
+    if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
+      throw new Error("closing the delete card called removeSession");
+    }
+    await history.frame.getByRole("button", { name: deleteLabel }).click();
+    await history.frame.locator("[data-wc-delete-confirm]").waitFor();
+    const removeCalls = await history.frame.evaluate((label) => {
+      const confirm = [...document.querySelectorAll("[data-wc-delete-confirm] button")].find((button) =>
+        (button.textContent || "").includes(label),
+      );
+      const key = Object.keys(confirm).find((name) => name.startsWith("__reactProps"));
+      const onClick = key && confirm[key].onClick;
+      if (!onClick) throw new Error("delete confirm click handler missing");
+      onClick();
+      onClick();
+      return window.__wcRemoveCalls || 0;
+    }, deleteLabel);
+    if (removeCalls !== 1) throw new Error(`removeSession ran ${removeCalls} times`);
+    await history.page.close();
+
+    const historyPlain = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    historyPlain.on("dialog", (dialog) => dialog.dismiss());
+    await historyPlain.goto(`${childOrigin}/harness.html?card=history`, { waitUntil: "domcontentloaded" });
+    await historyPlain.waitForSelector("[data-wc-ready]");
+    await historyPlain.getByRole("button", { name: deleteLabel }).click();
+    if ((await historyPlain.locator("[data-wc-delete-confirm]").count()) !== 0) {
+      throw new Error("non-embed delete rendered the in-flow card");
+    }
+    if ((await historyPlain.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
+      throw new Error("dismissed confirm called removeSession");
+    }
+    await historyPlain.close();
+
     const probePage = await browser.newPage({ viewport: { width: 390, height: 900 } });
     await probePage.goto(`${parentOrigin}/phone?src=${encodeURIComponent(`${childOrigin}/probe.html`)}`, {
-      waitUntil: "domcontentloaded"
+      waitUntil: "domcontentloaded",
     });
     const probe = await attachChildFrame(probePage);
     await probePage.waitForFunction(() => {
@@ -756,7 +980,7 @@ async function runQuitEmbedHarness(browser) {
         top: box.top,
         height: box.height,
         center: box.center,
-        offScreen: Boolean(phone && box.center > phone.y + phone.height)
+        offScreen: Boolean(phone && box.center > phone.y + phone.height),
       }));
     probes.push({ kind: "iframeHeight", height: measured.iframeHeight });
     console.log(`QUIT_PROBES ${JSON.stringify(probes)}`);
@@ -792,7 +1016,7 @@ async function main() {
   const child = spawn(process.execPath, [nextBin, "start", "-p", String(appPort), "-H", "127.0.0.1"], {
     cwd: process.cwd(),
     env: { ...PLACEHOLDER_ENV, PORT: String(appPort) },
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"],
   });
   let parent;
   let forwarder;
@@ -813,7 +1037,10 @@ async function main() {
 
     const slash = page.frame({ name: "slash" });
     const plain = page.frame({ name: "plain" });
-    const frameUrls = page.frames().map((frame) => frame.url()).join(" ");
+    const frameUrls = page
+      .frames()
+      .map((frame) => frame.url())
+      .join(" ");
     if (!slash || !slash.url().includes("/en?embed=1") || slash.url().includes("/en/?embed=1")) {
       throw new Error(`slash iframe did not reach /en?embed=1 (${frameUrls})`);
     }

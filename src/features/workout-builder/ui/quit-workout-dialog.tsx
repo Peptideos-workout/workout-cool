@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useI18n } from "locales/client";
 
@@ -19,14 +20,29 @@ interface QuitWorkoutDialogProps {
 export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercisesCompleted, totalExercises }: QuitWorkoutDialogProps) {
   const t = useI18n();
   const isEmbed = useIsEmbedDocument();
+  const confirmLock = useRef(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
-  if (!isOpen) return null;
+  const handleConfirm = () => {
+    if (confirmLock.current) return;
+    confirmLock.current = true;
+    setIsConfirming(true);
+    onQuitWithoutSave();
+  };
+
+  useEffect(() => {
+    if (isOpen) return;
+    confirmLock.current = false;
+    setIsConfirming(false);
+  }, [isOpen]);
 
   if (isEmbed) {
+    if (!isOpen) return null;
     return (
       <EmbedFlowConfirm
         body={t("workout_builder.session.quit_warning")}
         cancelLabel={t("workout_builder.session.continue_workout")}
+        confirmDisabled={isConfirming}
         confirmLabel={
           <>
             <Trash2 className="mr-2 h-4 w-4" />
@@ -35,7 +51,7 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
         }
         marker="quit"
         onCancel={onClose}
-        onConfirm={onQuitWithoutSave}
+        onConfirm={handleConfirm}
         title={t("workout_builder.session.quit_workout_title")}
       />
     );
@@ -78,7 +94,7 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          <Button className={embedQuitButtonClass} onClick={onQuitWithoutSave} size="large" type="button">
+          <Button className={embedQuitButtonClass} disabled={isConfirming} onClick={handleConfirm} size="large" type="button">
             <Trash2 className="h-4 w-4 mr-2" />
             {t("workout_builder.session.quit_without_save")}
           </Button>

@@ -85,7 +85,7 @@ function resolveRequestLocale(request: NextRequest): SupportedLocale {
 }
 
 /** `/` and locale homes, including exactly one trailing slash (`/en/`, `/zh-CN/`). Not `//` or deeper paths. */
-function isEmbedHomePath(pathname: string): boolean {
+export function isEmbedHomePath(pathname: string): boolean {
   if (pathname === "/") return true;
   return SUPPORTED_LOCALES.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`);
 }

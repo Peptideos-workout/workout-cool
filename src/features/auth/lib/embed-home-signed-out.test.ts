@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { NextRequest } from "next/server";
 import { locales } from "locales/types";
 
-import { proxy } from "../../../../proxy";
+import { isEmbedHomePath, proxy } from "../../../../proxy";
 
 import { embedSignedOutSessionBootstrap } from "@/features/embed/lib/embed-mode";
 import { shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
@@ -151,6 +151,17 @@ test("embed + /en/ with one trailing slash returns the signed-out document, and 
   assert.equal(deeper.body.includes("data-wc-embed-fallback"), false);
   const doubleSlash = await run(`${APP}//?embed=1`, { "accept-language": "en" });
   assert.equal(doubleSlash.body.includes("data-wc-embed-fallback"), false);
+});
+
+test("isEmbedHomePath matches /, /{locale}, and /{locale}/ only", () => {
+  assert.equal(isEmbedHomePath("/"), true);
+  for (const locale of locales) {
+    assert.equal(isEmbedHomePath(`/${locale}`), true, locale);
+    assert.equal(isEmbedHomePath(`/${locale}/`), true, locale);
+  }
+  for (const path of ["/en-foo", "/en/x", "//", "/en//", "/de", "/zh-cn", "/EN"]) {
+    assert.equal(isEmbedHomePath(path), false, path);
+  }
 });
 
 test("/en-foo, //, /en//, and /en/x are rejected and are not embed-home documents", async () => {

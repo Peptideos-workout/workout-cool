@@ -12,7 +12,6 @@ export default async function StatisticsPage() {
         <h1 className="mb-2 text-lg font-bold text-[var(--wc-dash-accent)]">{t("statistics.title")}</h1>
         <p className="mx-auto mb-8 max-w-2xl text-lg text-[var(--wc-dash-secondary)]">{t("statistics.page_subtitle")}</p>
 
-        {/* Stats hero social proof */}
         <PremiumGate
           fallback={
             <div className="flex flex-col flex-wrap items-center justify-center gap-4">

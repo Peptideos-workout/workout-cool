@@ -57,8 +57,8 @@ export function QuitWorkoutDialog({
       await onQuitWithoutSave();
     } catch (error) {
       failed = true;
-      // The click handler used to throw synchronously. An async rethrow is an unhandled rejection.
-      console.error("Error quitting workout:", error);
+      // The click handler used to throw into the window error event. Re-throwing here is an unhandled rejection.
+      reportError(error);
     } finally {
       if (failed) {
         const remaining = DOUBLE_ACTIVATION_GUARD_MS - (Date.now() - lockedAt);
@@ -73,7 +73,7 @@ export function QuitWorkoutDialog({
   };
 
   useEffect(() => {
-    if (isOpen) return;
+    if (isOpen || confirmLock.current) return;
     releaseConfirm();
   }, [isOpen]);
 

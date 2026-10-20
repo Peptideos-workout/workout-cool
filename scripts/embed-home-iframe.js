@@ -1038,6 +1038,10 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     await phone.frame.evaluate(() => {
       const store = window.__wcSessionStore;
       window.__wcQuitCalls = 0;
+      window.__wcUnhandled = 0;
+      window.addEventListener("unhandledrejection", () => {
+        window.__wcUnhandled += 1;
+      });
       store.setState({
         quitWorkout: () => {
           window.__wcQuitCalls += 1;
@@ -1076,10 +1080,27 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     if (700 - elapsed > 0) await wait(700 - elapsed);
     await confirm.click();
     if ((await quitCalls()) !== 2) throw new Error(`${engine} throwing quit retry ran ${await quitCalls()} times`);
+    const unhandled = await phone.frame.evaluate(() => window.__wcUnhandled || 0);
+    if (unhandled !== 0) throw new Error(`${engine} throwing quit fired unhandledrejection ${unhandled} times`);
+    await wait(520);
+    await phone.frame.evaluate(() => {
+      window.__wcQuitCalls = 0;
+      window.__wcSessionStore.setState({
+        quitWorkout: () => {
+          window.__wcQuitCalls += 1;
+        },
+      });
+    });
+    await confirm.click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor({ state: "hidden" });
+    await phone.frame.getByRole("button", { name: quitLabel }).click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor();
+    await phone.frame.getByRole("button", { name: discardLabel }).click({ force: true });
+    if ((await quitCalls()) !== 1) throw new Error(`${engine} success quit ran ${await quitCalls()} times`);
   } finally {
     await phone.page.close();
   }
-  console.log(`THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2`);
+  console.log(`THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0`);
 }
 
 async function runFirefoxThrowingQuit(parentOrigin, childOrigin) {

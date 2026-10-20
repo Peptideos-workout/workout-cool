@@ -6,7 +6,7 @@ import { headerAuthChrome } from "./header-auth-chrome";
 
 test("header auth chrome is neutral while the session is pending and unchanged after", () => {
   assert.equal(headerAuthChrome(true, false), "pending");
-  assert.equal(headerAuthChrome(true, true), "pending");
+  assert.equal(headerAuthChrome(true, true), "signed-in");
   assert.equal(headerAuthChrome(false, false), "signed-out");
   assert.equal(headerAuthChrome(false, true), "signed-in");
 });

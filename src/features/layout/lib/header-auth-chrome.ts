@@ -6,9 +6,9 @@ export const headerAuthChromeState = {
 
 export type HeaderAuthChrome = (typeof headerAuthChromeState)[keyof typeof headerAuthChromeState];
 
-/** Which header auth slot to paint. Pending hides both Login/Sign up and the avatar. */
+/** Which header auth slot to paint. A session is signed-in even while pending; pending is only the no-session wait. */
 export function headerAuthChrome(isPending: boolean, hasSession: boolean): HeaderAuthChrome {
+  if (hasSession) return headerAuthChromeState.signedIn;
   if (isPending) return headerAuthChromeState.pending;
-  if (!hasSession) return headerAuthChromeState.signedOut;
-  return headerAuthChromeState.signedIn;
+  return headerAuthChromeState.signedOut;
 }

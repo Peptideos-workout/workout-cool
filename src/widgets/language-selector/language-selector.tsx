@@ -73,7 +73,7 @@ export function LanguageSelector() {
               onClick={() => handleLanguageChange(language)}
             >
               <span className="text-lg">{languageFlags[language]}</span>
-              <span className="text-base whitespace-nowrap">{getLanguageName(language)}</span>
+              <span className="text-lg whitespace-nowrap">{getLanguageName(language)}</span>
             </button>
           </li>
         ))}

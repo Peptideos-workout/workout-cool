@@ -8,7 +8,8 @@
  *
  * Requires `pnpm build` and Playwright's Chromium (`pnpm exec playwright install chromium`).
  * The title modality check also runs in WebKit when that binary is installed.
- * In CI, a missing Chromium or WebKit fails the run instead of skipping.
+ * A throwing-quit double-click also runs in Firefox when that binary is installed.
+ * In CI, a missing Chromium or WebKit fails the run. A missing Firefox skips.
  */
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
@@ -996,7 +997,8 @@ async function runTitleModality(browser, parentOrigin, childOrigin, engine, save
 }
 
 function missingEngine(name, error) {
-  if (process.env.CI === "true") {
+  const requiredInCi = name === "chromium" || name === "webkit";
+  if (process.env.CI === "true" && requiredInCi) {
     throw new Error(`${name} is not available in CI (${error.message}).`);
   }
   console.log(`TITLE_ENGINE ${name} skipped (${error.message})`);
@@ -1019,6 +1021,58 @@ async function runWebKitTitleModality(parentOrigin, childOrigin, saveShot) {
   }
   try {
     await runTitleModality(browser, parentOrigin, childOrigin, "webkit", saveShot);
+    await assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, "webkit");
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, engine) {
+  const quitLabel = localeValue("quit_workout");
+  const discardLabel = localeValue("embed_quit_confirm");
+  const title = localeValue("embed_quit_title");
+  const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+  try {
+    await phone.frame.getByRole("button", { name: "Start workout" }).click();
+    await phone.frame.locator("[data-wc-active='1']").waitFor();
+    await phone.frame.evaluate(() => {
+      const store = window.__wcSessionStore;
+      window.__wcQuitCalls = 0;
+      store.setState({
+        quitWorkout: () => {
+          window.__wcQuitCalls += 1;
+          throw new Error("hold");
+        },
+      });
+    });
+    await phone.frame.getByRole("button", { name: quitLabel }).click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor();
+    await phone.frame.getByRole("button", { name: discardLabel }).dblclick();
+    const quitCalls = await phone.frame.evaluate(() => window.__wcQuitCalls || 0);
+    if (quitCalls !== 1) throw new Error(`${engine} throwing quit ran ${quitCalls} times`);
+  } finally {
+    await phone.page.close();
+  }
+  console.log(`THROWING_QUIT ${engine} dblclick=1`);
+}
+
+async function runFirefoxThrowingQuit(parentOrigin, childOrigin) {
+  let firefox;
+  try {
+    ({ firefox } = require("playwright"));
+  } catch (error) {
+    missingEngine("firefox", error);
+    return;
+  }
+  let browser;
+  try {
+    browser = await firefox.launch({ headless: true });
+  } catch (error) {
+    missingEngine("firefox", error);
+    return;
+  }
+  try {
+    await assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, "firefox");
   } finally {
     await browser.close();
   }
@@ -1778,7 +1832,9 @@ async function runQuitEmbedHarness(browser) {
     console.log(`QUIT_PROBES ${JSON.stringify(probes)}`);
     await probePage.close();
     await runTitleModality(browser, parentOrigin, childOrigin, "chromium", saveShot);
+    await assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, "chromium");
     await runWebKitTitleModality(parentOrigin, childOrigin, saveShot);
+    await runFirefoxThrowingQuit(parentOrigin, childOrigin);
     console.log("embed iframe: quit confirm stays in the 390x844 frame and quit clears the session");
   } finally {
     if (parent) await closeServer(parent);

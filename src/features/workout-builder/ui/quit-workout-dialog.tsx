@@ -43,19 +43,26 @@ export function QuitWorkoutDialog({
     setIsConfirming(false);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (confirmLock.current) return;
     confirmLock.current = true;
     clearPendingTimers();
     pendingTimers.current.push(setTimeout(() => setIsConfirming(true), 0));
     let failed = false;
     try {
-      onQuitWithoutSave();
+      await onQuitWithoutSave();
     } catch (error) {
       failed = true;
       throw error;
     } finally {
-      if (failed) pendingTimers.current.push(setTimeout(releaseConfirm, 0));
+      if (failed) {
+        // WebKit and Firefox run a 0ms timer between the two clicks of a double-click.
+        // Keep the ref set until that second click has been ignored.
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 32);
+        });
+        releaseConfirm();
+      }
     }
   };
 

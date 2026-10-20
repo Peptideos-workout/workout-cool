@@ -48,6 +48,18 @@ function unusedPort() {
   });
 }
 
+function assertTrapUsesFocusVisible() {
+  const source = readFileSync(join(process.cwd(), "src/shared/ui/embed-flow-confirm.tsx"), "utf8");
+  const trapStart = source.indexOf('if (event.key !== "Tab")');
+  const trapEnd = source.indexOf('document.addEventListener("keydown", onKeyDown)');
+  const trap = source.slice(trapStart, trapEnd);
+  const forward = trap.includes("first.focus({ focusVisible: true }");
+  const backward = trap.includes("last.focus({ focusVisible: true }");
+  if (!forward || !backward || /(?:first|last)\.focus\(\)/.test(trap)) {
+    throw new Error("tab trap focus is missing focusVisible");
+  }
+}
+
 function assertProductionSources() {
   const frameAncestors = readFileSync(join(process.cwd(), "src/shared/lib/frame-ancestors.ts"), "utf8");
   const nextConfig = readFileSync(join(process.cwd(), "next.config.ts"), "utf8");
@@ -898,7 +910,29 @@ async function openAndAssertTitle(frame, opener, title, expectRing) {
   else await assertNoTitleRing(frame);
 }
 
-async function runTitleModality(browser, parentOrigin, childOrigin, engine) {
+async function assertTrapRings(frame, firstLabel, lastLabel, label, afterForwardWrap) {
+  await frame.locator("[data-wc-quit-confirm] h3").press("Tab");
+  if ((await focusedName(frame)) !== firstLabel) {
+    throw new Error(`${label} Tab from title left focus on ${await focusedName(frame)}`);
+  }
+  await frame.getByRole("button", { name: firstLabel }).press("Tab");
+  if ((await focusedName(frame)) !== lastLabel) {
+    throw new Error(`${label} Tab from first left focus on ${await focusedName(frame)}`);
+  }
+  await frame.getByRole("button", { name: lastLabel }).press("Tab");
+  if ((await focusedName(frame)) !== firstLabel) {
+    throw new Error(`${label} Tab wrap left focus on ${await focusedName(frame)}`);
+  }
+  await assertActiveRing(frame, `${label} tab wrap`);
+  if (afterForwardWrap) await afterForwardWrap();
+  await frame.getByRole("button", { name: firstLabel }).press("Shift+Tab");
+  if ((await focusedName(frame)) !== lastLabel) {
+    throw new Error(`${label} Shift+Tab wrap left focus on ${await focusedName(frame)}`);
+  }
+  await assertActiveRing(frame, `${label} shift tab wrap`);
+}
+
+async function runTitleModality(browser, parentOrigin, childOrigin, engine, saveShot = async () => {}) {
   const quitLabel = localeValue("quit_workout");
   const title = localeValue("embed_quit_title");
   const keepLabel = localeValue("embed_quit_cancel");
@@ -919,8 +953,28 @@ async function runTitleModality(browser, parentOrigin, childOrigin, engine) {
     await closeQuit();
     await openAndAssertTitle(phone.frame, () => quit.press("Space"), title, true);
     await closeQuit();
+    const discardLabel = localeValue("embed_quit_confirm");
+    await openAndAssertTitle(phone.frame, () => quit.press("Enter"), title, true);
+    await closeQuit();
+    await openAndAssertTitle(phone.frame, () => quit.click(), title, false);
+    await assertTrapRings(phone.frame, discardLabel, keepLabel, `${engine} light`, async () => {
+      if (engine === "webkit") await saveShot(phone.page, "confirm-390-light-webkit-tabwrap.png");
+    });
   } finally {
     await phone.page.close();
+  }
+  const dark = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&dark=1", { hasTouch: true });
+  try {
+    await dark.frame.getByRole("button", { name: "Start workout" }).click();
+    await dark.frame.locator("[data-wc-active='1']").waitFor();
+    await dark.frame.getByRole("button", { name: quitLabel }).click();
+    await dark.frame.getByRole("dialog", { name: title }).waitFor();
+    const discardLabel = localeValue("embed_quit_confirm");
+    await assertTrapRings(dark.frame, discardLabel, keepLabel, `${engine} dark`, async () => {
+      if (engine === "webkit") await saveShot(dark.page, "confirm-390-dark-webkit-tabwrap.png");
+    });
+  } finally {
+    await dark.page.close();
   }
   const history = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history", { hasTouch: true });
   history.page.on("dialog", (dialog) => dialog.dismiss());
@@ -940,7 +994,7 @@ async function runTitleModality(browser, parentOrigin, childOrigin, engine) {
   console.log(`TITLE_ENGINE ${engine} pointer=no-ring tap=no-ring keyboard=ring`);
 }
 
-async function runWebKitTitleModality(parentOrigin, childOrigin) {
+async function runWebKitTitleModality(parentOrigin, childOrigin, saveShot) {
   let webkit;
   try {
     ({ webkit } = require("playwright"));
@@ -956,7 +1010,7 @@ async function runWebKitTitleModality(parentOrigin, childOrigin) {
     return;
   }
   try {
-    await runTitleModality(browser, parentOrigin, childOrigin, "webkit");
+    await runTitleModality(browser, parentOrigin, childOrigin, "webkit", saveShot);
   } finally {
     await browser.close();
   }
@@ -1218,10 +1272,12 @@ async function runQuitEmbedHarness(browser) {
     if ((await focusedName(light.frame)) !== discardLabel) {
       throw new Error(`Tab wrap left focus on ${await focusedName(light.frame)}`);
     }
+    await assertActiveRing(light.frame, "tab wrap");
     await light.frame.getByRole("button", { name: discardLabel }).press("Shift+Tab");
     if ((await focusedName(light.frame)) !== keepLabel) {
       throw new Error(`Shift+Tab wrap left focus on ${await focusedName(light.frame)}`);
     }
+    await assertActiveRing(light.frame, "shift tab wrap");
     const described = await light.frame.locator("[data-wc-quit-confirm]").evaluate((element) => {
       const id = element.getAttribute("aria-describedby");
       return id ? (document.getElementById(id)?.textContent?.trim() ?? "") : "";
@@ -1245,6 +1301,13 @@ async function runQuitEmbedHarness(browser) {
     await light.frame.getByRole("button", { name: keepLabel }).click();
     if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) {
       throw new Error("keyboard Keep going left the confirm open");
+    }
+    await light.frame.getByRole("button", { name: quitLabel }).click();
+    await light.frame.getByRole("dialog", { name: title }).waitFor();
+    await assertNoTitleRing(light.frame);
+    await light.frame.getByRole("button", { name: keepLabel }).click();
+    if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) {
+      throw new Error("pointer after keyboard left the confirm open");
     }
     await light.frame.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     if ((await light.frame.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
@@ -1354,6 +1417,20 @@ async function runQuitEmbedHarness(browser) {
     await dark.frame.locator("[data-wc-quit-confirm] h3").press("Tab");
     await assertActiveRing(dark.frame, "dark quit confirm");
     await saveShot(dark.page, "confirm-390-dark-focusring.png");
+    await dark.frame.getByRole("button", { name: discardLabel }).press("Tab");
+    if ((await focusedName(dark.frame)) !== keepLabel) {
+      throw new Error(`dark Tab from first left focus on ${await focusedName(dark.frame)}`);
+    }
+    await dark.frame.getByRole("button", { name: keepLabel }).press("Tab");
+    if ((await focusedName(dark.frame)) !== discardLabel) {
+      throw new Error(`dark Tab wrap left focus on ${await focusedName(dark.frame)}`);
+    }
+    await assertActiveRing(dark.frame, "dark tab wrap");
+    await dark.frame.getByRole("button", { name: discardLabel }).press("Shift+Tab");
+    if ((await focusedName(dark.frame)) !== keepLabel) {
+      throw new Error(`dark Shift+Tab wrap left focus on ${await focusedName(dark.frame)}`);
+    }
+    await assertActiveRing(dark.frame, "dark shift tab wrap");
     await dark.page.close();
 
     const deleteTitle = localeValue("delete_workout_title");
@@ -1692,8 +1769,8 @@ async function runQuitEmbedHarness(browser) {
     probes.push({ kind: "iframeHeight", height: measured.iframeHeight });
     console.log(`QUIT_PROBES ${JSON.stringify(probes)}`);
     await probePage.close();
-    await runTitleModality(browser, parentOrigin, childOrigin, "chromium");
-    await runWebKitTitleModality(parentOrigin, childOrigin);
+    await runTitleModality(browser, parentOrigin, childOrigin, "chromium", saveShot);
+    await runWebKitTitleModality(parentOrigin, childOrigin, saveShot);
     console.log("embed iframe: quit confirm stays in the 390x844 frame and quit clears the session");
   } finally {
     if (parent) await closeServer(parent);
@@ -1704,6 +1781,7 @@ async function runQuitEmbedHarness(browser) {
 
 async function main() {
   assertProductionSources();
+  assertTrapUsesFocusVisible();
   if (!existsSync(join(process.cwd(), ".next", "BUILD_ID"))) {
     throw new Error("pnpm test:embed-iframe needs a production build. Run pnpm build first.");
   }

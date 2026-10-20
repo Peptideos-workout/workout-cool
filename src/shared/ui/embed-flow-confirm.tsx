@@ -120,13 +120,14 @@ export function EmbedFlowConfirm({
       if (event.shiftKey) {
         if (!activeButton || activeButton === first) {
           event.preventDefault();
-          last.focus();
+          // Tab is keyboard input. WebKit does not match :focus-visible for a plain focus() here.
+          last.focus({ focusVisible: true } as unknown as FocusOptions);
         }
         return;
       }
       if (!activeButton || activeButton === last) {
         event.preventDefault();
-        first.focus();
+        first.focus({ focusVisible: true } as unknown as FocusOptions);
       }
     };
     document.addEventListener("keydown", onKeyDown);

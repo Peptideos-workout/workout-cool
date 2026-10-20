@@ -150,7 +150,25 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Read Playwright version from the lockfile
+        id: playwright-version
+        run: |
+          version="$(node -e "const fs=require('fs'); const text=fs.readFileSync('pnpm-lock.yaml','utf8'); const match=text.match(/^  playwright@([0-9]+\\.[0-9]+\\.[0-9]+):/m); if(!match) process.exit(1); process.stdout.write(match[1]);")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-ms-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
       - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run signed-out embed iframe check

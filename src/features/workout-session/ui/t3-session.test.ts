@@ -218,7 +218,7 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(header, /t\("workout_builder\.session\.total_volume"\)/);
   assert.match(header, /t\("workout_builder\.session\.complete"\)/);
 
-  assert.match(quit, /onClick=\{onQuitWithoutSave\}/);
+  assert.match(quit, /onClick=\{handleConfirm\}/);
   assert.match(quit, /onClick=\{onClose\}/);
   assert.match(quit, /onOpenChange=\{onClose\}/);
   assert.match(quit, /useIsEmbedDocument\(\)/);

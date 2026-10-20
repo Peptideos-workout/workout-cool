@@ -54,9 +54,10 @@ export function EmbedFlowConfirm({
     cardRef.current?.scrollIntoView({ block: "center" });
     cancelRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      restoreTrigger();
-      onCancelRef.current();
+      if (event.key === "Escape") {
+        restoreTrigger();
+        onCancelRef.current();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);

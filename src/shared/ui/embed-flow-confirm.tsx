@@ -5,11 +5,22 @@ import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react"
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/components/ui/button";
 
+// The shared Button fades box-shadow over 300ms, which would draw this ring transparent.
+const embedFocusRingClass =
+  "transition-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+  "focus-visible:ring-[var(--wc-dash-text)] focus-visible:ring-offset-[var(--wc-dash-panel)]";
+
+const embedTitleFocusClass =
+  "focus:outline-none focus:ring-2 focus:ring-offset-2 " + "focus:ring-[var(--wc-dash-text)] focus:ring-offset-[var(--wc-dash-panel)]";
+
 export const embedQuitButtonClass =
-  "w-full !min-h-12 !bg-[var(--wc-dash-error)] !text-lg !text-[var(--wc-dash-ink)] shadow-none hover:!bg-[var(--wc-dash-error)]";
+  "w-full !min-h-12 !bg-[var(--wc-dash-error)] !text-lg !text-[var(--wc-dash-ink)] shadow-none hover:!bg-[var(--wc-dash-error)] " +
+  embedFocusRingClass;
 
 export const embedKeepButtonClass =
-  "w-full border border-[var(--wc-dash-border)] shadow-none " + "hover:bg-transparent !min-h-12 !text-lg !text-[var(--wc-dash-text)]";
+  "w-full border border-[var(--wc-dash-border)] shadow-none " +
+  "hover:bg-transparent !min-h-12 !text-lg !text-[var(--wc-dash-text)] " +
+  embedFocusRingClass;
 
 interface EmbedFlowConfirmProps {
   title: string;
@@ -106,7 +117,7 @@ export function EmbedFlowConfirm({
       ref={cardRef}
       role="dialog"
     >
-      <h3 className="text-lg font-bold text-[var(--wc-dash-text)] focus:outline-none" id={titleId} ref={titleRef} tabIndex={-1}>
+      <h3 className={cn("text-lg font-bold text-[var(--wc-dash-text)]", embedTitleFocusClass)} id={titleId} ref={titleRef} tabIndex={-1}>
         {title}
       </h3>
       <p className="mt-3 text-lg leading-relaxed text-[var(--wc-dash-secondary)]" id={descriptionId}>

@@ -306,6 +306,7 @@ const historySession = {
 };
 export function useWorkoutSessions() {
   const [data, setData] = useState(() => (window.__wcSessions || [historySession]).slice());
+  window.__wcRefetchSessions = () => setData((window.__wcSessions || []).slice());
   return {
     data,
     refetch() {
@@ -326,6 +327,7 @@ export const useWorkoutSessionService = () => ({
   remove: async (id) => {
     window.__wcRemoveCalls = (window.__wcRemoveCalls || 0) + 1;
     if (typeof window.__wcHoldRemove === "function") await window.__wcHoldRemove();
+    if (window.__wcFailRemove) throw new Error("delete failed");
     window.__wcSessions = (window.__wcSessions || []).filter((session) => session.id !== id);
     workoutSessionLocal.remove(id);
   }
@@ -582,6 +584,16 @@ if (card === "history") {
     muscles: [],
     exercises: [{ id: "ex-2", name: "Lunge", nameEn: "Lunge", order: 0, attributes: [] }]
   }];
+  if (new URLSearchParams(location.search).get("rows") === "3") {
+    window.__wcSessions.push({
+      id: "hist-3",
+      status: "completed",
+      startedAt: "2026-01-04T15:04:00.000Z",
+      endedAt: "2026-01-04T16:00:00.000Z",
+      muscles: [],
+      exercises: [{ id: "ex-3", name: "Press", nameEn: "Press", order: 0, attributes: [] }]
+    });
+  }
 }
 createRoot(document.getElementById("root")).render(
   card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : card === "program" ? <ProgramHarness /> : <App />
@@ -788,6 +800,85 @@ async function assertDesign(frame) {
   }
   for (const button of sample.buttons) {
     if (button.height < 48) throw new Error(`confirm target is ${button.height}px`);
+  }
+}
+
+async function assertEmbedButtonHeights(frame, selector) {
+  const heights = await frame.locator(selector).evaluate((root) => {
+    return [...root.querySelectorAll("button")].map((button) => button.getBoundingClientRect().height);
+  });
+  if (heights.length < 2) throw new Error(`${selector} has ${heights.length} buttons`);
+  for (const height of heights) {
+    if (height < 48) throw new Error(`${selector} button is ${height}px`);
+  }
+  console.log(`BUTTON_HEIGHTS ${selector} ${heights.join(",")}`);
+}
+
+async function readActiveFocus(target) {
+  return target.evaluate(() => {
+    const element = document.activeElement;
+    const empty = {
+      tag: element?.tagName || "",
+      visible: false,
+      outlineAlpha: 1,
+      outlineStyle: "",
+      outlineColor: "",
+      boxShadow: "",
+    };
+    if (!element || element === document.body) return empty;
+    const style = getComputedStyle(element);
+    const parse = (value) => {
+      const match = String(value).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+      if (!match) return null;
+      return [Number(match[1]), Number(match[2]), Number(match[3]), match[4] === undefined ? 1 : Number(match[4])];
+    };
+    const layers = [];
+    const shadow = style.boxShadow;
+    if (shadow && shadow !== "none") {
+      let current = "";
+      let depth = 0;
+      for (const char of shadow) {
+        if (char === "(") depth += 1;
+        else if (char === ")") depth -= 1;
+        if (char === "," && depth === 0) {
+          layers.push(current);
+          current = "";
+        } else current += char;
+      }
+      if (current.trim()) layers.push(current);
+    }
+    const visibleShadow = layers.some((layer) => {
+      const color = parse(layer);
+      const widths = [...layer.matchAll(/([\d.]+)px/g)].map((match) => Number(match[1]));
+      const width = widths.length ? Math.max(...widths) : 0;
+      return Boolean(color && color[3] > 0 && width > 0);
+    });
+    const outline = parse(style.outlineColor);
+    const outlineWidth = Number.parseFloat(style.outlineWidth) || 0;
+    const outlineAlpha = outline ? outline[3] : String(style.outlineColor).includes("transparent") ? 0 : 1;
+    const visibleOutline = outlineAlpha > 0 && outlineWidth > 0 && style.outlineStyle !== "none";
+    return {
+      tag: element.tagName,
+      visible: visibleShadow || visibleOutline,
+      outlineAlpha,
+      outlineStyle: style.outlineStyle,
+      outlineColor: style.outlineColor,
+      boxShadow: style.boxShadow,
+    };
+  });
+}
+
+async function assertActiveRing(target, label) {
+  const ring = await readActiveFocus(target);
+  if (!ring.visible) throw new Error(`${label} focus ring missing (${ring.boxShadow} / ${ring.outlineColor})`);
+  return ring;
+}
+
+async function assertTitleRing(target) {
+  const ring = await assertActiveRing(target, "title");
+  if (ring.tag !== "H3") throw new Error(`title ring read ${ring.tag}`);
+  if (ring.outlineAlpha > 0) {
+    throw new Error(`title shows the browser outline (${ring.outlineStyle} ${ring.outlineColor})`);
   }
 }
 
@@ -1029,14 +1120,18 @@ async function runQuitEmbedHarness(browser) {
     if (openedFocus.tag !== "H3" || openedFocus.tab !== "-1" || openedFocus.text !== title) {
       throw new Error(`focused ${openedFocus.tag} ${openedFocus.text}`);
     }
+    await assertTitleRing(light.frame);
     await light.frame.locator("[data-wc-quit-confirm] h3").press("Tab");
     if ((await focusedName(light.frame)) !== discardLabel) {
       throw new Error(`Tab from title left focus on ${await focusedName(light.frame)}`);
     }
+    await assertActiveRing(light.frame, "quit confirm");
+    await saveShot(light.page, "confirm-390-light-focusring.png");
     await light.frame.getByRole("button", { name: discardLabel }).press("Tab");
     if ((await focusedName(light.frame)) !== keepLabel) {
       throw new Error(`Tab from confirm left focus on ${await focusedName(light.frame)}`);
     }
+    await assertActiveRing(light.frame, "keep going");
     await light.frame.getByRole("button", { name: keepLabel }).press("Tab");
     if ((await focusedName(light.frame)) !== discardLabel) {
       throw new Error(`Tab wrap left focus on ${await focusedName(light.frame)}`);
@@ -1052,6 +1147,7 @@ async function runQuitEmbedHarness(browser) {
     if (described !== localeValue("embed_quit_warning")) throw new Error(`quit describedby ${described}`);
     await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
     await assertDesign(light.frame);
+    await assertEmbedButtonHeights(light.frame, "[data-wc-quit-confirm]");
     await saveShot(light.page, "confirm-390-light.png");
     await light.frame.getByRole("button", { name: keepLabel }).click();
     if ((await focusedName(light.frame)).includes(quitLabel) === false) {
@@ -1155,18 +1251,25 @@ async function runQuitEmbedHarness(browser) {
     await dark.frame.getByRole("dialog", { name: title }).waitFor();
     await assertInPhone(dark.page, dark.frame, "[data-wc-quit-confirm]");
     await assertDesign(dark.frame);
+    await assertEmbedButtonHeights(dark.frame, "[data-wc-quit-confirm]");
+    await assertTitleRing(dark.frame);
     await saveShot(dark.page, "confirm-390-dark.png");
+    await dark.frame.locator("[data-wc-quit-confirm] h3").press("Tab");
+    await assertActiveRing(dark.frame, "dark quit confirm");
+    await saveShot(dark.page, "confirm-390-dark-focusring.png");
     await dark.page.close();
 
     const deleteTitle = localeValue("delete_workout_title");
     const deleteLight = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=delete");
     await deleteLight.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
     await assertInPhone(deleteLight.page, deleteLight.frame, "[data-wc-delete-confirm]");
+    await assertEmbedButtonHeights(deleteLight.frame, "[data-wc-delete-confirm]");
     await saveShot(deleteLight.page, "delete-390-light.png");
     await deleteLight.page.close();
     const deleteDark = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&dark=1&card=delete");
     await deleteDark.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
     await assertInPhone(deleteDark.page, deleteDark.frame, "[data-wc-delete-confirm]");
+    await assertEmbedButtonHeights(deleteDark.frame, "[data-wc-delete-confirm]");
     await saveShot(deleteDark.page, "delete-390-dark.png");
     await deleteDark.page.close();
 
@@ -1312,6 +1415,86 @@ async function runQuitEmbedHarness(browser) {
       throw new Error(`last delete left focus on ${headingFocus} (${error.message})`);
     }
     await history.page.close();
+
+    const historyRows = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history&rows=3");
+    historyRows.page.on("dialog", (dialog) => dialog.dismiss());
+    const confirmRowDelete = async (rowIndex) => {
+      await historyRows.frame.locator("ul").getByRole("button", { name: deleteLabel }).nth(rowIndex).click();
+      await historyRows.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel }).click();
+    };
+    const waitForRowFocus = async (index, exercise) => {
+      try {
+        await historyRows.frame.waitForFunction(
+          ({ index: rowIndex, exercise: name, label }) => {
+            if (document.querySelector("[data-wc-delete-confirm]")) return false;
+            const element = document.activeElement;
+            if (!element || element === document.body) return false;
+            if ((element.getAttribute("aria-label") || "") !== label) return false;
+            const items = [...document.querySelectorAll("ul li")];
+            const row = items[rowIndex];
+            return Boolean(row && row.contains(element) && (row.textContent || "").includes(name));
+          },
+          { index, exercise, label: deleteLabel },
+        );
+      } catch (error) {
+        const where = await historyRows.frame.evaluate(() => {
+          const element = document.activeElement;
+          const items = [...document.querySelectorAll("ul li")];
+          const rowIndex = items.findIndex((row) => row.contains(element));
+          const text = (items[rowIndex]?.textContent || "").replace(/\s+/g, " ").trim();
+          return `${element?.tagName || "none"}:${rowIndex}:${text}`;
+        });
+        throw new Error(`delete focus expected row ${index} ${exercise}, got ${where} (${error.message})`);
+      }
+    };
+    await confirmRowDelete(1);
+    await waitForRowFocus(1, "PRESS");
+    await confirmRowDelete(1);
+    await waitForRowFocus(0, "SQUAT");
+    await confirmRowDelete(0);
+    try {
+      await historyRows.frame.waitForFunction(() => {
+        if (document.querySelectorAll("ul li").length !== 0) return false;
+        const element = document.activeElement;
+        return element?.tagName === "H2" && element.getAttribute("tabindex") === "-1";
+      });
+    } catch (error) {
+      const headingFocus = await historyRows.frame.evaluate(() => document.activeElement?.tagName || "");
+      throw new Error(`empty history left focus on ${headingFocus} (${error.message})`);
+    }
+    await historyRows.page.close();
+
+    const historyFail = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
+    historyFail.page.on("dialog", (dialog) => dialog.dismiss());
+    await historyFail.frame.evaluate(() => {
+      window.__wcFailRemove = true;
+    });
+    await historyFail.frame.locator("ul").getByRole("button", { name: deleteLabel }).first().click();
+    await historyFail.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel }).click();
+    try {
+      await historyFail.frame.waitForFunction((label) => {
+        if (document.querySelector("[data-wc-delete-confirm]")) return false;
+        const element = document.activeElement;
+        if (!element || element === document.body) return false;
+        const items = [...document.querySelectorAll("ul li")];
+        return items.length === 2 && items[0]?.contains(element) && (element.getAttribute("aria-label") || "") === label;
+      }, deleteLabel);
+    } catch (error) {
+      throw new Error(`failed delete left focus on ${await focusedName(historyFail.frame)} (${error.message})`);
+    }
+    await historyFail.frame.evaluate(() => {
+      window.__wcSessions = (window.__wcSessions || []).filter((session) => session.id !== "hist-1");
+      window.__wcRefetchSessions();
+    });
+    try {
+      await historyFail.frame.waitForFunction(() => {
+        if (document.querySelectorAll("ul li").length !== 1) return false;
+        return document.activeElement === document.body;
+      });
+    } catch (error) {
+      throw new Error(`failed delete kept a pending focus (${await focusedName(historyFail.frame)}) (${error.message})`);
+    }
+    await historyFail.page.close();
 
     const historyUnmount = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
     historyUnmount.page.on("dialog", (dialog) => dialog.dismiss());

@@ -46,6 +46,7 @@ export function WorkoutSessionList() {
   const deleteButtonRefs = useRef(new Map<string, { current: HTMLButtonElement | null }>());
   const historyHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusAfterDeleteId = useRef<string | null>(null);
+  const focusAfterDeleteIndex = useRef<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -53,11 +54,12 @@ export function WorkoutSessionList() {
     const deletedId = focusAfterDeleteId.current;
     if (!deletedId) return;
     if (sessions.some((session) => session.id === deletedId)) return;
+    const index = focusAfterDeleteIndex.current ?? -1;
     focusAfterDeleteId.current = null;
-    const nextButton = sessions
-      .map((session) => deleteButtonRefs.current.get(session.id)?.current)
-      .find((button): button is HTMLButtonElement => Boolean(button?.isConnected));
-    if (nextButton) {
+    focusAfterDeleteIndex.current = null;
+    const nextSession = sessions[index] ?? (index > 0 ? sessions[index - 1] : undefined);
+    const nextButton = nextSession ? deleteButtonRefs.current.get(nextSession.id)?.current : null;
+    if (nextButton?.isConnected) {
       nextButton.focus();
       return;
     }
@@ -77,9 +79,13 @@ export function WorkoutSessionList() {
       feedback.onDelete();
       await remove(id);
       refetch();
+      return true;
     } catch (error) {
       console.error("Error deleting session:", error);
       alert("Error deleting session");
+      focusAfterDeleteId.current = null;
+      focusAfterDeleteIndex.current = null;
+      return false;
     }
   };
 
@@ -99,13 +105,24 @@ export function WorkoutSessionList() {
     deleteLock.current = true;
     const id = pendingDeleteId;
     focusAfterDeleteId.current = id;
+    focusAfterDeleteIndex.current = sessions.findIndex((session) => session.id === id);
     if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
     deleteDisableTimer.current = setTimeout(() => setIsDeleting(true), 0);
-    void removeSession(id).finally(() => {
+    void removeSession(id).then((deleted) => {
       if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
       deleteLock.current = false;
       setIsDeleting(false);
       setPendingDeleteId(null);
+      if (deleted) return;
+      const trigger = deleteButtonRefs.current.get(id);
+      queueMicrotask(() => {
+        const button = trigger?.current;
+        if (button?.isConnected) {
+          button.focus();
+          return;
+        }
+        historyHeadingRef.current?.focus();
+      });
     });
   };
 

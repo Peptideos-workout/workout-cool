@@ -299,6 +299,13 @@ test("quitWorkout clears the saved session, zeroes counters, and returns to step
       workoutSessionLocal.getAll().some((session) => session.status === "completed"),
       false,
     );
+    restoreProcessEnv();
+    assert.equal(process.env.SKIP_ENV_VALIDATION, previousSkipEnvValidation);
+    assert.equal(process.env.BETTER_AUTH_URL, previousBetterAuthUrl);
+    assert.equal(process.env.NEXT_PUBLIC_APP_URL, previousAppUrl);
+    assert.equal(Object.hasOwn(process.env, "SKIP_ENV_VALIDATION"), previousSkipEnvValidation !== undefined);
+    assert.equal(Object.hasOwn(process.env, "BETTER_AUTH_URL"), previousBetterAuthUrl !== undefined);
+    assert.equal(Object.hasOwn(process.env, "NEXT_PUBLIC_APP_URL"), previousAppUrl !== undefined);
   } finally {
     restoreProcessEnv();
   }

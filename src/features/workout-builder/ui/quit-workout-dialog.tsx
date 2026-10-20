@@ -75,19 +75,19 @@ export function QuitWorkoutDialog({
     if (!isOpen) return null;
     return (
       <EmbedFlowConfirm
-        body={t("workout_builder.session.quit_warning")}
-        cancelLabel={t("workout_builder.session.continue_workout")}
+        body={t("workout_builder.session.embed_quit_warning")}
+        cancelLabel={t("workout_builder.session.embed_quit_cancel")}
         confirmDisabled={isConfirming}
         confirmLabel={
           <>
             <Trash2 className="mr-2 h-4 w-4" />
-            {t("workout_builder.session.quit_without_save")}
+            {t("workout_builder.session.embed_quit_confirm")}
           </>
         }
         marker="quit"
         onCancel={onClose}
         onConfirm={handleConfirm}
-        title={t("workout_builder.session.quit_workout_title")}
+        title={t("workout_builder.session.embed_quit_title")}
         triggerRef={returnFocusRef}
       />
     );

@@ -9,8 +9,7 @@ export const embedQuitButtonClass =
   "w-full !min-h-12 !bg-[var(--wc-dash-error)] !text-lg !text-[var(--wc-dash-ink)] shadow-none hover:!bg-[var(--wc-dash-error)]";
 
 export const embedKeepButtonClass =
-  "w-full !min-h-12 border border-[var(--wc-dash-border)] !bg-[var(--wc-dash-panel)] " +
-  "!text-lg !text-[var(--wc-dash-text)] shadow-none hover:!bg-[var(--wc-dash-inner)]";
+  "w-full border border-[var(--wc-dash-border)] shadow-none " + "hover:bg-transparent !min-h-12 !text-lg !text-[var(--wc-dash-text)]";
 
 interface EmbedFlowConfirmProps {
   title: string;

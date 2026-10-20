@@ -242,6 +242,10 @@ function bundleQuitHarness(dir) {
     "workout_builder.session.quit_warning": localeValue("quit_warning"),
     "workout_builder.session.quit_without_save": localeValue("quit_without_save"),
     "workout_builder.session.continue_workout": localeValue("continue_workout"),
+    "workout_builder.session.embed_quit_title": localeValue("embed_quit_title"),
+    "workout_builder.session.embed_quit_warning": localeValue("embed_quit_warning"),
+    "workout_builder.session.embed_quit_confirm": localeValue("embed_quit_confirm"),
+    "workout_builder.session.embed_quit_cancel": localeValue("embed_quit_cancel"),
     "workout_builder.session.workout_in_progress": localeValue("workout_in_progress"),
     "workout_builder.session.started_at": localeValue("started_at"),
     "workout_builder.session.exercise_progress": localeValue("exercise_progress"),
@@ -804,9 +808,9 @@ async function installListenerSpy(frame) {
 
 async function runQuitEmbedHarness(browser) {
   const quitLabel = localeValue("quit_workout");
-  const title = localeValue("quit_workout_title");
-  const keepLabel = localeValue("continue_workout");
-  const discardLabel = localeValue("quit_without_save");
+  const title = localeValue("embed_quit_title");
+  const keepLabel = localeValue("embed_quit_cancel");
+  const discardLabel = localeValue("embed_quit_confirm");
   const dir = join(tmpdir(), `wc-quit-harness-${process.pid}`);
   mkdirSync(dir, { recursive: true });
   let child;
@@ -891,7 +895,7 @@ async function runQuitEmbedHarness(browser) {
       const id = element.getAttribute("aria-describedby");
       return id ? (document.getElementById(id)?.textContent?.trim() ?? "") : "";
     });
-    if (described !== localeValue("quit_warning")) throw new Error(`quit describedby ${described}`);
+    if (described !== localeValue("embed_quit_warning")) throw new Error(`quit describedby ${described}`);
     await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
     await assertDesign(light.frame);
     await saveShot(light.page, "confirm-390-light.png");
@@ -1021,6 +1025,15 @@ async function runQuitEmbedHarness(browser) {
     await plain.getByRole("button", { name: quitLabel }).click();
     const radix = plain.getByRole("dialog");
     await radix.waitFor();
+    const desktopCopy = await radix.innerText();
+    for (const expected of [
+      "Quit Workout?",
+      "Are you sure you want to quit? You can save your progress or lose it completely.",
+      "Quit Without Saving",
+      "Continue Workout",
+    ]) {
+      if (!desktopCopy.includes(expected)) throw new Error(`non-embed dialog missing ${expected}`);
+    }
     if ((await plain.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("non-embed rendered the in-flow confirm");
     const position = await radix.evaluate((element) => getComputedStyle(element).position);
     if (position !== "fixed") throw new Error(`non-embed dialog position ${position}`);
@@ -1067,7 +1080,7 @@ async function runQuitEmbedHarness(browser) {
       throw new Error("overlay click ended the session");
     }
     await plain.getByRole("button", { name: quitLabel }).click();
-    await plain.getByRole("button", { name: keepLabel }).click();
+    await plain.getByRole("button", { name: localeValue("continue_workout") }).click();
     if ((await plain.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
       throw new Error("non-embed Keep going ended the session");
     }

@@ -61,6 +61,7 @@ export function QuitWorkoutDialog({
         onCancel={onClose}
         onConfirm={handleConfirm}
         title={t("workout_builder.session.quit_workout_title")}
+        triggerRef={returnFocusRef}
       />
     );
   }

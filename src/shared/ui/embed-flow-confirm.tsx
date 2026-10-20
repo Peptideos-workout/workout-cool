@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ interface EmbedFlowConfirmProps {
   marker?: "quit" | "delete";
   confirmDisabled?: boolean;
   className?: string;
+  triggerRef?: RefObject<HTMLButtonElement | null>;
 }
 
 export function EmbedFlowConfirm({
@@ -34,23 +35,33 @@ export function EmbedFlowConfirm({
   marker,
   confirmDisabled = false,
   className,
+  triggerRef,
 }: EmbedFlowConfirmProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
+  const fallbackTriggerRef = useRef<HTMLElement | null>(null);
+  const triggerRefProp = useRef(triggerRef);
   const onCancelRef = useRef(onCancel);
   const titleId = useId();
   const descriptionId = useId();
+  triggerRefProp.current = triggerRef;
   onCancelRef.current = onCancel;
 
   const restoreTrigger = () => {
-    const trigger = triggerRef.current;
-    if (trigger?.isConnected) trigger.focus();
+    const explicit = triggerRefProp.current;
+    if (explicit) {
+      if (explicit.current?.isConnected) explicit.current.focus();
+      return;
+    }
+    const fallback = fallbackTriggerRef.current;
+    if (fallback?.isConnected) fallback.focus();
   };
 
   useEffect(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body) triggerRef.current = active;
+    if (!triggerRefProp.current) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active !== document.body) fallbackTriggerRef.current = active;
+    }
     cardRef.current?.scrollIntoView({ block: "center" });
     cancelRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {

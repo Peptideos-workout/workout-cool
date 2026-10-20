@@ -290,17 +290,22 @@ export function PrismaClient() {}
   );
   writeFileSync(
     sessionsStub,
-    `export function useWorkoutSessions() {
+    `import { useState } from "react";
+const historySession = {
+  id: "hist-1",
+  status: "completed",
+  startedAt: "2026-01-02T15:04:00.000Z",
+  endedAt: "2026-01-02T16:00:00.000Z",
+  muscles: [],
+  exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
+};
+export function useWorkoutSessions() {
+  const [data, setData] = useState(() => (window.__wcSessions || [historySession]).slice());
   return {
-    data: [{
-      id: "hist-1",
-      status: "completed",
-      startedAt: "2026-01-02T15:04:00.000Z",
-      endedAt: "2026-01-02T16:00:00.000Z",
-      muscles: [],
-      exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
-    }],
-    refetch() {}
+    data,
+    refetch() {
+      setData((window.__wcSessions || []).slice());
+    }
   };
 }
 `,
@@ -315,6 +320,8 @@ export const useWorkoutSessionService = () => ({
   complete: async () => {},
   remove: async (id) => {
     window.__wcRemoveCalls = (window.__wcRemoveCalls || 0) + 1;
+    if (typeof window.__wcHoldRemove === "function") await window.__wcHoldRemove();
+    window.__wcSessions = (window.__wcSessions || []).filter((session) => session.id !== id);
     workoutSessionLocal.remove(id);
   }
 });
@@ -444,6 +451,16 @@ function HistoryHarness() {
 }
 
 const card = new URLSearchParams(location.search).get("card");
+if (card === "history") {
+  window.__wcSessions = [{
+    id: "hist-1",
+    status: "completed",
+    startedAt: "2026-01-02T15:04:00.000Z",
+    endedAt: "2026-01-02T16:00:00.000Z",
+    muscles: [],
+    exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
+  }];
+}
 createRoot(document.getElementById("root")).render(
   card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : <App />
 );
@@ -689,6 +706,26 @@ async function focusedName(target) {
   });
 }
 
+async function armNonFocusingClick(button) {
+  await button.evaluate((element) => {
+    element.addEventListener(
+      "mousedown",
+      (event) => {
+        event.preventDefault();
+      },
+      { capture: true, once: true },
+    );
+  });
+}
+
+async function clickAgainWhileDisabled(button, label) {
+  if (!(await button.isDisabled())) throw new Error(`${label} was not disabled`);
+  await button.evaluate((element) => {
+    element.disabled = false;
+  });
+  await button.click();
+}
+
 async function installListenerSpy(frame) {
   await frame.evaluate(() => {
     window.__wcKeydown = 0;
@@ -800,30 +837,42 @@ async function runQuitEmbedHarness(browser) {
     if ((await focusedName(light.frame)).includes(quitLabel) === false) {
       throw new Error(`Escape left focus on ${await focusedName(light.frame)}`);
     }
-    await light.frame.getByRole("button", { name: quitLabel }).click();
-    await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
-    const quitCalls = await light.frame.evaluate((label) => {
+    const quitTrigger = light.frame.getByRole("button", { name: quitLabel });
+    await armNonFocusingClick(quitTrigger);
+    await quitTrigger.click();
+    await light.frame.locator("[data-wc-quit-confirm]").waitFor();
+    await light.frame.getByRole("button", { name: keepLabel }).click();
+    if ((await focusedName(light.frame)).includes(quitLabel) === false) {
+      throw new Error(`non-focusing Keep going left focus on ${await focusedName(light.frame)}`);
+    }
+    await light.frame.evaluate(() => {
       const store = window.__wcSessionStore;
-      window.__wcQuitCalls = 0;
       const original = store.getState().quitWorkout;
+      window.__wcOriginalQuit = original;
+      window.__wcHoldQuit = true;
+      window.__wcQuitCalls = 0;
       store.setState({
         quitWorkout: () => {
           window.__wcQuitCalls += 1;
+          if (window.__wcHoldQuit) throw new Error("hold");
           return original();
         },
       });
-      const confirm = [...document.querySelectorAll("[data-wc-quit-confirm] button")].find((button) =>
-        (button.textContent || "").includes(label),
-      );
-      const key = Object.keys(confirm).find((name) => name.startsWith("__reactProps"));
-      const onClick = key && confirm[key].onClick;
-      if (!onClick) throw new Error("quit confirm click handler missing");
-      onClick();
-      onClick();
-      return { quitCalls: window.__wcQuitCalls, completeCalls: window.__wcCompleteCalls };
-    }, discardLabel);
-    if (quitCalls.quitCalls !== 1) throw new Error(`quit confirm ran ${quitCalls.quitCalls} times`);
-    if (quitCalls.completeCalls !== 0) throw new Error(`quit called completeWorkout ${quitCalls.completeCalls} times`);
+    });
+    await quitTrigger.click();
+    await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
+    const quitConfirm = light.frame.getByRole("button", { name: discardLabel });
+    await quitConfirm.click();
+    await clickAgainWhileDisabled(quitConfirm, "quit confirm");
+    const quitCalls = await light.frame.evaluate(() => window.__wcQuitCalls || 0);
+    if (quitCalls !== 1) throw new Error(`quit confirm ran ${quitCalls} times`);
+    await light.frame.evaluate(() => {
+      window.__wcHoldQuit = false;
+      window.__wcOriginalQuit();
+    });
+    if ((await light.frame.evaluate(() => window.__wcCompleteCalls || 0)) !== 0) {
+      throw new Error(`quit called completeWorkout ${await light.frame.evaluate(() => window.__wcCompleteCalls || 0)} times`);
+    }
     await light.frame.locator("[data-wc-active='0']").waitFor();
     await light.frame.locator("[data-wc-step='1']").waitFor();
     await light.frame.locator("[data-wc-completed='0']").waitFor();
@@ -878,7 +927,30 @@ async function runQuitEmbedHarness(browser) {
     if ((await plain.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("non-embed rendered the in-flow confirm");
     const position = await radix.evaluate((element) => getComputedStyle(element).position);
     if (position !== "fixed") throw new Error(`non-embed dialog position ${position}`);
+    await plain.evaluate(() => {
+      const dialog = document.querySelector("[role=dialog]");
+      window.__wcDialogClose = new Promise((resolve) => {
+        const obs = new MutationObserver(() => {
+          if (dialog.getAttribute("data-state") === "closed") {
+            obs.disconnect();
+            resolve("closed");
+            return;
+          }
+          if (!dialog.isConnected) {
+            obs.disconnect();
+            resolve("removed");
+          }
+        });
+        obs.observe(document.body, { attributes: true, subtree: true, childList: true });
+        setTimeout(() => {
+          obs.disconnect();
+          resolve(dialog.isConnected ? "still-open" : "removed");
+        }, 1000);
+      });
+    });
     await plain.keyboard.press("Escape");
+    const closeState = await plain.evaluate(() => window.__wcDialogClose);
+    if (closeState !== "closed") throw new Error(`non-embed dialog ${closeState} instead of staying mounted closed`);
     await plain.getByRole("dialog").waitFor({ state: "hidden" });
     if ((await focusedName(plain)).includes(quitLabel) === false) {
       throw new Error(`non-embed Escape left focus on ${await focusedName(plain)}`);
@@ -887,6 +959,16 @@ async function runQuitEmbedHarness(browser) {
       throw new Error("non-embed Escape ended the session");
     }
     if ((await plain.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("non-embed Escape rendered the in-flow confirm");
+    await plain.getByRole("button", { name: quitLabel }).click();
+    await plain.getByRole("dialog").waitFor();
+    await plain.locator(".fixed.inset-0").click({ position: { x: 8, y: 8 } });
+    await plain.getByRole("dialog").waitFor({ state: "hidden" });
+    if ((await focusedName(plain)).includes(quitLabel) === false) {
+      throw new Error(`overlay click left focus on ${await focusedName(plain)}`);
+    }
+    if ((await plain.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
+      throw new Error("overlay click ended the session");
+    }
     await plain.getByRole("button", { name: quitLabel }).click();
     await plain.getByRole("button", { name: keepLabel }).click();
     if ((await plain.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
@@ -918,20 +1000,31 @@ async function runQuitEmbedHarness(browser) {
     if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
       throw new Error("closing the delete card called removeSession");
     }
-    await history.frame.getByRole("button", { name: deleteLabel }).click();
+    const rowDelete = history.frame.locator("ul").getByRole("button", { name: deleteLabel });
+    await armNonFocusingClick(rowDelete);
+    await rowDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").waitFor();
-    const removeCalls = await history.frame.evaluate((label) => {
-      const confirm = [...document.querySelectorAll("[data-wc-delete-confirm] button")].find((button) =>
-        (button.textContent || "").includes(label),
-      );
-      const key = Object.keys(confirm).find((name) => name.startsWith("__reactProps"));
-      const onClick = key && confirm[key].onClick;
-      if (!onClick) throw new Error("delete confirm click handler missing");
-      onClick();
-      onClick();
-      return window.__wcRemoveCalls || 0;
-    }, deleteLabel);
+    await history.frame.getByRole("button", { name: cancelLabel }).click();
+    if ((await focusedName(history.frame)) !== deleteLabel) {
+      throw new Error(`non-focusing Cancel left focus on ${await focusedName(history.frame)}`);
+    }
+    await rowDelete.click();
+    await history.frame.locator("[data-wc-delete-confirm]").waitFor();
+    await history.frame.evaluate(() => {
+      let resolveHold;
+      const gate = new Promise((resolve) => {
+        resolveHold = resolve;
+      });
+      window.__wcHoldRemove = () => gate;
+      window.__wcReleaseRemove = () => resolveHold();
+    });
+    const deleteConfirm = history.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel });
+    await deleteConfirm.click();
+    await clickAgainWhileDisabled(deleteConfirm, "delete confirm");
+    const removeCalls = await history.frame.evaluate(() => window.__wcRemoveCalls || 0);
     if (removeCalls !== 1) throw new Error(`removeSession ran ${removeCalls} times`);
+    await history.frame.evaluate(() => window.__wcReleaseRemove());
+    await history.frame.waitForFunction(() => document.querySelectorAll("ul li").length === 0);
     await history.page.close();
 
     const historyPlain = await browser.newPage({ viewport: { width: 1280, height: 900 } });

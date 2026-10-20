@@ -35,8 +35,17 @@ export function WorkoutSessionList() {
   const activeSession = sessions.find((s) => s.status === "active");
   const isEmbed = useIsEmbedDocument();
   const deleteLock = useRef(false);
+  const deleteButtonRefs = useRef(new Map<string, { current: HTMLButtonElement | null }>());
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const deleteTriggerRef = (id: string) => {
+    const existing = deleteButtonRefs.current.get(id);
+    if (existing) return existing;
+    const created = { current: null };
+    deleteButtonRefs.current.set(id, created);
+    return created;
+  };
 
   const removeSession = async (id: string) => {
     try {
@@ -198,6 +207,7 @@ export function WorkoutSessionList() {
                     onCancel={() => setPendingDeleteId(null)}
                     onConfirm={handleConfirmDelete}
                     title={t("workout_builder.session.delete_workout_title")}
+                    triggerRef={deleteTriggerRef(session.id)}
                   />
                 ) : null}
                 <div className="flex gap-2 items-center">
@@ -233,6 +243,7 @@ export function WorkoutSessionList() {
                       <Button
                         aria-label={t("workout_builder.session.delete")}
                         onClick={() => handleDelete(session.id)}
+                        ref={deleteTriggerRef(session.id)}
                         size="icon"
                         variant="ghost"
                       >

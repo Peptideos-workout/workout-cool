@@ -120,6 +120,37 @@ test("gated embed paths still return the signed-out document", async () => {
   assert.equal(withSession.body.includes("data-wc-embed-fallback"), false);
 });
 
+test("embed + /en/ with one trailing slash returns the signed-out document, and cookie or non-embed stays put", async () => {
+  const signedOut = await run(`${APP}/en/?embed=1&theme=dark`, { "accept-language": "en" });
+  assertSignedOutDocument(signedOut.response, signedOut.body);
+
+  const withCookie = await run(`${APP}/en/?embed=1&theme=dark`, {
+    "accept-language": "en",
+    cookie: SESSION
+  });
+  assert.equal(withCookie.response.status, 200);
+  assert.equal(withCookie.response.headers.get("location"), null);
+  assert.equal(withCookie.response.headers.get("x-next-locale"), "en");
+  assert.equal(withCookie.body.includes("data-wc-embed-fallback"), false);
+  assert.equal(withCookie.body.includes("wc:session"), false);
+
+  const plain = await run(`${APP}/en/`, { "accept-language": "en" });
+  assert.equal(plain.response.status, 200);
+  assert.equal(plain.response.headers.get("location"), null);
+  assert.equal(plain.response.headers.get("x-next-locale"), "en");
+  assert.equal(plain.body.includes("data-wc-embed-fallback"), false);
+
+  for (const locale of ["fr", "zh-CN"]) {
+    const slashed = await run(`${APP}/${locale}/?embed=1`, { "accept-language": locale });
+    assertSignedOutDocument(slashed.response, slashed.body);
+  }
+
+  const deeper = await run(`${APP}/en//?embed=1`, { "accept-language": "en" });
+  assert.equal(deeper.body.includes("data-wc-embed-fallback"), false);
+  const doubleSlash = await run(`${APP}//?embed=1`, { "accept-language": "en" });
+  assert.equal(doubleSlash.body.includes("data-wc-embed-fallback"), false);
+});
+
 test("embed sign-out paths still return a document that posts no session", async () => {
   const { response, body } = await run(`${APP}/en/auth/signout`, { "sec-fetch-dest": "iframe" });
   assert.equal(response.status, 200);

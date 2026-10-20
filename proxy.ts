@@ -84,10 +84,10 @@ function resolveRequestLocale(request: NextRequest): SupportedLocale {
   return candidate;
 }
 
-/** `/` and supported locale homes (`/en`, `/zh-CN`). Uses the proxy locale list. */
+/** `/` and locale homes, including exactly one trailing slash (`/en/`, `/zh-CN/`). Not `//` or deeper paths. */
 function isEmbedHomePath(pathname: string): boolean {
   if (pathname === "/") return true;
-  return SUPPORTED_LOCALES.some((locale) => pathname === `/${locale}`);
+  return SUPPORTED_LOCALES.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`);
 }
 
 /** Locale redirect target. Pathname gains the locale; search and hash stay as received. */

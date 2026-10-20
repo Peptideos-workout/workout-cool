@@ -84,6 +84,12 @@ function resolveRequestLocale(request: NextRequest): SupportedLocale {
   return candidate;
 }
 
+/** `/` and locale homes, including exactly one trailing slash (`/en/`, `/zh-CN/`). Not `//` or deeper paths. */
+export function isEmbedHomePath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return SUPPORTED_LOCALES.some((locale) => pathname === `/${locale}` || pathname === `/${locale}/`);
+}
+
 /** Locale redirect target. Pathname gains the locale; search and hash stay as received. */
 export function buildLocaleRedirectUrl(request: NextRequest, locale: string): URL {
   const url = request.nextUrl.clone();
@@ -110,8 +116,12 @@ export async function proxy(request: NextRequest) {
     request.headers.get("sec-fetch-dest")
   );
   const embedNeedsFallback =
-    embedded && (shouldRedirectSignedOutRequest(pathname, hasSession) || isEmbedUnframeableSignoutPath(pathname));
+    embedded &&
+    (shouldRedirectSignedOutRequest(pathname, hasSession) ||
+      isEmbedUnframeableSignoutPath(pathname) ||
+      (!hasSession && isEmbedHomePath(pathname)));
 
+  // Before the `/` detected-locale redirect, so a signed-out embed home skips that 307.
   if (embedNeedsFallback) {
     return embedSignedOutDocumentResponse(
       process.env.NEXT_PUBLIC_PEPTIDEOS_URL,

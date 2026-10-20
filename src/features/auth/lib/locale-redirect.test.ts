@@ -6,11 +6,19 @@ import { NextRequest } from "next/server";
 import { buildLocaleRedirectUrl, proxy } from "../../../../proxy";
 
 const APP = "https://workouts.peptideos.us";
+const SESSION = "better-auth.session_token=1";
 
-test("/?embed=1 with a non-English Accept-Language redirects to /{locale}?embed=1", async () => {
+/** A session cookie keeps an embed home on the locale-redirect path. Without it, proxy returns the signed-out document. */
+function withSession(headers: Record<string, string> = {}): Record<string, string> {
+  if (headers.cookie?.includes("better-auth.session_token")) return headers;
+  const cookie = headers.cookie ? `${headers.cookie}; ${SESSION}` : SESSION;
+  return { ...headers, cookie };
+}
+
+test("/?embed=1 with a session cookie and a non-English Accept-Language redirects to /{locale}?embed=1", async () => {
   const french = await proxy(
     new NextRequest(`${APP}/?embed=1`, {
-      headers: { "accept-language": "fr-FR,fr;q=0.9,en;q=0.8" }
+      headers: withSession({ "accept-language": "fr-FR,fr;q=0.9,en;q=0.8" })
     })
   );
   assert.equal(french.status, 307);
@@ -18,7 +26,7 @@ test("/?embed=1 with a non-English Accept-Language redirects to /{locale}?embed=
 
   const chinese = await proxy(
     new NextRequest(`${APP}/?embed=1`, {
-      headers: { "accept-language": "zh-CN,zh;q=0.9" }
+      headers: withSession({ "accept-language": "zh-CN,zh;q=0.9" })
     })
   );
   assert.equal(chinese.status, 307);
@@ -64,7 +72,7 @@ test("no query string means no stray question mark", async () => {
 test("locale redirect keeps the hash when one is present", async () => {
   const response = await proxy(
     new NextRequest(`${APP}/?embed=1#sets`, {
-      headers: { "accept-language": "ru" }
+      headers: withSession({ "accept-language": "ru" })
     })
   );
 
@@ -94,7 +102,7 @@ test("english or default locale behavior is unchanged", async () => {
 
   const withQuery = await proxy(
     new NextRequest(`${APP}/?embed=1`, {
-      headers: { "accept-language": "en" }
+      headers: withSession({ "accept-language": "en" })
     })
   );
   assert.equal(withQuery.status, 307);
@@ -104,11 +112,12 @@ test("english or default locale behavior is unchanged", async () => {
 test("an already-localized path does not redirect", async () => {
   const french = await proxy(
     new NextRequest(`${APP}/fr?embed=1`, {
-      headers: { "accept-language": "fr" }
+      headers: withSession({ "accept-language": "fr" })
     })
   );
   assert.equal(french.status, 200);
   assert.equal(french.headers.get("location"), null);
+  assert.equal(french.headers.get("x-next-locale"), "fr");
 
   const english = await proxy(
     new NextRequest(`${APP}/en/about`, {
@@ -169,7 +178,7 @@ test("zh-CN, zh-TW, zh, and fr-CA resolve to the same locale on / and on a neste
   for (const { acceptLanguage, locale } of cases) {
     const headers = { "accept-language": acceptLanguage };
 
-    const root = await proxy(new NextRequest(`${APP}/?embed=1`, { headers }));
+    const root = await proxy(new NextRequest(`${APP}/?embed=1`, { headers: withSession(headers) }));
     const rootLocation = root.headers.get("location");
     assert.equal(root.status, 307, acceptLanguage);
     if (!rootLocation) assert.fail(acceptLanguage);
@@ -189,8 +198,8 @@ test("zh-CN, zh-TW, zh, and fr-CA resolve to the same locale on / and on a neste
   }
 });
 
-test("cookieless /?embed=1 with Accept-Language zh-CN settles within 2 hops and keeps embed=1", async () => {
-  const headers = { "accept-language": "zh-CN,zh;q=0.9" };
+test("a session cookie on /?embed=1 with Accept-Language zh-CN settles within 2 hops and keeps embed=1", async () => {
+  const headers = withSession({ "accept-language": "zh-CN,zh;q=0.9" });
   const settled = await followRedirects(`${APP}/?embed=1`, headers);
   const finalUrl = new URL(settled.finalUrl);
 
@@ -235,7 +244,8 @@ test("zh-CN /?embed=1 does not redirect-loop for any detected-locale or Next-Loc
   for (const cookie of cookieStates) {
     const headers: Record<string, string> = { "accept-language": "zh-CN" };
     if (cookie !== undefined) headers.cookie = cookie;
-    const label = cookie ?? "(no cookies)";
+    Object.assign(headers, withSession(headers));
+    const label = cookie ?? "(session only)";
 
     if (cookie !== undefined && cookie in nextLocalePath) {
       const first = await proxy(new NextRequest(`${APP}/?embed=1`, { headers }));
@@ -274,7 +284,7 @@ function setCookieList(response: Response): string[] {
 }
 
 async function assertLocaleOnRootAndNested(headers: Record<string, string>, locale: string, label: string) {
-  const root = await proxy(new NextRequest(`${APP}/?${QUERY}`, { headers }));
+  const root = await proxy(new NextRequest(`${APP}/?${QUERY}`, { headers: withSession(headers) }));
   const rootLocation = root.headers.get("location");
   if (rootLocation) {
     assert.equal(root.status, 307, label);
@@ -334,7 +344,7 @@ test("Accept-Language pt-BR and fr-FR on /programs/x?embed=1 rewrite to /pt and 
   for (const { acceptLanguage, locale } of cases) {
     const headers = { "accept-language": acceptLanguage };
 
-    const root = await proxy(new NextRequest(`${APP}/?embed=1`, { headers }));
+    const root = await proxy(new NextRequest(`${APP}/?embed=1`, { headers: withSession(headers) }));
     const rootLocation = root.headers.get("location");
     assert.equal(root.status, 307, acceptLanguage);
     if (!rootLocation) assert.fail(acceptLanguage);
@@ -366,11 +376,11 @@ test("pt-BR and fr-FR with q-values resolve to pt and fr on / and on a nested pa
     await assertLocaleOnRootAndNested({ "accept-language": acceptLanguage }, locale, acceptLanguage);
   }
 
-  const settled = await followQuery(`${APP}/?${QUERY}`, { "accept-language": "zh-CN,zh;q=0.9" });
+  const settled = await followQuery(`${APP}/?${QUERY}`, withSession({ "accept-language": "zh-CN,zh;q=0.9" }));
   assert.equal(settled.loop, false);
   assert.ok(settled.hops <= 2);
   assert.equal(new URL(settled.finalUrl).pathname, "/zh-CN");
-  assertKeptQuery(settled.finalUrl, "cookieless zh-CN");
+  assertKeptQuery(settled.finalUrl, "session zh-CN");
 });
 
 test("a supported Next-Locale cookie wins over Accept-Language on / and on a nested path", async () => {
@@ -424,7 +434,7 @@ test("q=0, malformed q, star, and blank Accept-Language do not select an unaccep
 
   for (const { acceptLanguage, locale } of cases) {
     await assert.doesNotReject(() => assertLocaleOnRootAndNested({ "accept-language": acceptLanguage }, locale, acceptLanguage));
-    const root = await proxy(new NextRequest(`${APP}/?${QUERY}`, { headers: { "accept-language": acceptLanguage } }));
+    const root = await proxy(new NextRequest(`${APP}/?${QUERY}`, { headers: withSession({ "accept-language": acceptLanguage }) }));
     const location = root.headers.get("location");
     if (!location) assert.fail(acceptLanguage);
     assert.equal(new URL(location).pathname, `/${locale}`, acceptLanguage);
@@ -433,13 +443,13 @@ test("q=0, malformed q, star, and blank Accept-Language do not select an unaccep
 });
 
 test("embed=1 and other query params survive every locale redirect hop", async () => {
-  const region = await followQuery(`${APP}/?${QUERY}`, { "accept-language": "pt-BR,pt;q=0.9,en;q=0.8" });
+  const region = await followQuery(`${APP}/?${QUERY}`, withSession({ "accept-language": "pt-BR,pt;q=0.9,en;q=0.8" }));
   assert.equal(region.loop, false);
   assert.equal(new URL(region.finalUrl).pathname, "/pt");
   assertKeptQuery(region.finalUrl, "pt-BR");
   for (const location of region.locations) assertKeptQuery(location, "pt-BR hop");
 
-  const saved = await followQuery(`${APP}/zh-CN?${QUERY}`, { "accept-language": "en", cookie: "Next-Locale=fr" });
+  const saved = await followQuery(`${APP}/zh-CN?${QUERY}`, withSession({ "accept-language": "en", cookie: "Next-Locale=fr" }));
   assert.equal(saved.loop, false);
   assert.ok(saved.hops <= 2, saved.finalUrl);
   assert.equal(new URL(saved.finalUrl).pathname, "/fr");
@@ -447,7 +457,7 @@ test("embed=1 and other query params survive every locale redirect hop", async (
   assert.ok(saved.locations.length >= 1);
   for (const location of saved.locations) assertKeptQuery(location, "saved fr hop");
 
-  const malformed = await followQuery(`${APP}/?${QUERY}`, { "accept-language": "fr;q=0, en", cookie: "Next-Locale=../" });
+  const malformed = await followQuery(`${APP}/?${QUERY}`, withSession({ "accept-language": "fr;q=0, en", cookie: "Next-Locale=../" }));
   assert.equal(malformed.loop, false);
   assert.equal(new URL(malformed.finalUrl).pathname, "/en");
   assertKeptQuery(malformed.finalUrl, "q=0");
@@ -502,7 +512,7 @@ test("Content-Language is the rendered locale, including on /programs and /about
 });
 
 test("unsupported Accept-Language falls back to English without a redirect loop", async () => {
-  const headers = { "accept-language": "de-DE,de;q=0.9" };
+  const headers = withSession({ "accept-language": "de-DE,de;q=0.9" });
   const settled = await followRedirects(`${APP}/?embed=1`, headers);
   const finalUrl = new URL(settled.finalUrl);
 

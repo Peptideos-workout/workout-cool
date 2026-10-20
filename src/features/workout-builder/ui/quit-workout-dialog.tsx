@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useI18n } from "locales/client";
 
@@ -15,9 +15,17 @@ interface QuitWorkoutDialogProps {
   onQuitWithoutSave: VoidFunction;
   exercisesCompleted: number;
   totalExercises: number;
+  returnFocusRef?: RefObject<HTMLButtonElement | null>;
 }
 
-export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercisesCompleted, totalExercises }: QuitWorkoutDialogProps) {
+export function QuitWorkoutDialog({
+  isOpen,
+  onClose,
+  onQuitWithoutSave,
+  exercisesCompleted,
+  totalExercises,
+  returnFocusRef,
+}: QuitWorkoutDialogProps) {
   const t = useI18n();
   const isEmbed = useIsEmbedDocument();
   const confirmLock = useRef(false);
@@ -59,7 +67,13 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
 
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
-      <DialogContent className="max-w-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] [&>button]:!h-12 [&>button]:!w-12">
+      <DialogContent
+        className="max-w-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] [&>button]:!h-12 [&>button]:!w-12"
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          returnFocusRef?.current?.focus();
+        }}
+      >
         <DialogHeader className="pb-6">
           <DialogTitle className="flex items-center gap-3 text-lg font-bold text-[var(--wc-dash-text)]">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-inner)]">

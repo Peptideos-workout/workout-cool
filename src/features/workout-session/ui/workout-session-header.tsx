@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Target, Weight } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 
@@ -17,6 +17,7 @@ interface WorkoutSessionHeaderProps {
 
 export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProps) {
   const t = useI18n();
+  const quitButtonRef = useRef<HTMLButtonElement>(null);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
   const [volumeUnit, setVolumeUnit] = useState<WeightUnit>("kg");
   const locale = useCurrentLocale();
@@ -72,6 +73,7 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
         isOpen={showQuitDialog}
         onClose={() => setShowQuitDialog(false)}
         onQuitWithoutSave={handleQuitWithoutSave}
+        returnFocusRef={quitButtonRef}
         totalExercises={totalExercises}
       />
       <div className="w-full mt-2 mb-6 px-2 sm:px-6">
@@ -85,6 +87,7 @@ export function WorkoutSessionHeader({ onQuitWorkout }: WorkoutSessionHeaderProp
             <Button
               className="max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
               onClick={handleQuitClick}
+              ref={quitButtonRef}
               variant="ghost"
             >
               <X className="h-3 w-3 mr-1" />

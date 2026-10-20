@@ -197,6 +197,12 @@ test("program quit navigates only inside embed", () => {
   assert.deepEqual(embed.pushes, ["/?embed=1"]);
 });
 
+test("program session quit reads the embed flag from the document", () => {
+  const program = read("app/[locale]/(app)/programs/[slug]/session/[sessionSlug]/ProgramSessionClient.tsx");
+  assert.match(program, /quitProgramSession\(\{/);
+  assert.match(program, /isEmbed: document\.documentElement\.getAttribute\("data-wc-embed"\) === "1"/);
+});
+
 test("session handlers, disabled expressions, conditionals, and copy stay locked with regex matches", () => {
   const header = read(HEADER);
   const timer = read(TIMER);

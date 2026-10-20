@@ -8,6 +8,7 @@
  *
  * Requires `pnpm build` and Playwright's Chromium (`pnpm exec playwright install chromium`).
  * The title modality check also runs in WebKit when that binary is installed.
+ * In CI, a missing Chromium or WebKit fails the run instead of skipping.
  */
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
@@ -994,19 +995,26 @@ async function runTitleModality(browser, parentOrigin, childOrigin, engine, save
   console.log(`TITLE_ENGINE ${engine} pointer=no-ring tap=no-ring keyboard=ring`);
 }
 
+function missingEngine(name, error) {
+  if (process.env.CI === "true") {
+    throw new Error(`${name} is not available in CI (${error.message}).`);
+  }
+  console.log(`TITLE_ENGINE ${name} skipped (${error.message})`);
+}
+
 async function runWebKitTitleModality(parentOrigin, childOrigin, saveShot) {
   let webkit;
   try {
     ({ webkit } = require("playwright"));
   } catch (error) {
-    console.log(`TITLE_ENGINE webkit skipped (${error.message})`);
+    missingEngine("webkit", error);
     return;
   }
   let browser;
   try {
     browser = await webkit.launch({ headless: true });
   } catch (error) {
-    console.log(`TITLE_ENGINE webkit skipped (${error.message})`);
+    missingEngine("webkit", error);
     return;
   }
   try {
@@ -1815,7 +1823,13 @@ async function main() {
     const slashSrc = `${forwardOrigin}/en/?embed=1`;
     const plainSrc = `${forwardOrigin}/en?embed=1`;
     parent = await startParent(parentPort, slashSrc, plainSrc);
-    browser = await chromium.launch({ headless: true });
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (error) {
+      throw new Error(
+        process.env.CI === "true" ? `chromium is not available in CI (${error.message}).` : `Chromium failed to launch (${error.message}).`,
+      );
+    }
     const context = await browser.newContext();
     await context.clearCookies();
     const page = await context.newPage();

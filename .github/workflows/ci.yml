@@ -151,7 +151,7 @@ jobs:
         run: pnpm test
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: Run signed-out embed iframe check
         run: pnpm test:embed-iframe

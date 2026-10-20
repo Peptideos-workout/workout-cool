@@ -11,6 +11,7 @@ import { SiteConfig } from "@/shared/config/site-config";
 import { ChangePasswordMenuItem } from "@/features/update-password/ui/change-password-menu-item";
 import { ThemeToggle } from "@/features/theme/ThemeToggle";
 import WorkoutStreakHeader from "@/features/layout/workout-streak-header";
+import { useHeaderAuthTimedOut } from "@/features/layout/lib/use-header-auth-timeout";
 import { headerAuthChrome } from "@/features/layout/lib/header-auth-chrome";
 import { assignCheckoutUrl } from "@/features/embed/lib/embed-mode";
 import { useLogout } from "@/features/auth/model/useLogout";
@@ -25,7 +26,9 @@ export const Header = () => {
   const logout = useLogout();
   const t = useI18n();
   const isPremium = useIsPremium();
-  const authChrome = headerAuthChrome(session.isPending, Boolean(session.data));
+  const hasSession = Boolean(session.data);
+  const authTimedOut = useHeaderAuthTimedOut(session.isPending, hasSession);
+  const authChrome = headerAuthChrome(session.isPending, hasSession, authTimedOut);
 
   // Get user initials for avatar
   const userAvatar = session.data?.user?.email?.substring(0, 2).toUpperCase() || "";

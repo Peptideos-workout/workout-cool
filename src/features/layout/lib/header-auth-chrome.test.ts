@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
-import { headerAuthChrome } from "./header-auth-chrome";
+import { HEADER_AUTH_PENDING_TIMEOUT_MS, headerAuthChrome } from "./header-auth-chrome";
 
 test("header auth chrome is neutral while the session is pending and unchanged after", () => {
   assert.equal(headerAuthChrome(true, false), "pending");
@@ -11,9 +11,27 @@ test("header auth chrome is neutral while the session is pending and unchanged a
   assert.equal(headerAuthChrome(false, true), "signed-in");
 });
 
+test("a session-less pending header falls back to signed-out after the timeout", () => {
+  assert.equal(HEADER_AUTH_PENDING_TIMEOUT_MS, 5000);
+  assert.equal(headerAuthChrome(true, false, false), "pending");
+  assert.equal(headerAuthChrome(true, false, true), "signed-out");
+  assert.equal(headerAuthChrome(true, true, true), "signed-in");
+  assert.equal(headerAuthChrome(false, false, true), "signed-out");
+
+  const hook = readFileSync("src/features/layout/lib/use-header-auth-timeout.ts", "utf8");
+  assert.match(hook, /HEADER_AUTH_PENDING_TIMEOUT_MS/);
+  assert.match(hook, /setTimeout/);
+  assert.match(hook, /clearTimeout\(timeoutId\)/);
+  assert.match(hook, /if \(!isPending \|\| hasSession\)/);
+
+  const header = readFileSync("src/features/layout/Header.tsx", "utf8");
+  assert.match(header, /useHeaderAuthTimedOut\(session\.isPending, hasSession\)/);
+  assert.match(header, /headerAuthChrome\(session\.isPending, hasSession, authTimedOut\)/);
+});
+
 test("the pending header slot reserves the auth footprint without login, signup, or avatar", () => {
   const header = readFileSync("src/features/layout/Header.tsx", "utf8");
-  assert.match(header, /headerAuthChrome\(session\.isPending, Boolean\(session\.data\)\)/);
+  assert.match(header, /headerAuthChrome\(session\.isPending, hasSession, authTimedOut\)/);
 
   const pendingAt = header.indexOf("authChrome === \"pending\"");
   const signedOutAt = header.indexOf("authChrome === \"signed-out\"");

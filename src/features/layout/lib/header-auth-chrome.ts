@@ -6,9 +6,16 @@ export const headerAuthChromeState = {
 
 export type HeaderAuthChrome = (typeof headerAuthChromeState)[keyof typeof headerAuthChromeState];
 
-/** Which header auth slot to paint. A session is signed-in even while pending; pending is only the no-session wait. */
-export function headerAuthChrome(isPending: boolean, hasSession: boolean): HeaderAuthChrome {
+/** How long a session-less pending header waits before showing signed-out. */
+export const HEADER_AUTH_PENDING_TIMEOUT_MS = 5000;
+
+/**
+ * Which header auth slot to paint.
+ * A session is signed-in even while pending.
+ * Pending is only the no-session wait. timedOut ends that wait as signed-out.
+ */
+export function headerAuthChrome(isPending: boolean, hasSession: boolean, timedOut = false): HeaderAuthChrome {
   if (hasSession) return headerAuthChromeState.signedIn;
-  if (isPending) return headerAuthChromeState.pending;
+  if (isPending && !timedOut) return headerAuthChromeState.pending;
   return headerAuthChromeState.signedOut;
 }

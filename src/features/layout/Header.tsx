@@ -49,6 +49,11 @@ export const Header = () => {
     "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
     "shadow-none hover:bg-[var(--wc-dash-accent)] " +
     "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]";
+  const loginLinkClass =
+    "!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center";
+  const authClusterClass = "ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2";
+  const loginLabel = t("commons.login");
+  const signupLabel = t("commons.signup");
 
   return (
     <>
@@ -93,16 +98,12 @@ export const Header = () => {
           </div>
 
           {authChrome === "pending" ? (
-            <div
-              aria-hidden="true"
-              className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2"
-              data-wc-header-auth="pending"
-            >
-              <span className="inline-flex h-12 min-h-12 min-w-12 shrink-0 rounded-2xl border border-[var(--wc-dash-secondary)] bg-[var(--wc-dash-panel)]" />
-              <span className="inline-flex h-12 min-h-12 min-w-[6.5rem] shrink-0 rounded-2xl border border-[var(--wc-dash-secondary)] bg-[var(--wc-dash-panel)]" />
+            <div aria-hidden="true" className={authClusterClass} data-wc-header-auth="pending">
+              <span className={`${loginLinkClass} invisible`}>{loginLabel}</span>
+              <span className={`${publicSignupClass} invisible`}>{signupLabel}</span>
             </div>
           ) : authChrome === "signed-out" ? (
-            <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
+            <div className={authClusterClass}>
               <Link
                 className="!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center"
                 href={getConfiguredPeptideOsLoginUrl()}

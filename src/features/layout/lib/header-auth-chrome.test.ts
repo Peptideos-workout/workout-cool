@@ -21,12 +21,22 @@ test("the pending header slot reserves the auth footprint without login, signup,
   assert.ok(signedOutAt > pendingAt);
   const pending = header.slice(pendingAt, signedOutAt);
   assert.match(pending, /aria-hidden="true"/);
-  assert.match(pending, /min-h-12/);
-  assert.match(pending, /border-\[var\(--wc-dash-secondary\)\]/);
-  assert.match(pending, /bg-\[var\(--wc-dash-panel\)\]/);
-  assert.doesNotMatch(pending, /commons\.login/);
-  assert.doesNotMatch(pending, /commons\.signup/);
+  assert.match(pending, /className=\{`\$\{loginLinkClass\} invisible`\}/);
+  assert.match(pending, /className=\{`\$\{publicSignupClass\} invisible`\}/);
+  assert.match(pending, /\{loginLabel\}/);
+  assert.match(pending, /\{signupLabel\}/);
+  assert.doesNotMatch(pending, /<Link/);
   assert.doesNotMatch(pending, /avatar/);
   assert.doesNotMatch(pending, /href=/);
   assert.doesNotMatch(pending, /#[0-9a-fA-F]{3,8}/);
+});
+
+test("pending and signed-out auth rows share the wrapping container classes", () => {
+  const header = readFileSync("src/features/layout/Header.tsx", "utf8");
+  const cluster = "ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2";
+  assert.match(header, new RegExp(`const authClusterClass = "${cluster}"`));
+  assert.equal(header.split("className={authClusterClass}").length - 1, 2);
+  const loginClass =
+    "!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center";
+  assert.equal(header.split(loginClass).length - 1, 2);
 });

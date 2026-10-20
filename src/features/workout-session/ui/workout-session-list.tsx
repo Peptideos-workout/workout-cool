@@ -44,8 +44,25 @@ export function WorkoutSessionList() {
     [],
   );
   const deleteButtonRefs = useRef(new Map<string, { current: HTMLButtonElement | null }>());
+  const historyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const focusAfterDeleteId = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const deletedId = focusAfterDeleteId.current;
+    if (!deletedId) return;
+    if (sessions.some((session) => session.id === deletedId)) return;
+    focusAfterDeleteId.current = null;
+    const nextButton = sessions
+      .map((session) => deleteButtonRefs.current.get(session.id)?.current)
+      .find((button): button is HTMLButtonElement => Boolean(button?.isConnected));
+    if (nextButton) {
+      nextButton.focus();
+      return;
+    }
+    historyHeadingRef.current?.focus();
+  }, [sessions]);
 
   const deleteTriggerRef = (id: string) => {
     const existing = deleteButtonRefs.current.get(id);
@@ -81,6 +98,7 @@ export function WorkoutSessionList() {
     if (deleteLock.current || !pendingDeleteId) return;
     deleteLock.current = true;
     const id = pendingDeleteId;
+    focusAfterDeleteId.current = id;
     if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
     deleteDisableTimer.current = setTimeout(() => setIsDeleting(true), 0);
     void removeSession(id).finally(() => {
@@ -144,7 +162,7 @@ export function WorkoutSessionList() {
 
   return (
     <div className="space-y-4 mt-10">
-      <h2 className="text-xl font-bold mt-5 mb-2 text-slate-900 dark:text-slate-200">
+      <h2 className="text-xl font-bold mt-5 mb-2 text-slate-900 dark:text-slate-200" ref={historyHeadingRef} tabIndex={-1}>
         {t("workout_builder.session.history", { count: sessions.length })}
       </h2>
       {sessions.length === 0 && <div className="text-slate-500 dark:text-slate-400">{t("workout_builder.session.no_workout_yet")}</div>}

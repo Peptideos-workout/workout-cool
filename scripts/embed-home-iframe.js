@@ -454,14 +454,24 @@ function HistoryHarness() {
 
 const card = new URLSearchParams(location.search).get("card");
 if (card === "history") {
-  window.__wcSessions = [{
-    id: "hist-1",
-    status: "completed",
-    startedAt: "2026-01-02T15:04:00.000Z",
-    endedAt: "2026-01-02T16:00:00.000Z",
-    muscles: [],
-    exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
-  }];
+  window.__wcSessions = [
+    {
+      id: "hist-1",
+      status: "completed",
+      startedAt: "2026-01-02T15:04:00.000Z",
+      endedAt: "2026-01-02T16:00:00.000Z",
+      muscles: [],
+      exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
+    },
+    {
+      id: "hist-2",
+      status: "completed",
+      startedAt: "2026-01-03T15:04:00.000Z",
+      endedAt: "2026-01-03T16:00:00.000Z",
+      muscles: [],
+      exercises: [{ id: "ex-2", name: "Lunge", nameEn: "Lunge", order: 0, attributes: [] }]
+    }
+  ];
 }
 createRoot(document.getElementById("root")).render(
   card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : <App />
@@ -1039,7 +1049,8 @@ async function runQuitEmbedHarness(browser) {
     const cancelLabel = localeValue("cancel");
     const history = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
     history.page.on("dialog", (dialog) => dialog.dismiss());
-    await history.frame.getByRole("button", { name: deleteLabel }).click();
+    const historyDelete = () => history.frame.locator("ul").getByRole("button", { name: deleteLabel }).first();
+    await historyDelete().click();
     if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
       throw new Error("embed delete called removeSession before confirm");
     }
@@ -1050,7 +1061,7 @@ async function runQuitEmbedHarness(browser) {
     if ((await focusedName(history.frame)) !== deleteLabel) {
       throw new Error(`Cancel left focus on ${await focusedName(history.frame)}`);
     }
-    await history.frame.getByRole("button", { name: deleteLabel }).click();
+    await historyDelete().click();
     await history.frame.locator("[data-wc-delete-confirm]").press("Escape");
     if ((await history.frame.locator("[data-wc-delete-confirm]").count()) !== 0) throw new Error("Escape left the delete card open");
     if ((await focusedName(history.frame)) !== deleteLabel) {
@@ -1059,7 +1070,7 @@ async function runQuitEmbedHarness(browser) {
     if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
       throw new Error("closing the delete card called removeSession");
     }
-    const rowDelete = history.frame.locator("ul").getByRole("button", { name: deleteLabel });
+    const rowDelete = historyDelete();
     await armNonFocusingClick(rowDelete);
     await rowDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").waitFor();
@@ -1083,7 +1094,29 @@ async function runQuitEmbedHarness(browser) {
     if (removeCalls !== 1) throw new Error(`removeSession ran ${removeCalls} times`);
     await assertDisabledSoon(deleteConfirm, "delete confirm");
     await history.frame.evaluate(() => window.__wcReleaseRemove());
-    await history.frame.waitForFunction(() => document.querySelectorAll("ul li").length === 0);
+    try {
+      await history.frame.waitForFunction((label) => {
+        if (document.querySelectorAll("ul li").length !== 1) return false;
+        const element = document.activeElement;
+        if (!element || element === document.body) return false;
+        const name = (element.getAttribute("aria-label") || element.textContent || "").replace(/\s+/g, " ").trim();
+        return name === label;
+      }, deleteLabel);
+    } catch (error) {
+      throw new Error(`delete left focus on ${await focusedName(history.frame)} (${error.message})`);
+    }
+    await historyDelete().click();
+    await history.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel }).click();
+    try {
+      await history.frame.waitForFunction(() => {
+        if (document.querySelectorAll("ul li").length !== 0) return false;
+        const element = document.activeElement;
+        return element?.tagName === "H2" && element.getAttribute("tabindex") === "-1";
+      });
+    } catch (error) {
+      const headingFocus = await history.frame.evaluate(() => document.activeElement?.tagName || "");
+      throw new Error(`last delete left focus on ${headingFocus} (${error.message})`);
+    }
     await history.page.close();
 
     const historyUnmount = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
@@ -1099,7 +1132,7 @@ async function runQuitEmbedHarness(browser) {
       };
       document.addEventListener("click", onClick, false);
     });
-    await historyUnmount.frame.getByRole("button", { name: deleteLabel }).click();
+    await historyUnmount.frame.locator("ul").getByRole("button", { name: deleteLabel }).first().click();
     await historyUnmount.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel }).click();
     await historyUnmount.frame.locator("[data-wc-list-unmounted]").waitFor({ state: "attached" });
     await assertDisableTimerCleared(historyUnmount.frame, "delete confirm");
@@ -1109,7 +1142,7 @@ async function runQuitEmbedHarness(browser) {
     historyPlain.on("dialog", (dialog) => dialog.dismiss());
     await historyPlain.goto(`${childOrigin}/harness.html?card=history`, { waitUntil: "domcontentloaded" });
     await historyPlain.waitForSelector("[data-wc-ready]");
-    await historyPlain.getByRole("button", { name: deleteLabel }).click();
+    await historyPlain.locator("ul").getByRole("button", { name: deleteLabel }).first().click();
     if ((await historyPlain.locator("[data-wc-delete-confirm]").count()) !== 0) {
       throw new Error("non-embed delete rendered the in-flow card");
     }

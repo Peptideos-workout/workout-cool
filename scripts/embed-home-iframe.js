@@ -454,24 +454,21 @@ function HistoryHarness() {
 
 const card = new URLSearchParams(location.search).get("card");
 if (card === "history") {
-  window.__wcSessions = [
-    {
-      id: "hist-1",
-      status: "completed",
-      startedAt: "2026-01-02T15:04:00.000Z",
-      endedAt: "2026-01-02T16:00:00.000Z",
-      muscles: [],
-      exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
-    },
-    {
-      id: "hist-2",
-      status: "completed",
-      startedAt: "2026-01-03T15:04:00.000Z",
-      endedAt: "2026-01-03T16:00:00.000Z",
-      muscles: [],
-      exercises: [{ id: "ex-2", name: "Lunge", nameEn: "Lunge", order: 0, attributes: [] }]
-    }
-  ];
+  window.__wcSessions = [{
+    id: "hist-1",
+    status: "completed",
+    startedAt: "2026-01-02T15:04:00.000Z",
+    endedAt: "2026-01-02T16:00:00.000Z",
+    muscles: [],
+    exercises: [{ id: "ex-1", name: "Squat", nameEn: "Squat", order: 0, attributes: [] }]
+  }, {
+    id: "hist-2",
+    status: "completed",
+    startedAt: "2026-01-03T15:04:00.000Z",
+    endedAt: "2026-01-03T16:00:00.000Z",
+    muscles: [],
+    exercises: [{ id: "ex-2", name: "Lunge", nameEn: "Lunge", order: 0, attributes: [] }]
+  }];
 }
 createRoot(document.getElementById("root")).render(
   card === "delete" ? <DeletePreview /> : card === "history" ? <HistoryHarness /> : <App />
@@ -1080,8 +1077,8 @@ async function runQuitEmbedHarness(browser) {
     const cancelLabel = localeValue("cancel");
     const history = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
     history.page.on("dialog", (dialog) => dialog.dismiss());
-    const historyDelete = () => history.frame.locator("ul").getByRole("button", { name: deleteLabel }).first();
-    await historyDelete().click();
+    const historyDelete = history.frame.locator("ul").getByRole("button", { name: deleteLabel }).first();
+    await historyDelete.click();
     if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
       throw new Error("embed delete called removeSession before confirm");
     }
@@ -1092,7 +1089,7 @@ async function runQuitEmbedHarness(browser) {
     if ((await focusedName(history.frame)) !== deleteLabel) {
       throw new Error(`Cancel left focus on ${await focusedName(history.frame)}`);
     }
-    await historyDelete().click();
+    await historyDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").press("Escape");
     if ((await history.frame.locator("[data-wc-delete-confirm]").count()) !== 0) throw new Error("Escape left the delete card open");
     if ((await focusedName(history.frame)) !== deleteLabel) {
@@ -1101,15 +1098,14 @@ async function runQuitEmbedHarness(browser) {
     if ((await history.frame.evaluate(() => window.__wcRemoveCalls || 0)) !== 0) {
       throw new Error("closing the delete card called removeSession");
     }
-    const rowDelete = historyDelete();
-    await armNonFocusingClick(rowDelete);
-    await rowDelete.click();
+    await armNonFocusingClick(historyDelete);
+    await historyDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").waitFor();
     await history.frame.getByRole("button", { name: cancelLabel }).click();
     if ((await focusedName(history.frame)) !== deleteLabel) {
       throw new Error(`non-focusing Cancel left focus on ${await focusedName(history.frame)}`);
     }
-    await rowDelete.click();
+    await historyDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").waitFor();
     await history.frame.evaluate(() => {
       let resolveHold;
@@ -1136,7 +1132,7 @@ async function runQuitEmbedHarness(browser) {
     } catch (error) {
       throw new Error(`delete left focus on ${await focusedName(history.frame)} (${error.message})`);
     }
-    await historyDelete().click();
+    await historyDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel }).click();
     try {
       await history.frame.waitForFunction(() => {

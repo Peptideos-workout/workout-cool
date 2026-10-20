@@ -203,6 +203,23 @@ test("program session quit reads the embed flag from the document", () => {
   assert.match(program, /isEmbed: document\.documentElement\.getAttribute\("data-wc-embed"\) === "1"/);
 });
 
+test("non-embed quit clears the session, returns to step 1, and does not navigate", () => {
+  const store = read("src/features/workout-session/model/workout-session.store.ts");
+  const quitStart = store.indexOf("quitWorkout: () => {");
+  const quitStore = store.slice(quitStart, store.indexOf("completeWorkout: () => {", quitStart));
+  assert.match(quitStore, /workoutSessionLocal\.remove\(session\.id\)/);
+  assert.match(quitStore, /workoutSessionLocal\.clearCurrent\(\)/);
+  assert.match(quitStore, /useWorkoutBuilderStore\.getState\(\)\.setStep\(1\)/);
+  assert.match(quitStore, /isWorkoutActive: false/);
+  assert.doesNotMatch(quitStore, /status: "completed"/);
+  assert.doesNotMatch(quitStore, /router\.push|window\.location|history\.pushState/);
+  const header = read(HEADER);
+  const handlerStart = header.indexOf("const handleQuitWithoutSave");
+  const handler = header.slice(handlerStart, header.indexOf("return (", handlerStart));
+  assert.match(handler, /onQuitWorkout\(\)/);
+  assert.doesNotMatch(handler, /router\.push|window\.location|history\.pushState/);
+});
+
 test("session handlers, disabled expressions, conditionals, and copy stay locked with regex matches", () => {
   const header = read(HEADER);
   const timer = read(TIMER);

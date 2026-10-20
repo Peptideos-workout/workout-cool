@@ -1722,6 +1722,7 @@ export default {
       exercise: "EXERCICE",
       repeat: "Répéter",
       delete: "Supprimer",
+      delete_workout_title: "Supprimer cet entraînement ?",
     },
     attribute_value: {
       bodyweight: "Poids du corps",

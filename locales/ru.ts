@@ -1696,6 +1696,7 @@ export default {
       exercise: "УПРАЖНЕНИЕ",
       repeat: "Повторить",
       delete: "Удалить",
+      delete_workout_title: "Удалить эту тренировку?",
     },
     attribute_value: {
       bodyweight: "Собственный вес",

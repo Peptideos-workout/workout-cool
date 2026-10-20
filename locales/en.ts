@@ -1696,6 +1696,7 @@ export default {
       exercise: "EXERCISE",
       repeat: "Repeat",
       delete: "Delete",
+      delete_workout_title: "Delete this workout?",
     },
     attribute_value: {
       bodyweight: "Bodyweight",

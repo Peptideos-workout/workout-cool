@@ -822,6 +822,7 @@ export default {
       exercise: "练习",
       repeat: "重复",
       delete: "删除",
+      delete_workout_title: "删除这次锻炼？",
     },
     attribute_value: {
       bodyweight: "自重",

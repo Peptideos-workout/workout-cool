@@ -189,7 +189,7 @@ export function WorkoutSessionList() {
                     marker="delete"
                     onCancel={() => setPendingDeleteId(null)}
                     onConfirm={handleConfirmDelete}
-                    title={t("workout_builder.session.delete")}
+                    title={t("workout_builder.session.delete_workout_title")}
                   />
                 ) : null}
                 <div className="flex gap-2 items-center">

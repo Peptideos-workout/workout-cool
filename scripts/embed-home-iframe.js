@@ -12,7 +12,7 @@ const { join } = require("node:path");
 const { tmpdir } = require("node:os");
 const { createServer: createNetServer } = require("node:net");
 const { createServer, request: httpRequest } = require("node:http");
-const { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } = require("node:fs");
+const { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } = require("node:fs");
 const { spawn } = require("node:child_process");
 
 const PRODUCTION_CSP = "frame-ancestors 'self' https://peptideos.us https://www.peptideos.us";
@@ -211,9 +211,9 @@ function assertSignedOut(state, label) {
 
 function localeValue(name) {
   const source = readFileSync(join(process.cwd(), "locales/en.ts"), "utf8");
-  const match = source.match(new RegExp(name + ': "([^"]*)"'));
+  const match = source.match(new RegExp("(^|[^A-Za-z0-9_])" + name + ': "([^"]*)"', "m"));
   if (!match) throw new Error(`missing en locale ${name}`);
-  return match[1];
+  return match[2];
 }
 
 function loadEsbuild() {
@@ -250,7 +250,11 @@ function bundleQuitHarness(dir) {
     "workout_builder.session.exercise_progress": localeValue("exercise_progress"),
     "workout_builder.session.total_volume": localeValue("total_volume"),
     "workout_builder.session.complete": localeValue("complete"),
-    "workout_builder.session.progress": localeValue("progress")
+    "workout_builder.session.progress": localeValue("progress"),
+    "workout_builder.session.delete_workout_title": localeValue("delete_workout_title"),
+    "workout_builder.confirm_delete": localeValue("confirm_delete"),
+    "workout_builder.session.delete": localeValue("delete"),
+    "commons.cancel": localeValue("cancel")
   };
   const i18nStub = join(dir, "i18n-stub.js");
   const builderStub = join(dir, "builder-stub.ts");
@@ -290,6 +294,8 @@ import { createRoot } from "react-dom/client";
 import { useWorkoutSessionStore } from "@/features/workout-session/model/workout-session.store";
 import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
 import { WorkoutSessionHeader } from "@/features/workout-session/ui/workout-session-header";
+import { EmbedFlowConfirm } from "@/shared/ui/embed-flow-confirm";
+import { useI18n } from "locales/client";
 
 const exercise = { id: "ex-1", name: "Squat", nameEn: "Squat", attributes: [] };
 
@@ -333,7 +339,36 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+function DeletePreview() {
+  const t = useI18n();
+  useEffect(() => {
+    const post = () => {
+      window.parent.postMessage({ type: "wc:height", height: document.documentElement.scrollHeight }, "*");
+    };
+    post();
+    const observer = new ResizeObserver(post);
+    observer.observe(document.documentElement);
+    document.documentElement.setAttribute("data-wc-ready", "1");
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div>
+      <EmbedFlowConfirm
+        body={t("workout_builder.confirm_delete")}
+        cancelLabel={t("commons.cancel")}
+        confirmLabel={t("workout_builder.session.delete")}
+        marker="delete"
+        onCancel={() => {}}
+        onConfirm={() => {}}
+        title={t("workout_builder.session.delete_workout_title")}
+      />
+      <div style={{ height: 2400 }} />
+    </div>
+  );
+}
+
+const card = new URLSearchParams(location.search).get("card");
+createRoot(document.getElementById("root")).render(card === "delete" ? <DeletePreview /> : <App />);
 `
   );
 
@@ -569,23 +604,31 @@ async function runQuitEmbedHarness(browser) {
   const discardLabel = localeValue("quit_without_save");
   const dir = join(tmpdir(), `wc-quit-harness-${process.pid}`);
   mkdirSync(dir, { recursive: true });
-  await bundleQuitHarness(dir);
-  const css = builtStyles();
-  const childPort = await unusedPort();
-  const parentPort = await unusedPort();
-  const files = new Map([
-    ["/harness.js", { type: "text/javascript; charset=utf-8", body: readFileSync(join(dir, "harness.js")) }],
-    ["/app.css", { type: "text/css; charset=utf-8", body: css }],
-    ["/harness.html", { type: "text/html; charset=utf-8", body: harnessHtml() }],
-    ["/probe.html", { type: "text/html; charset=utf-8", body: probeHtml() }]
-  ]);
-  const child = await startMappedServer(childPort, files);
-  const parent = await startMappedServer(parentPort, files);
-  const childOrigin = `http://127.0.0.1:${childPort}`;
-  const parentOrigin = `http://127.0.0.1:${parentPort}`;
-  const shotDir = "/cursor/stores/bot/wc-quit-triage";
-
+  let child;
+  let parent;
   try {
+    await bundleQuitHarness(dir);
+    const css = builtStyles();
+    const childPort = await unusedPort();
+    const parentPort = await unusedPort();
+    const files = new Map([
+      ["/harness.js", { type: "text/javascript; charset=utf-8", body: readFileSync(join(dir, "harness.js")) }],
+      ["/app.css", { type: "text/css; charset=utf-8", body: css }],
+      ["/harness.html", { type: "text/html; charset=utf-8", body: harnessHtml() }],
+      ["/probe.html", { type: "text/html; charset=utf-8", body: probeHtml() }]
+    ]);
+    child = await startMappedServer(childPort, files);
+    parent = await startMappedServer(parentPort, files);
+    const childOrigin = `http://127.0.0.1:${childPort}`;
+    const parentOrigin = `http://127.0.0.1:${parentPort}`;
+    const shotDir = process.env.WC_EMBED_SHOT_DIR || "";
+
+    async function saveShot(page, name) {
+      if (!shotDir) return;
+      mkdirSync(shotDir, { recursive: true });
+      await page.locator("#phone").screenshot({ path: join(shotDir, name) });
+    }
+
     const light = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
     await light.frame.getByRole("button", { name: "Start workout" }).click();
     await light.frame.locator("[data-wc-step='3']").waitFor();
@@ -601,9 +644,7 @@ async function runQuitEmbedHarness(browser) {
     if (focused !== keepLabel) throw new Error(`focused ${focused}`);
     await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
     await assertDesign(light.frame);
-    if (existsSync(shotDir)) {
-      await light.page.locator("#phone").screenshot({ path: join(shotDir, "confirm-390-light.png") });
-    }
+    await saveShot(light.page, "confirm-390-light.png");
     await light.frame.getByRole("button", { name: keepLabel }).click();
     if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("Keep going left the confirm open");
     if ((await light.frame.locator("[data-wc-session]").getAttribute("data-wc-session")) !== keptId) {
@@ -649,10 +690,20 @@ async function runQuitEmbedHarness(browser) {
     await dark.frame.getByRole("dialog", { name: title }).waitFor();
     await assertInPhone(dark.page, dark.frame, "[data-wc-quit-confirm]");
     await assertDesign(dark.frame);
-    if (existsSync(shotDir)) {
-      await dark.page.locator("#phone").screenshot({ path: join(shotDir, "confirm-390-dark.png") });
-    }
+    await saveShot(dark.page, "confirm-390-dark.png");
     await dark.page.close();
+
+    const deleteTitle = localeValue("delete_workout_title");
+    const deleteLight = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=delete");
+    await deleteLight.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
+    await assertInPhone(deleteLight.page, deleteLight.frame, "[data-wc-delete-confirm]");
+    await saveShot(deleteLight.page, "delete-390-light.png");
+    await deleteLight.page.close();
+    const deleteDark = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&dark=1&card=delete");
+    await deleteDark.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
+    await assertInPhone(deleteDark.page, deleteDark.frame, "[data-wc-delete-confirm]");
+    await saveShot(deleteDark.page, "delete-390-dark.png");
+    await deleteDark.page.close();
 
     const plain = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await plain.goto(`${childOrigin}/harness.html`, { waitUntil: "domcontentloaded" });
@@ -712,8 +763,9 @@ async function runQuitEmbedHarness(browser) {
     await probePage.close();
     console.log("embed iframe: quit confirm stays in the 390x844 frame and quit clears the session");
   } finally {
-    await closeServer(parent);
-    await closeServer(child);
+    if (parent) await closeServer(parent);
+    if (child) await closeServer(child);
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 

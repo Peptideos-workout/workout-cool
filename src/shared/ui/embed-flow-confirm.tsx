@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ export function EmbedFlowConfirm({
   const cardRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const onCancelRef = useRef(onCancel);
+  const titleId = useId();
   onCancelRef.current = onCancel;
 
   useEffect(() => {
@@ -50,8 +51,7 @@ export function EmbedFlowConfirm({
 
   return (
     <div
-      aria-labelledby="wc-embed-confirm-title"
-      aria-modal="true"
+      aria-labelledby={titleId}
       className={cn("mb-4 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-4", className)}
       data-wc-delete-confirm={marker === "delete" ? "" : undefined}
       data-wc-embed-confirm=""
@@ -59,7 +59,7 @@ export function EmbedFlowConfirm({
       ref={cardRef}
       role="dialog"
     >
-      <h3 className="text-lg font-bold text-[var(--wc-dash-text)]" id="wc-embed-confirm-title">
+      <h3 className="text-lg font-bold text-[var(--wc-dash-text)]" id={titleId}>
         {title}
       </h3>
       <p className="mt-3 text-lg leading-relaxed text-[var(--wc-dash-secondary)]">{body}</p>

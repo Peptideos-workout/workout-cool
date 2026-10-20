@@ -185,7 +185,7 @@ export function WorkoutStepper() {
     return (
       <>
         <div className="flex flex-col items-center justify-center py-16 h-full">
-          <Image alt="Trophée" className="w-56 h-56" src={Trophy} />
+          <Image alt={t("workout_builder.session.trophy_alt")} className="w-56 h-56" src={Trophy} />
           <h2 className="text-2xl font-bold mb-2 text-center">{t("workout_builder.session.congrats")}</h2>
           <p className="text-lg text-slate-600 mb-6">{t("workout_builder.session.congrats_subtitle")}</p>
           <Button onClick={goToProfile}>{t("commons.go_to_profile")}</Button>
@@ -348,12 +348,25 @@ export function WorkoutStepper() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto h-full">
+    <div className="w-full max-w-6xl mx-auto h-full" data-wc-builder="">
       {renderTopBanner()}
 
-      <StepperHeader currentStep={currentStep} onStepClick={handleStepClick} steps={steps} />
+      <div className="px-2 pb-4 sm:px-6" data-wc-intro="">
+        <p className="text-lg font-bold text-[var(--wc-dash-accent)]" data-wc-kicker="">
+          {t("bottom_navigation.workouts")}
+        </p>
+        <h1 className="mt-2 text-3xl font-bold text-[var(--wc-dash-text)]" data-wc-title="">
+          {t("workout_builder.title")}
+        </h1>
+      </div>
 
-      <div className="px-2 sm:px-6">{renderStepContent()}</div>
+      <div data-wc-step-sheet="">
+        <StepperHeader currentStep={currentStep} onStepClick={handleStepClick} steps={steps} />
+      </div>
+
+      <div className="px-2 sm:px-6" data-wc-step-body="">
+        {renderStepContent()}
+      </div>
 
       <WorkoutBuilderFooter
         bottomBanner={renderBottomBanner()}

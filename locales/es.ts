@@ -45,8 +45,8 @@ export default {
     premium_session_description: "Esta sesión es parte del contenido premium. Puedes ver los detalles pero no realizar el entrenamiento.",
     workout_description: "Descripción de la sesión",
     connect_to_access: "Conecta para acceder",
-    become_premium: "Torne-se Premium",
-    back_to_program: "Voltar ao programa",
+    become_premium: "Hazte Premium",
+    back_to_program: "Volver al programa",
     premium_session_exercises: "Ejercicios incluidos",
     no_equipment: "Ningún equipo",
     workout_programs_title: "Programas de entrenamiento (+ en curso de creación)",
@@ -221,13 +221,13 @@ export default {
       premium: {
         name: "PREMIUM ⭐",
         price_label: "€7.90/mes o €49/año",
-        badge: "MOST POPULAR • Para entusiastas",
+        badge: "MÁS POPULAR • Para entusiastas",
         description: "Todas las funciones + acceso temprano",
         footer_monthly: "¡Únete a la comunidad apasionada! 🔥",
         footer_yearly: "¡Gracias por el apoyo anual! 🙏",
         yearly_price_note: "/mes",
         features: [
-          "...todo del plan Gratuit",
+          "...todo del plan Gratis",
           "Sin publicidad",
           "Historial ilimitado (vs 6 meses gratuito)",
           "Seguimiento de progreso con estadísticas avanzadas (volumen, progresión, PR)",
@@ -241,8 +241,8 @@ export default {
     // Buttons and Actions
     actions: {
       processing: "Procesando...",
-      go_premium: "Torne-se Premium",
-      sign_in_continue: "Torne-se Premium",
+      go_premium: "Hazte Premium",
+      sign_in_continue: "Hazte Premium",
       upgrade_now: "Actualizar ahora",
       current_plan: "Tu plan actual",
     },
@@ -364,11 +364,11 @@ export default {
         },
       ],
       additional_support: {
-        title: "Still have questions?",
-        description: "Our fitness-focused community is here to help you succeed",
-        community: "Community support (discord or hello@workout.cool)",
-        discussions: "Open discussions (github/discord)",
-        roadmap: "Transparent roadmap (github)",
+        title: "¿Todavía tienes preguntas?",
+        description: "Nuestra comunidad de fitness está aquí para ayudarte a conseguirlo",
+        community: "Soporte de la comunidad (discord o hello@workout.cool)",
+        discussions: "Debates abiertos (github/discord)",
+        roadmap: "Hoja de ruta transparente (github)",
       },
     },
 
@@ -454,11 +454,12 @@ export default {
     workouts: "Entrenamientos",
     workouts_tooltip: "Crear tu propio entrenamiento",
     premium: "Premium",
-    premium_tooltip: "Torne-se Premium",
+    premium_tooltip: "Hazte Premium",
     leaderboard: "Clasificación",
     leaderboard_tooltip: "Ver ranking de entrenamiento",
     tools: "Herramientas",
     tools_tooltip: "Explorar herramientas",
+    label: "Navegación principal",
     profile: "Perfil",
     profile_tooltip: "Ver tu perfil",
   },
@@ -652,6 +653,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Construir tu entrenamiento",
     confirm_delete: "¿Estás seguro de que quieres eliminar esta sesión de entrenamiento?",
     steps: {
       equipment: {
@@ -766,6 +768,7 @@ export default {
       back_to_workout: "Volver al entrenamiento",
       congrats: "¡Felicidades, entrenamiento terminado! 🎉",
       congrats_subtitle: "¡Lo has logrado!",
+      trophy_alt: "Trofeo",
       see_instructions: "Ver instrucciones",
       finish_set: "Terminar serie",
       finish_session: "Terminar sesión",
@@ -866,7 +869,7 @@ export default {
     },
   },
   commons: {
-    upgrade_to_premium: "Torne-se Premium",
+    upgrade_to_premium: "Hazte Premium",
     last_activity: "Última actividad",
     registered_on: "Inscrito el",
     just_now: "ahora mismo",
@@ -978,7 +981,7 @@ export default {
     subscription: "Suscripción",
     manage_subscription: "Gestionar suscripción",
     change_password: "Cambiar contraseña",
-    become_premium: "Torne-se Premium",
+    become_premium: "Hazte Premium",
     remove_ads: "Eliminar anuncios",
     in_progress: "En progreso",
     close: "Cerrar",
@@ -1091,7 +1094,7 @@ export default {
         carbs: "Carbohidratos",
         fat: "Grasa",
         disclaimer:
-          "These calculations are estimates based on average formulas. Actual caloric needs may vary based on individual factors. Consult with a healthcare professional or registered dietitian for personalized advice.",
+          "Estos cálculos son estimaciones basadas en fórmulas promedio. Las necesidades calóricas reales pueden variar según factores individuales. Consulta a un profesional de la salud o a un dietista para un consejo personalizado.",
       },
       faq: {
         title: "Preguntas Frecuentes",

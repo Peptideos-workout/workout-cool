@@ -438,6 +438,7 @@ export default {
     leaderboard_tooltip: "View workout rankings",
     tools: "Tools",
     tools_tooltip: "Browse tools",
+    label: "Main navigation",
     profile: "Profile",
     profile_tooltip: "View your profile",
   },
@@ -1521,6 +1522,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Build your workout",
     confirm_delete: "Are you sure you want to delete this workout session?",
     steps: {
       equipment: {
@@ -1636,6 +1638,7 @@ export default {
       back_to_workout: "Back to workout",
       congrats: "Congratulations, workout finished! 🎉",
       congrats_subtitle: "You've done it !",
+      trophy_alt: "Trophy",
       see_instructions: "See instructions",
       finish_set: "Finish Set",
       finish_session: "Finish Session",

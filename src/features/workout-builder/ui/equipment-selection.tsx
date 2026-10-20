@@ -97,11 +97,10 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
         <div className="text-center">
           <h3
             className={cn(
-              "font-semibold text-sm transition-all duration-200",
-              "tracking-wide leading-tight",
+              "font-semibold text-lg leading-tight tracking-wide transition-all duration-200",
               isSelected
-                ? "text-emerald-700 dark:text-emerald-300"
-                : "text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-200",
+                ? "text-[var(--wc-dash-accent)]"
+                : "text-[var(--wc-dash-text)] group-hover:text-[var(--wc-dash-accent)]",
             )}
           >
             {translation.label}

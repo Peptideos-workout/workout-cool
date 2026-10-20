@@ -17,7 +17,6 @@ import { ThemeSynchronizer } from "@/features/theme/ui/ThemeSynchronizer";
 import { embedBootScript } from "@/features/embed/lib/embed-boot-script";
 import { getConfiguredPeptideOsOrigin } from "@/features/auth/lib/configured-peptideos-signup";
 import { env } from "@/env";
-import { Version } from "@/components/version";
 import { TailwindIndicator } from "@/components/utils/TailwindIndicator";
 import { NextTopLoader } from "@/components/ui/next-top-loader";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
@@ -373,7 +372,7 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
             <AdBlockerForPremium />
             <NextTopLoader color="#FF5722" delay={100} showSpinner={false} />
 
-            <div className="flex items-center justify-center min-h-screen w-full max-sm:min-h-full" data-wc-frame="">
+            <div className="relative flex items-center justify-center min-h-screen w-full max-sm:min-h-full" data-wc-frame="">
               <div className="flex items-start gap-2 w-full max-sm:gap-0 justify-center" data-wc-frame="">
                 <div className="contents" data-wc-chrome="banner">
                   <VerticalLeftBanner />
@@ -384,7 +383,6 @@ export default async function RootLayout({ params, children }: RootLayoutProps) 
                 </div>
               </div>
             </div>
-            <Version />
 
             <TailwindIndicator />
           </Providers>

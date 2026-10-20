@@ -55,7 +55,7 @@ export function LanguageSelector() {
     <div className="dropdown dropdown-end">
       <div className="tooltip tooltip-bottom" data-tip={t("commons.change_language")}>
         <div
-          className="btn btn-ghost btn-circle h-8 w-8 p-0 text-xl flex items-center justify-center hover:bg-slate-200 border-none dark:hover:bg-gray-800 rounded-full"
+          className="btn btn-ghost btn-circle !h-12 !w-12 !min-h-12 !min-w-12 !p-0 text-xl flex items-center justify-center hover:bg-slate-200 border-none dark:hover:bg-gray-800 rounded-full"
           role="button"
           tabIndex={0}
         >
@@ -69,11 +69,11 @@ export function LanguageSelector() {
         {languages.map((language) => (
           <li className="" key={language}>
             <button
-              className="flex items-center gap-2 text-base hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors whitespace-nowrap min-w-fit"
+              className="flex h-12 min-h-12 items-center gap-2 text-base hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors whitespace-nowrap min-w-fit"
               onClick={() => handleLanguageChange(language)}
             >
               <span className="text-lg">{languageFlags[language]}</span>
-              <span className="text-base whitespace-nowrap">{getLanguageName(language)}</span>
+              <span className="text-lg whitespace-nowrap">{getLanguageName(language)}</span>
             </button>
           </li>
         ))}

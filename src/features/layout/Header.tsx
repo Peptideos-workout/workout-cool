@@ -42,13 +42,22 @@ export const Header = () => {
     element.blur();
   };
 
+  const publicSignupClass =
+    "!inline-flex !h-auto !min-h-12 !min-w-12 !shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border-0 " +
+    "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
+    "shadow-none hover:bg-[var(--wc-dash-accent)] " +
+    "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]";
+
   return (
     <>
-      <div className="navbar bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg" data-wc-chrome="header">
+      <div
+        className="navbar h-auto max-sm:overflow-x-clip flex-wrap gap-y-2 bg-base-100 dark:bg-black dark:text-gray-200 px-2 sm:px-4 rounded-tl-lg rounded-tr-lg"
+        data-wc-chrome="header"
+      >
         {/* Logo and Title */}
-        <div className="navbar-start flex items-center gap-2">
+        <div className="navbar-start order-1 !w-auto shrink-0 flex items-center gap-1">
           <Link
-            className="group flex items-center space-x-3 rounded-xl bg-gradient-to-r px-2 sm:px-4 py-2 transition-all duration-200 dark:text-gray-200 dark:bg-gray-800"
+            className="group flex items-center gap-2 rounded-xl bg-gradient-to-r px-1 sm:px-4 py-2 transition-all duration-200 dark:text-gray-200 dark:bg-gray-800"
             href="/"
           >
             <div className="relative flex-none">
@@ -63,110 +72,129 @@ export const Header = () => {
               <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100"></div>
             </div>
             <div className="flex-col hidden sm:flex">
-              <span className="font-bold transition-colors duration-200 group-hover:text-blue-400">WorkoutOS</span>
+              <span className="text-lg font-bold transition-colors duration-200 group-hover:text-blue-400">WorkoutOS</span>
             </div>
           </Link>
         </div>
 
-        {/* User Menu */}
-        <div className="navbar-end">
+        <div className="order-3 flex min-w-0 max-w-full justify-end max-[447px]:basis-full min-[448px]:order-2 min-[448px]:w-auto">
           {allFeaturesFree || isPremium || !showAds || !hasAdProvider ? <WorkoutStreakHeader /> : <RemoveAdsText />}
-          <ThemeToggle />
-          <LanguageSelector />
+        </div>
+
+        {/* User Menu */}
+        <div className="navbar-end order-2 !h-auto !w-auto min-w-0 flex-1 flex-wrap justify-end gap-y-1 min-[448px]:order-3">
+          <div className="inline-flex !min-h-12 !min-w-12 items-center justify-center">
+            <ThemeToggle />
+          </div>
+          <div className="inline-flex !min-h-12 !min-w-12 items-center justify-center">
+            <LanguageSelector />
+          </div>
 
           {!session.data ? (
-            <div className="ml-1 flex items-center gap-1 sm:gap-2">
-              <Link className="!no-underline" href={getConfiguredPeptideOsLoginUrl()} prefetch={false} size="sm" variant="nav">
+            <div className="ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2">
+              <Link
+                className="!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center"
+                href={getConfiguredPeptideOsLoginUrl()}
+                prefetch={false}
+                size="sm"
+                variant="nav"
+              >
                 {t("commons.login")}
               </Link>
-              <Link className="!no-underline" href={getConfiguredPeptideOsSignupUrl()} prefetch={false} size="sm" variant="button">
+              <Link
+                className={publicSignupClass}
+                href={getConfiguredPeptideOsSignupUrl()}
+                prefetch={false}
+                size="lg"
+                variant="button"
+              >
                 {t("commons.signup")}
               </Link>
             </div>
           ) : (
             <div className="dropdown dropdown-end ml-1">
-            <div className="tooltip tooltip-bottom" data-tip={t("commons.profile")}>
-              <div className="btn btn-ghost btn-circle avatar relative" role="button" tabIndex={0}>
-                <div className="w-8 rounded-full bg-primary text-primary-content !flex items-center justify-center text-sm font-medium">
-                  {userAvatar || <User className="w-4 h-4" />}
-                </div>
-                {!allFeaturesFree && isPremium && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full !flex items-center justify-center">
-                    <Crown className="w-2.5 h-2.5 text-amber-900" />
+              <div className="tooltip tooltip-bottom" data-tip={t("commons.profile")}>
+                <div className="btn btn-ghost btn-circle avatar relative !min-h-12 !min-w-12" role="button" tabIndex={0}>
+                  <div className="w-8 rounded-full bg-primary text-primary-content !flex items-center justify-center text-sm font-medium">
+                    {userAvatar || <User className="w-4 h-4" />}
                   </div>
-                )}
+                  {!allFeaturesFree && isPremium && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full !flex items-center justify-center">
+                      <Crown className="w-2.5 h-2.5 text-amber-900" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <ul
-              className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 dark:bg-black dark:text-gray-200 rounded-box w-52 border border-slate-200 dark:border-gray-800"
-              onClick={handleCloseDropdown}
-              tabIndex={0}
-            >
-              <li>
-                <Link className="!no-underline" href="/profile" size="base" variant="nav">
-                  <User className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                  {t("commons.profile")}
-                </Link>
-              </li>
-              <ChangePasswordMenuItem />
-
-              {!allFeaturesFree && (
+              <ul
+                className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 dark:bg-black dark:text-gray-200 rounded-box w-52 border border-slate-200 dark:border-gray-800"
+                onClick={handleCloseDropdown}
+                tabIndex={0}
+              >
                 <li>
-                  <Link
-                    className="!no-underline"
-                    data-wc-entry="premium"
-                    href={isPremium ? "/api/premium/billing-portal" : "/premium"}
-                    size="base"
-                    variant="nav"
-                    {...(isPremium && {
-                      onClick: async (e) => {
-                        e.preventDefault();
-                        try {
-                          const response = await fetch("/api/premium/billing-portal", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ returnUrl: window.location.origin + "/profile" }),
-                          });
-                          const data = await response.json();
-                          if (data.success && data.url) {
-                            assignCheckoutUrl(data.url);
-                          }
-                        } catch (error) {
-                          console.error("Error opening billing portal:", error);
-                        }
-                      },
-                    })}
-                  >
-                    {isPremium ? (
-                      <>
-                        <Crown className="w-4 h-4 text-amber-500" />
-                        {t("commons.manage_subscription")}
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 text-purple-500" />
-                        {t("commons.remove_ads")}
-                      </>
-                    )}
+                  <Link className="!no-underline min-h-12 text-lg" href="/profile" size="base" variant="nav">
+                    <User className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                    {t("commons.profile")}
                   </Link>
                 </li>
-              )}
+                <ChangePasswordMenuItem />
 
-              <hr className="my-1 border-slate-200 dark:border-gray-800" />
+                {!allFeaturesFree && (
+                  <li>
+                    <Link
+                      className="!no-underline min-h-12 text-lg"
+                      data-wc-entry="premium"
+                      href={isPremium ? "/api/premium/billing-portal" : "/premium"}
+                      size="base"
+                      variant="nav"
+                      {...(isPremium && {
+                        onClick: async (e) => {
+                          e.preventDefault();
+                          try {
+                            const response = await fetch("/api/premium/billing-portal", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ returnUrl: window.location.origin + "/profile" }),
+                            });
+                            const data = await response.json();
+                            if (data.success && data.url) {
+                              assignCheckoutUrl(data.url);
+                            }
+                          } catch (error) {
+                            console.error("Error opening billing portal:", error);
+                          }
+                        },
+                      })}
+                    >
+                      {isPremium ? (
+                        <>
+                          <Crown className="w-4 h-4 text-amber-500" />
+                          {t("commons.manage_subscription")}
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 text-purple-500" />
+                          {t("commons.remove_ads")}
+                        </>
+                      )}
+                    </Link>
+                  </li>
+                )}
 
-              <li>
-                <button
-                  className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
-                  data-wc-signout=""
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="w-4 h-4" />
-                  {t("commons.logout")}
-                </button>
-              </li>
-            </ul>
-          </div>
+                <hr className="my-1 border-slate-200 dark:border-gray-800" />
+
+                <li>
+                  <button
+                    className="flex min-h-12 items-center gap-2 text-lg text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                    data-wc-signout=""
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {t("commons.logout")}
+                  </button>
+                </li>
+              </ul>
+            </div>
           )}
         </div>
       </div>

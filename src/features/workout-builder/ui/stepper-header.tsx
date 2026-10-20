@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Check } from "lucide-react";
 
 import { StepperStepProps } from "../types";
 
@@ -23,6 +22,7 @@ function StepperStep({
   onStepClick,
 }: StepperStepProps & { currentStep: number; onStepClick?: (stepNumber: number) => void }) {
   const canClick = stepNumber < currentStep || isCompleted;
+  const StepTitle = isActive ? "h2" : "h3";
 
   const handleClick = () => {
     if (canClick && onStepClick) {
@@ -39,34 +39,35 @@ function StepperStep({
           className={cn(
             "flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-200 flex-shrink-0",
             {
-              "border-green-500 bg-green-500 text-white": isCompleted,
-              "border-blue-500 bg-blue-500 text-white": isActive,
-              "border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500":
-                !isActive && !isCompleted,
+              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive || isCompleted,
+              "border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             },
             canClick ? "cursor-pointer" : "cursor-default",
           )}
+          data-wc-step-mark=""
+          data-wc-step-state={isCompleted ? "done" : isActive ? "active" : "todo"}
           onClick={handleClick}
         >
-          {isCompleted ? <Check className="h-6 w-6" /> : <span className="text-sm font-semibold">{stepNumber}</span>}
+          {isCompleted ? <span className="text-lg font-semibold">✓</span> : <span className="text-lg font-semibold">{stepNumber}</span>}
         </div>
 
         {/* Contenu textuel à droite */}
         <div className="ml-4">
-          <h3
-            className={cn("font-semibold text-sm transition-colors", {
-              "text-green-600 dark:text-green-400": isCompleted,
-              "text-blue-600 dark:text-blue-400": isActive,
-              "text-gray-500 dark:text-gray-400": !isActive && !isCompleted,
+          <StepTitle
+            className={cn("font-semibold text-lg transition-colors", {
+              "text-[var(--wc-dash-accent)]": isActive || isCompleted,
+              "text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             })}
+            data-wc-step-title=""
           >
             {title}
-          </h3>
+          </StepTitle>
           <p
             className={cn(
-              "text-xs mt-1 transition-colors",
-              isActive || isCompleted ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-500",
+              "text-lg mt-1 transition-colors",
+              isActive || isCompleted ? "text-[var(--wc-dash-text)]" : "text-[var(--wc-dash-secondary)]",
             )}
+            data-wc-step-caption=""
           >
             {description}
           </p>
@@ -80,34 +81,35 @@ function StepperStep({
           className={cn(
             "flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-200",
             {
-              "border-green-500 bg-green-500 text-white": isCompleted,
-              "border-blue-500 bg-blue-500 text-white": isActive,
-              "border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500":
-                !isActive && !isCompleted,
+              "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]": isActive || isCompleted,
+              "border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             },
             canClick ? "cursor-pointer" : "cursor-default",
           )}
+          data-wc-step-mark=""
+          data-wc-step-state={isCompleted ? "done" : isActive ? "active" : "todo"}
           onClick={handleClick}
         >
-          {isCompleted ? <Check className="h-6 w-6" /> : <span className="text-sm font-semibold">{stepNumber}</span>}
+          {isCompleted ? <span className="text-lg font-semibold">✓</span> : <span className="text-lg font-semibold">{stepNumber}</span>}
         </div>
 
         {/* Contenu textuel en bas */}
         <div className="mt-3">
-          <h3
-            className={cn("font-semibold text-sm transition-colors", {
-              "text-green-600 dark:text-green-400": isCompleted,
-              "text-blue-600 dark:text-blue-400": isActive,
-              "text-gray-500 dark:text-gray-400": !isActive && !isCompleted,
+          <StepTitle
+            className={cn("font-semibold text-lg transition-colors", {
+              "text-[var(--wc-dash-accent)]": isActive || isCompleted,
+              "text-[var(--wc-dash-secondary)]": !isActive && !isCompleted,
             })}
+            data-wc-step-title=""
           >
             {title}
-          </h3>
+          </StepTitle>
           <p
             className={cn(
-              "text-xs mt-1 transition-colors",
-              isActive || isCompleted ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-500",
+              "text-lg mt-1 transition-colors",
+              isActive || isCompleted ? "text-[var(--wc-dash-text)]" : "text-[var(--wc-dash-secondary)]",
             )}
+            data-wc-step-caption=""
           >
             {description}
           </p>
@@ -119,20 +121,23 @@ function StepperStep({
 
 export function StepperHeader({ steps, currentStep, onStepClick }: StepperHeaderProps) {
   return (
-    <div className={cn("w-full my-8 px-2 sm:px-6")}>
+    <div className={cn("w-full my-8 px-2 sm:px-6")} data-wc-steps="">
       {/* Layout mobile - vertical */}
-      <div className="flex flex-col space-y-6 md:hidden">
+      <div className="flex flex-col space-y-6 md:hidden" data-wc-steps-list="stack">
         {steps.map((step, index) => (
           <div className="relative" key={step.stepNumber}>
             <StepperStep {...step} currentStep={currentStep} onStepClick={onStepClick} />
 
             {/* Ligne de connexion verticale */}
             {index < steps.length - 1 && (
-              <div className="absolute left-6 top-12 w-0.5 h-6 -translate-x-0.5">
+              <div
+                className="absolute left-6 top-12 w-0.5 h-6 -translate-x-0.5"
+                data-wc-step-line={step.isCompleted ? "done" : "todo"}
+              >
                 <div
                   className={cn(
                     "w-full h-full transition-colors duration-300",
-                    step.isCompleted ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600",
+                    step.isCompleted ? "bg-[var(--wc-dash-accent)]" : "bg-[var(--wc-dash-border)]",
                   )}
                 />
               </div>
@@ -142,7 +147,7 @@ export function StepperHeader({ steps, currentStep, onStepClick }: StepperHeader
       </div>
 
       {/* Layout desktop - horizontal */}
-      <div className="hidden md:flex items-start">
+      <div className="hidden md:flex items-start" data-wc-steps-list="row">
         {steps.map((step, index) => (
           <React.Fragment key={step.stepNumber}>
             {/* Étape */}
@@ -156,7 +161,7 @@ export function StepperHeader({ steps, currentStep, onStepClick }: StepperHeader
                 <div
                   className={cn(
                     "w-full h-1 transition-colors duration-300",
-                    step.isCompleted ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600",
+                    step.isCompleted ? "bg-[var(--wc-dash-accent)]" : "bg-[var(--wc-dash-border)]",
                   )}
                 />
               </div>

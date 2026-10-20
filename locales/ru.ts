@@ -456,6 +456,7 @@ export default {
     premium_tooltip: "Стань Премиум",
     tools: "Инструменты",
     tools_tooltip: "Просмотр инструментов",
+    label: "Основная навигация",
     profile: "Профиль",
     profile_tooltip: "Просмотр профиля",
     leaderboard: "Рейтинг",
@@ -1516,6 +1517,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Составить свою тренировку",
     confirm_delete: "Вы уверены, что хотите удалить эту тренировочную сессию?",
     steps: {
       equipment: {
@@ -1631,6 +1633,7 @@ export default {
       back_to_workout: "Вернуться к тренировке",
       congrats: "Поздравляем, тренировка завершена! 🎉",
       congrats_subtitle: "Вы справились!",
+      trophy_alt: "Трофей",
       see_instructions: "Смотреть инструкции",
       finish_set: "Завершить подход",
       finish_session: "Завершить сессию",

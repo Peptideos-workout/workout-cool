@@ -32,8 +32,38 @@ const DARK = {
   "--dash-error": "#fecdd3"
 } as const;
 
+function flattenMedia(css: string): string {
+  const parts: string[] = [];
+  let index = 0;
+  while (index < css.length) {
+    const mediaAt = css.indexOf("@media", index);
+    if (mediaAt === -1) {
+      parts.push(css.slice(index));
+      break;
+    }
+    parts.push(css.slice(index, mediaAt));
+    const open = css.indexOf("{", mediaAt);
+    assert.match(css.slice(mediaAt, open), /@media\s*\(\s*min-width:\s*448px\s*\)/);
+    let depth = 0;
+    let cursor = open;
+    for (; cursor < css.length; cursor += 1) {
+      if (css[cursor] === "{") depth += 1;
+      else if (css[cursor] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          parts.push(css.slice(open + 1, cursor));
+          cursor += 1;
+          break;
+        }
+      }
+    }
+    index = cursor;
+  }
+  return parts.join("\n");
+}
+
 function rules(css: string): Array<{ selector: string; body: string }> {
-  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const withoutComments = flattenMedia(css.replace(/\/\*[\s\S]*?\*\//g, ""));
   return withoutComments
     .split("}")
     .map((block) => block.trim())
@@ -62,8 +92,14 @@ test("embed theme rules never apply outside embed mode", () => {
   const globals = readFileSync("src/shared/styles/globals.css", "utf8");
   assert.match(globals, /embed-theme\.css/);
   assert.doesNotMatch(globals, /--dash-accent/);
-  assert.doesNotMatch(globals, /#0a5c52/);
-  assert.doesNotMatch(globals, /#2dd4bf/);
+  const outsideWcDash = globals
+    .split("\n")
+    .filter((line) => !line.includes("--wc-dash-"))
+    .join("\n");
+  assert.doesNotMatch(outsideWcDash, /#0a5c52/);
+  assert.doesNotMatch(outsideWcDash, /#2dd4bf/);
+  assert.match(globals, /--wc-dash-accent:\s*#0a5c52/);
+  assert.match(globals, /--wc-dash-accent:\s*#2dd4bf/);
 });
 
 test("embed tokens match PeptideOS light and dark values and keep the page transparent", () => {
@@ -81,12 +117,12 @@ test("embed tokens match PeptideOS light and dark values and keep the page trans
     assert.match(dark.body, new RegExp(`${name}:\\s*${value}`), name);
   }
 
-  assert.match(light.body, /--color-base-100:\s*var\(--dash-panel\)/);
-  assert.match(light.body, /--color-base-200:\s*var\(--dash-inner\)/);
-  assert.match(light.body, /--color-base-300:\s*var\(--dash-card\)/);
-  assert.match(light.body, /--color-primary:\s*var\(--dash-accent\)/);
-  assert.match(light.body, /--color-accent:\s*var\(--dash-link\)/);
-  assert.match(light.body, /--color-primary-content:\s*var\(--dash-ink\)/);
+  assert.match(light.body, /--color-base-100:\s*var\(--wc-dash-panel\)/);
+  assert.match(light.body, /--color-base-200:\s*var\(--wc-dash-inner\)/);
+  assert.match(light.body, /--color-base-300:\s*var\(--wc-dash-card\)/);
+  assert.match(light.body, /--color-primary:\s*var\(--wc-dash-accent\)/);
+  assert.match(light.body, /--color-accent:\s*var\(--wc-dash-link\)/);
+  assert.match(light.body, /--color-primary-content:\s*var\(--wc-dash-ink\)/);
 
   const page = parsed.filter((rule) => /html\[data-wc-embed="1"\]/.test(rule.selector) && /background/.test(rule.body));
   assert.ok(page.some((rule) => /transparent/.test(rule.body)));

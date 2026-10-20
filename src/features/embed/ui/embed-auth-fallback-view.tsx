@@ -18,13 +18,13 @@ export function EmbedAuthFallbackView({
 }: EmbedAuthFallbackViewProps) {
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3" data-wc-embed-fallback="">
-      <a className="text-base font-medium" href={dashboardHref} rel="noopener noreferrer" target="_top">
+      <a className="inline-flex min-h-12 items-center text-lg font-bold" href={dashboardHref} rel="noopener noreferrer" target="_top">
         {EMBED_BACK_TO_DASHBOARD}
       </a>
-      <a className="text-base font-medium" href={loginHref} rel="noopener noreferrer" target="_top">
+      <a className="inline-flex min-h-12 items-center text-lg font-bold" href={loginHref} rel="noopener noreferrer" target="_top">
         {loginLabel}
       </a>
-      <a className="text-base font-medium" href={signupHref} rel="noopener noreferrer" target="_top">
+      <a className="inline-flex min-h-12 items-center text-lg font-bold" href={signupHref} rel="noopener noreferrer" target="_top">
         {signupLabel}
       </a>
     </div>

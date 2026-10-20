@@ -461,6 +461,7 @@ export default {
     leaderboard_tooltip: "Ver ranking de treinos",
     tools: "Ferramentas",
     tools_tooltip: "Explorar ferramentas",
+    label: "Navegação principal",
     profile: "Perfil",
     profile_tooltip: "Ver o seu perfil",
   },
@@ -1526,6 +1527,7 @@ export default {
 
   // Workout Builder
   workout_builder: {
+    title: "Construir o seu treino",
     confirm_delete: "Tem a certeza de que pretende eliminar esta sessão de treino?",
     steps: {
       equipment: {
@@ -1640,6 +1642,7 @@ export default {
       back_to_workout: "Voltar ao treino",
       congrats: "Parabéns, treino concluído! 🎉",
       congrats_subtitle: "Conseguiu!",
+      trophy_alt: "Troféu",
       see_instructions: "Ver instruções",
       finish_set: "Concluir série",
       finish_session: "Terminar sessão",

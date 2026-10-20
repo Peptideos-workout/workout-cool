@@ -1072,11 +1072,50 @@ async function assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engin
   console.log(`SECOND_WORKOUT_QUIT ${engine} remount=1 calls=2`);
 }
 
+async function assertReportErrorDeleted(browser, parentOrigin, childOrigin, engine) {
+  const quitLabel = localeValue("quit_workout");
+  const discardLabel = localeValue("embed_quit_confirm");
+  const title = localeValue("embed_quit_title");
+  const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+  try {
+    await phone.frame.getByRole("button", { name: "Start workout" }).click();
+    await phone.frame.locator("[data-wc-active='1']").waitFor();
+    const removed = await phone.frame.evaluate(() => {
+      window.__wcUnhandled = 0;
+      window.addEventListener("unhandledrejection", () => {
+        window.__wcUnhandled += 1;
+      });
+      const prototype = Object.getPrototypeOf(window);
+      delete prototype.reportError;
+      delete window.reportError;
+      window.__wcSessionStore.setState({
+        quitWorkout: () => {
+          throw new Error("hold");
+        },
+      });
+      return typeof window.reportError;
+    });
+    if (removed !== "undefined") throw new Error(`${engine} reportError stayed ${removed}`);
+    await phone.frame.getByRole("button", { name: quitLabel }).click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor();
+    await phone.frame.getByRole("button", { name: discardLabel }).click();
+    // The catch runs before finally waits out the 500ms guard, so a throw there rejects only after that wait.
+    await phone.frame.evaluate((delay) => new Promise((resolve) => window.setTimeout(resolve, delay)), 700);
+    const unhandled = await phone.frame.evaluate(() => window.__wcUnhandled || 0);
+    if (unhandled !== 0) throw new Error(`${engine} missing reportError fired unhandledrejection ${unhandled} times`);
+  } finally {
+    await phone.page.close();
+  }
+  console.log(`REPORT_ERROR_DELETED ${engine} unhandled=0`);
+}
+
 async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, engine) {
   const quitLabel = localeValue("quit_workout");
   const discardLabel = localeValue("embed_quit_confirm");
   const title = localeValue("embed_quit_title");
   const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+  let gap150Ms = -1;
+  let gap300Ms = -1;
   const consoleLines = [];
   const onConsole = (message) => {
     consoleLines.push(`${message.type()}: ${message.text()}`);
@@ -1112,19 +1151,48 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
       phone.frame.evaluate(() => {
         window.__wcQuitCalls = 0;
       });
+    await phone.frame.evaluate(() => {
+      window.__wcClickMarks = [];
+      window.addEventListener(
+        "pointerdown",
+        () => {
+          window.__wcClickMarks.push(performance.now());
+        },
+        true,
+      );
+    });
+    const resetMarks = () =>
+      phone.frame.evaluate(() => {
+        window.__wcClickMarks = [];
+      });
+    const readGap = async (label) => {
+      const gap = await phone.frame.evaluate(() => {
+        const marks = window.__wcClickMarks || [];
+        if (marks.length !== 2) return { gap: -1, count: marks.length };
+        return { gap: Math.round(marks[1] - marks[0]), count: 2 };
+      });
+      if (gap.count !== 2 || gap.gap < 0 || gap.gap >= 500) {
+        throw new Error(`${engine} ${label} click gap was ${gap.gap}ms (${gap.count} pointerdowns)`);
+      }
+      return gap.gap;
+    };
     await confirm.dblclick();
     if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times`);
     await wait(520);
     await resetCalls();
+    await resetMarks();
     await confirm.click();
     await wait(150);
     await confirm.click({ force: true });
+    gap150Ms = await readGap("150ms");
     if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times after 150ms`);
     await wait(520);
     await resetCalls();
+    await resetMarks();
     await confirm.click();
     await wait(300);
     await confirm.click({ force: true });
+    gap300Ms = await readGap("300ms");
     if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times after 300ms`);
     await wait(520);
     await resetCalls();
@@ -1158,7 +1226,10 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
   }
   const reported = consoleLines.filter((line) => /hold|pageerror|uncaught|unhandled|reportError/i.test(line));
   console.log(`THROWING_QUIT_CONSOLE ${engine} ${JSON.stringify(reported)}`);
-  console.log(`THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0`);
+  console.log(
+    `THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0 gap150Ms=${gap150Ms} gap300Ms=${gap300Ms}`,
+  );
+  await assertReportErrorDeleted(browser, parentOrigin, childOrigin, engine);
   await assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engine);
 }
 

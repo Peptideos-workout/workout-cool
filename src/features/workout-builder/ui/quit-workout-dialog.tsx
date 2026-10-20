@@ -58,14 +58,13 @@ export function QuitWorkoutDialog({
     } catch (error) {
       failed = true;
       // window.reportError fires the same error event as a thrown click handler. It is missing before Safari 15.4.
-      if (typeof reportError === "function") reportError(error);
-      else console.error(error);
+      (typeof globalThis.reportError === "function" ? globalThis.reportError : console.error)(error);
     } finally {
       if (failed) {
         const remaining = DOUBLE_ACTIVATION_GUARD_MS - (Date.now() - lockedAt);
         if (remaining > 0) {
           await new Promise<void>((resolve) => {
-            setTimeout(resolve, remaining);
+            pendingTimers.current.push(setTimeout(resolve, remaining));
           });
         }
         releaseConfirm();

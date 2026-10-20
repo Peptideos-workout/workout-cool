@@ -228,6 +228,13 @@ function localeValue(name) {
   return match[2];
 }
 
+function readQuitGuardMs() {
+  const source = readFileSync(join(process.cwd(), "src/features/workout-builder/ui/quit-workout-dialog.tsx"), "utf8");
+  const match = source.match(/const DOUBLE_ACTIVATION_GUARD_MS = (\d+);/);
+  if (!match) throw new Error("DOUBLE_ACTIVATION_GUARD_MS is missing from the quit dialog");
+  return Number(match[1]);
+}
+
 function loadEsbuild() {
   try {
     return require("esbuild");
@@ -1109,6 +1116,84 @@ async function assertReportErrorDeleted(browser, parentOrigin, childOrigin, engi
   console.log(`REPORT_ERROR_DELETED ${engine} unhandled=0`);
 }
 
+async function assertGuardTimerClearedOnUnmount(browser, parentOrigin, childOrigin, engine) {
+  const quitLabel = localeValue("quit_workout");
+  const discardLabel = localeValue("embed_quit_confirm");
+  const title = localeValue("embed_quit_title");
+  const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
+  try {
+    await phone.frame.getByRole("button", { name: "Start workout" }).click();
+    await phone.frame.locator("[data-wc-active='1']").waitFor();
+    await phone.frame.evaluate(() => {
+      window.__wcSessionStore.setState({
+        quitWorkout: () => {
+          throw new Error("hold");
+        },
+      });
+    });
+    await phone.frame.getByRole("button", { name: quitLabel }).click();
+    await phone.frame.getByRole("dialog", { name: title }).waitFor();
+    await phone.frame.evaluate(() => {
+      window.__wcTimerLog = [];
+      window.__wcHeaderUnmounted = false;
+      window.__wcUnmountStateErrors = 0;
+      const set = window.setTimeout.bind(window);
+      const clear = window.clearTimeout.bind(window);
+      const report = console.error.bind(console);
+      console.error = (...args) => {
+        const text = args.map((item) => (typeof item === "string" ? item : item instanceof Error ? item.message : "")).join(" ");
+        if (text.includes("unmounted") || text.includes("Can't perform a React state update")) window.__wcUnmountStateErrors += 1;
+        return report(...args);
+      };
+      window.setTimeout = (fn, delay, ...args) => {
+        const delayMs = Number(delay) || 0;
+        const record = { delay: delayMs, fired: false, cleared: false, armed: !window.__wcHeaderUnmounted };
+        const id = set(() => {
+          if (record.cleared) return undefined;
+          record.fired = true;
+          if (typeof fn === "function") return fn(...args);
+          return undefined;
+        }, delay);
+        record.id = id;
+        window.__wcTimerLog.push(record);
+        return id;
+      };
+      window.clearTimeout = (id) => {
+        const record = window.__wcTimerLog.find((item) => item.id === id);
+        if (record) record.cleared = true;
+        return clear(id);
+      };
+    });
+    await phone.frame.getByRole("button", { name: discardLabel }).click();
+    await phone.frame.waitForFunction(() => (window.__wcTimerLog || []).some((timer) => timer.armed && timer.delay >= 100));
+    await phone.frame.evaluate(() => {
+      window.__wcHeaderUnmounted = true;
+      window.__wcSessionStore.setState({ isWorkoutActive: false, session: null });
+    });
+    await phone.frame.locator("[data-wc-active='0']").waitFor();
+    await phone.frame.evaluate((delay) => new Promise((resolve) => window.setTimeout(resolve, delay)), 700);
+    const stats = await phone.frame.evaluate(() => {
+      const armed = (window.__wcTimerLog || []).filter((timer) => timer.armed && timer.delay >= 100);
+      const guard = armed.reduce((best, timer) => (!best || timer.delay > best.delay ? timer : best), null);
+      return {
+        delay: guard ? guard.delay : -1,
+        cleared: guard && guard.cleared ? 1 : 0,
+        fired: guard && guard.fired ? 1 : 0,
+        setState: window.__wcUnmountStateErrors || 0,
+      };
+    });
+    if (stats.delay < 100 || stats.cleared !== 1 || stats.fired !== 0 || stats.setState !== 0) {
+      throw new Error(
+        `${engine} guard timer survived unmount ` +
+          `(delay ${stats.delay}, cleared ${stats.cleared}, fired ${stats.fired}, setState ${stats.setState})`,
+      );
+    }
+  } finally {
+    await phone.page.close();
+  }
+  console.log(`GUARD_TIMER_UNMOUNT ${engine} cleared=1 fired=0 setState=0`);
+}
+
 async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, engine) {
   const quitLabel = localeValue("quit_workout");
   const discardLabel = localeValue("embed_quit_confirm");
@@ -1165,14 +1250,26 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
       phone.frame.evaluate(() => {
         window.__wcClickMarks = [];
       });
+    const guardMs = readQuitGuardMs();
+    const gapWindows = { "150ms": { low: 100, high: 250 }, "300ms": { low: 250, high: 450 } };
+    for (const [label, bounds] of Object.entries(gapWindows)) {
+      if (!(bounds.low > 0 && bounds.low < bounds.high && bounds.high < guardMs)) {
+        throw new Error(`${label} gap bound ${bounds.low}..${bounds.high} is not inside the ${guardMs}ms guard`);
+      }
+    }
     const readGap = async (label) => {
+      const bounds = gapWindows[label];
       const gap = await phone.frame.evaluate(() => {
         const marks = window.__wcClickMarks || [];
         if (marks.length !== 2) return { gap: -1, count: marks.length };
         return { gap: Math.round(marks[1] - marks[0]), count: 2 };
       });
-      if (gap.count !== 2 || gap.gap < 0 || gap.gap >= 500) {
-        throw new Error(`${engine} ${label} click gap was ${gap.gap}ms (${gap.count} pointerdowns)`);
+      const inside = gap.count === 2 && gap.gap > bounds.low && gap.gap < bounds.high && gap.gap < guardMs;
+      if (!inside) {
+        throw new Error(
+          `${engine} ${label} click gap was ${gap.gap}ms (${gap.count} pointerdowns), ` +
+            `expected ${bounds.low} < gap < ${bounds.high} and < ${guardMs}`,
+        );
       }
       return gap.gap;
     };
@@ -1231,6 +1328,7 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
   );
   await assertReportErrorDeleted(browser, parentOrigin, childOrigin, engine);
   await assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engine);
+  await assertGuardTimerClearedOnUnmount(browser, parentOrigin, childOrigin, engine);
 }
 
 async function runFirefoxThrowingQuit(parentOrigin, childOrigin) {

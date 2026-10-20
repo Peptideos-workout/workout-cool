@@ -38,7 +38,7 @@ export function EmbedFlowConfirm({
   triggerRef,
 }: EmbedFlowConfirmProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const fallbackTriggerRef = useRef<HTMLElement | null>(null);
   const triggerRefProp = useRef(triggerRef);
   const onCancelRef = useRef(onCancel);
@@ -63,11 +63,33 @@ export function EmbedFlowConfirm({
       if (active instanceof HTMLElement && active !== document.body) fallbackTriggerRef.current = active;
     }
     cardRef.current?.scrollIntoView({ block: "center" });
-    cancelRef.current?.focus();
+    titleRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         restoreTrigger();
         onCancelRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const card = cardRef.current;
+      if (!card) return;
+      const buttons = [...card.querySelectorAll<HTMLButtonElement>("button:not([disabled])")];
+      if (buttons.length === 0) return;
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      const active = document.activeElement;
+      const activeButton = active instanceof HTMLButtonElement && buttons.includes(active) ? active : null;
+      if (event.shiftKey) {
+        if (!activeButton || activeButton === first) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+      if (!activeButton || activeButton === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -85,7 +107,7 @@ export function EmbedFlowConfirm({
       ref={cardRef}
       role="dialog"
     >
-      <h3 className="text-lg font-bold text-[var(--wc-dash-text)]" id={titleId}>
+      <h3 className="text-lg font-bold text-[var(--wc-dash-text)]" id={titleId} ref={titleRef} tabIndex={-1}>
         {title}
       </h3>
       <p className="mt-3 text-lg leading-relaxed text-[var(--wc-dash-secondary)]" id={descriptionId}>
@@ -101,7 +123,6 @@ export function EmbedFlowConfirm({
             restoreTrigger();
             onCancel();
           }}
-          ref={cancelRef}
           type="button"
           variant="ghost"
         >

@@ -234,7 +234,11 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.doesNotMatch(quit, /window\.confirm|window\.alert|window\.prompt|window\.top/);
   const confirm = read(CONFIRM);
   assert.match(confirm, /scrollIntoView\(\{ block: "center" \}\)/);
-  assert.match(confirm, /cancelRef\.current\?\.focus\(\)/);
+  assert.match(confirm, /titleRef\.current\?\.focus\(\)/);
+  assert.match(confirm, /tabIndex=\{-1\}/);
+  assert.match(confirm, /event\.key !== "Tab"/);
+  assert.match(confirm, /activeButton === last/);
+  assert.match(confirm, /activeButton === first/);
   assert.match(confirm, /event\.key === "Escape"/);
   assert.match(confirm, /const titleId = useId\(\)/);
   assert.match(confirm, /aria-labelledby=\{titleId\}/);

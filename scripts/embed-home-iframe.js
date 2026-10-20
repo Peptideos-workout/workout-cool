@@ -863,8 +863,33 @@ async function runQuitEmbedHarness(browser) {
     if (keydownDuring !== keydownBefore + 1) throw new Error(`keydown listeners ${keydownDuring} from ${keydownBefore}`);
     const scrolled = await light.frame.evaluate(() => window.__wcScrolled === true);
     if (!scrolled) throw new Error("confirm did not scrollIntoView({block:'center'})");
-    const focused = await light.frame.evaluate(() => document.activeElement?.textContent?.trim());
-    if (focused !== keepLabel) throw new Error(`focused ${focused}`);
+    const openedFocus = await light.frame.evaluate(() => {
+      const element = document.activeElement;
+      return {
+        tag: element?.tagName || "",
+        tab: element?.getAttribute("tabindex") || "",
+        text: (element?.textContent || "").replace(/\s+/g, " ").trim(),
+      };
+    });
+    if (openedFocus.tag !== "H3" || openedFocus.tab !== "-1" || openedFocus.text !== title) {
+      throw new Error(`focused ${openedFocus.tag} ${openedFocus.text}`);
+    }
+    await light.frame.locator("[data-wc-quit-confirm] h3").press("Tab");
+    if ((await focusedName(light.frame)) !== discardLabel) {
+      throw new Error(`Tab from title left focus on ${await focusedName(light.frame)}`);
+    }
+    await light.frame.getByRole("button", { name: discardLabel }).press("Tab");
+    if ((await focusedName(light.frame)) !== keepLabel) {
+      throw new Error(`Tab from confirm left focus on ${await focusedName(light.frame)}`);
+    }
+    await light.frame.getByRole("button", { name: keepLabel }).press("Tab");
+    if ((await focusedName(light.frame)) !== discardLabel) {
+      throw new Error(`Tab wrap left focus on ${await focusedName(light.frame)}`);
+    }
+    await light.frame.getByRole("button", { name: discardLabel }).press("Shift+Tab");
+    if ((await focusedName(light.frame)) !== keepLabel) {
+      throw new Error(`Shift+Tab wrap left focus on ${await focusedName(light.frame)}`);
+    }
     const described = await light.frame.locator("[data-wc-quit-confirm]").evaluate((element) => {
       const id = element.getAttribute("aria-describedby");
       return id ? (document.getElementById(id)?.textContent?.trim() ?? "") : "";

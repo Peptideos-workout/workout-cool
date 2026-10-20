@@ -106,7 +106,7 @@ export function EmbedFlowConfirm({
       ref={cardRef}
       role="dialog"
     >
-      <h3 className="text-lg font-bold text-[var(--wc-dash-text)]" id={titleId} ref={titleRef} tabIndex={-1}>
+      <h3 className="text-lg font-bold text-[var(--wc-dash-text)] focus:outline-none" id={titleId} ref={titleRef} tabIndex={-1}>
         {title}
       </h3>
       <p className="mt-3 text-lg leading-relaxed text-[var(--wc-dash-secondary)]" id={descriptionId}>

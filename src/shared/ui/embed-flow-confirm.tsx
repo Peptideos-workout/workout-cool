@@ -5,13 +5,33 @@ import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react"
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/components/ui/button";
 
+let embedTitleOpenedFromKeyboard = false;
+
+const rememberEmbedTitleKey = (event: KeyboardEvent) => {
+  if (event.key === "Enter" || event.key === " ") embedTitleOpenedFromKeyboard = true;
+};
+
+const forgetEmbedTitleKey = () => {
+  embedTitleOpenedFromKeyboard = false;
+};
+
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", rememberEmbedTitleKey, true);
+  document.addEventListener("pointerdown", forgetEmbedTitleKey, true);
+  document.addEventListener("mousedown", forgetEmbedTitleKey, true);
+  document.addEventListener("touchstart", forgetEmbedTitleKey, true);
+}
+
 // The shared Button fades box-shadow over 300ms, which would draw this ring transparent.
 const embedFocusRingClass =
   "transition-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
   "focus-visible:ring-[var(--wc-dash-text)] focus-visible:ring-offset-[var(--wc-dash-panel)]";
 
+// titleRef.focus() runs on every open. :focus would paint this ring after a tap.
+// :focus-visible keeps it for a keyboard open, and outline-none stays on for both.
 const embedTitleFocusClass =
-  "focus:outline-none focus:ring-2 focus:ring-offset-2 " + "focus:ring-[var(--wc-dash-text)] focus:ring-offset-[var(--wc-dash-panel)]";
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+  "focus-visible:ring-[var(--wc-dash-text)] focus-visible:ring-offset-[var(--wc-dash-panel)]";
 
 export const embedQuitButtonClass =
   "w-full !min-h-12 !bg-[var(--wc-dash-error)] !text-lg !text-[var(--wc-dash-ink)] shadow-none hover:!bg-[var(--wc-dash-error)] " +
@@ -74,6 +94,13 @@ export function EmbedFlowConfirm({
     }
     cardRef.current?.scrollIntoView({ block: "center" });
     titleRef.current?.focus();
+    // WebKit ignores :focus-visible on that script focus, and ignores a second focus() while it is already focused.
+    if (embedTitleOpenedFromKeyboard && titleRef.current) {
+      const title = titleRef.current;
+      title.blur();
+      // This repo's DOM types omit FocusOptions.focusVisible. The browser still honors it.
+      title.focus({ focusVisible: true } as unknown as FocusOptions);
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();

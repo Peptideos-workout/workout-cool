@@ -7,6 +7,7 @@
  * the way back. The app, next.config.ts, and FRAME_ANCESTORS_CSP stay unchanged.
  *
  * Requires `pnpm build` and Playwright's Chromium (`pnpm exec playwright install chromium`).
+ * The title modality check also runs in WebKit when that binary is installed.
  */
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
@@ -882,6 +883,85 @@ async function assertTitleRing(target) {
   }
 }
 
+async function assertNoTitleRing(target) {
+  const ring = await readActiveFocus(target);
+  if (ring.tag !== "H3") throw new Error(`pointer open focused ${ring.tag}`);
+  if (ring.visible || ring.outlineAlpha > 0) {
+    throw new Error(`pointer open showed a title ring (${ring.boxShadow} / ${ring.outlineColor})`);
+  }
+}
+
+async function openAndAssertTitle(frame, opener, title, expectRing) {
+  await opener();
+  await frame.getByRole("dialog", { name: title }).waitFor();
+  if (expectRing) await assertTitleRing(frame);
+  else await assertNoTitleRing(frame);
+}
+
+async function runTitleModality(browser, parentOrigin, childOrigin, engine) {
+  const quitLabel = localeValue("quit_workout");
+  const title = localeValue("embed_quit_title");
+  const keepLabel = localeValue("embed_quit_cancel");
+  const deleteLabel = localeValue("delete");
+  const deleteTitle = localeValue("delete_workout_title");
+  const cancelLabel = localeValue("cancel");
+  const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1", { hasTouch: true });
+  try {
+    await phone.frame.getByRole("button", { name: "Start workout" }).click();
+    await phone.frame.locator("[data-wc-active='1']").waitFor();
+    const quit = phone.frame.getByRole("button", { name: quitLabel });
+    const closeQuit = () => phone.frame.getByRole("button", { name: keepLabel }).click();
+    await openAndAssertTitle(phone.frame, () => quit.click(), title, false);
+    await closeQuit();
+    await openAndAssertTitle(phone.frame, () => quit.tap(), title, false);
+    await closeQuit();
+    await openAndAssertTitle(phone.frame, () => quit.press("Enter"), title, true);
+    await closeQuit();
+    await openAndAssertTitle(phone.frame, () => quit.press("Space"), title, true);
+    await closeQuit();
+  } finally {
+    await phone.page.close();
+  }
+  const history = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history", { hasTouch: true });
+  history.page.on("dialog", (dialog) => dialog.dismiss());
+  try {
+    const historyDelete = history.frame.locator("ul").getByRole("button", { name: deleteLabel }).first();
+    const closeDelete = () => history.frame.getByRole("button", { name: cancelLabel }).click();
+    await openAndAssertTitle(history.frame, () => historyDelete.click(), deleteTitle, false);
+    await closeDelete();
+    await openAndAssertTitle(history.frame, () => historyDelete.tap(), deleteTitle, false);
+    await closeDelete();
+    await openAndAssertTitle(history.frame, () => historyDelete.press("Enter"), deleteTitle, true);
+    await closeDelete();
+    await openAndAssertTitle(history.frame, () => historyDelete.press("Space"), deleteTitle, true);
+  } finally {
+    await history.page.close();
+  }
+  console.log(`TITLE_ENGINE ${engine} pointer=no-ring tap=no-ring keyboard=ring`);
+}
+
+async function runWebKitTitleModality(parentOrigin, childOrigin) {
+  let webkit;
+  try {
+    ({ webkit } = require("playwright"));
+  } catch (error) {
+    console.log(`TITLE_ENGINE webkit skipped (${error.message})`);
+    return;
+  }
+  let browser;
+  try {
+    browser = await webkit.launch({ headless: true });
+  } catch (error) {
+    console.log(`TITLE_ENGINE webkit skipped (${error.message})`);
+    return;
+  }
+  try {
+    await runTitleModality(browser, parentOrigin, childOrigin, "webkit");
+  } finally {
+    await browser.close();
+  }
+}
+
 async function storedSession(frame) {
   return frame.evaluate(() => ({
     current: localStorage.getItem("currentWorkoutSessionId"),
@@ -933,8 +1013,8 @@ async function attachChildFrame(page) {
   return frame;
 }
 
-async function openPhone(browser, parentOrigin, childOrigin, search) {
-  const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
+async function openPhone(browser, parentOrigin, childOrigin, search, pageOptions = {}) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 900 }, ...pageOptions });
   await page.addInitScript(() => {
     const original = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = function scrollIntoView(arg) {
@@ -1120,7 +1200,9 @@ async function runQuitEmbedHarness(browser) {
     if (openedFocus.tag !== "H3" || openedFocus.tab !== "-1" || openedFocus.text !== title) {
       throw new Error(`focused ${openedFocus.tag} ${openedFocus.text}`);
     }
-    await assertTitleRing(light.frame);
+    // Pointer open keeps focus on the title and must not paint its ring. The ring check moved to the Enter open below.
+    await assertNoTitleRing(light.frame);
+    await saveShot(light.page, "confirm-390-light-pointer.png");
     await light.frame.locator("[data-wc-quit-confirm] h3").press("Tab");
     if ((await focusedName(light.frame)) !== discardLabel) {
       throw new Error(`Tab from title left focus on ${await focusedName(light.frame)}`);
@@ -1156,6 +1238,14 @@ async function runQuitEmbedHarness(browser) {
     if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) throw new Error("Keep going left the confirm open");
     const keydownAfter = await light.frame.evaluate(() => window.__wcKeydown);
     if (keydownAfter !== keydownBefore) throw new Error(`Escape listener leaked (${keydownAfter} vs ${keydownBefore})`);
+    await light.frame.getByRole("button", { name: quitLabel }).press("Enter");
+    await light.frame.getByRole("dialog", { name: title }).waitFor();
+    await assertTitleRing(light.frame);
+    await saveShot(light.page, "confirm-390-light-keyboard.png");
+    await light.frame.getByRole("button", { name: keepLabel }).click();
+    if ((await light.frame.locator("[data-wc-quit-confirm]").count()) !== 0) {
+      throw new Error("keyboard Keep going left the confirm open");
+    }
     await light.frame.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     if ((await light.frame.locator("[data-wc-active]").getAttribute("data-wc-active")) !== "1") {
       throw new Error("Escape after unmount ended the session");
@@ -1252,8 +1342,15 @@ async function runQuitEmbedHarness(browser) {
     await assertInPhone(dark.page, dark.frame, "[data-wc-quit-confirm]");
     await assertDesign(dark.frame);
     await assertEmbedButtonHeights(dark.frame, "[data-wc-quit-confirm]");
-    await assertTitleRing(dark.frame);
+    // Same move as the light card: a click open must not show the title ring. Space below is the keyboard open.
+    await assertNoTitleRing(dark.frame);
+    await saveShot(dark.page, "confirm-390-dark-pointer.png");
     await saveShot(dark.page, "confirm-390-dark.png");
+    await dark.frame.getByRole("button", { name: keepLabel }).click();
+    await dark.frame.getByRole("button", { name: quitLabel }).press("Space");
+    await dark.frame.getByRole("dialog", { name: title }).waitFor();
+    await assertTitleRing(dark.frame);
+    await saveShot(dark.page, "confirm-390-dark-keyboard.png");
     await dark.frame.locator("[data-wc-quit-confirm] h3").press("Tab");
     await assertActiveRing(dark.frame, "dark quit confirm");
     await saveShot(dark.page, "confirm-390-dark-focusring.png");
@@ -1353,11 +1450,23 @@ async function runQuitEmbedHarness(browser) {
       throw new Error("embed delete called removeSession before confirm");
     }
     await history.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
+    await assertNoTitleRing(history.frame);
     await assertInPhone(history.page, history.frame, "[data-wc-delete-confirm]");
     await history.frame.getByRole("button", { name: cancelLabel }).click();
     if ((await history.frame.locator("[data-wc-delete-confirm]").count()) !== 0) throw new Error("Cancel left the delete card open");
     if ((await focusedName(history.frame)) !== deleteLabel) {
       throw new Error(`Cancel left focus on ${await focusedName(history.frame)}`);
+    }
+    await historyDelete.press("Enter");
+    await history.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
+    await assertTitleRing(history.frame);
+    await history.frame.getByRole("button", { name: cancelLabel }).click();
+    await historyDelete.press("Space");
+    await history.frame.getByRole("dialog", { name: deleteTitle }).waitFor();
+    await assertTitleRing(history.frame);
+    await history.frame.getByRole("button", { name: cancelLabel }).click();
+    if ((await focusedName(history.frame)) !== deleteLabel) {
+      throw new Error(`keyboard Cancel left focus on ${await focusedName(history.frame)}`);
     }
     await historyDelete.click();
     await history.frame.locator("[data-wc-delete-confirm]").press("Escape");
@@ -1583,6 +1692,8 @@ async function runQuitEmbedHarness(browser) {
     probes.push({ kind: "iframeHeight", height: measured.iframeHeight });
     console.log(`QUIT_PROBES ${JSON.stringify(probes)}`);
     await probePage.close();
+    await runTitleModality(browser, parentOrigin, childOrigin, "chromium");
+    await runWebKitTitleModality(parentOrigin, childOrigin);
     console.log("embed iframe: quit confirm stays in the 390x844 frame and quit clears the session");
   } finally {
     if (parent) await closeServer(parent);

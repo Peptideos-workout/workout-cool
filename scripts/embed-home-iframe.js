@@ -708,6 +708,7 @@ async function focusedName(target) {
 
 async function armNonFocusingClick(button) {
   await button.evaluate((element) => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     element.addEventListener(
       "mousedown",
       (event) => {
@@ -715,15 +716,22 @@ async function armNonFocusingClick(button) {
       },
       { capture: true, once: true },
     );
+    element.addEventListener(
+      "click",
+      () => {
+        element.blur();
+      },
+      { capture: true, once: true },
+    );
   });
 }
 
-async function clickAgainWhileDisabled(button, label) {
-  if (!(await button.isDisabled())) throw new Error(`${label} was not disabled`);
-  await button.evaluate((element) => {
-    element.disabled = false;
-  });
-  await button.click();
+async function assertDisabledSoon(button, label) {
+  const deadline = Date.now() + 1000;
+  while (!(await button.isDisabled())) {
+    if (Date.now() > deadline) throw new Error(`${label} was not disabled`);
+    await new Promise((resolve) => setTimeout(resolve, 15));
+  }
 }
 
 async function installListenerSpy(frame) {
@@ -862,10 +870,10 @@ async function runQuitEmbedHarness(browser) {
     await quitTrigger.click();
     await assertInPhone(light.page, light.frame, "[data-wc-quit-confirm]");
     const quitConfirm = light.frame.getByRole("button", { name: discardLabel });
-    await quitConfirm.click();
-    await clickAgainWhileDisabled(quitConfirm, "quit confirm");
+    await quitConfirm.dblclick();
     const quitCalls = await light.frame.evaluate(() => window.__wcQuitCalls || 0);
     if (quitCalls !== 1) throw new Error(`quit confirm ran ${quitCalls} times`);
+    await assertDisabledSoon(quitConfirm, "quit confirm");
     await light.frame.evaluate(() => {
       window.__wcHoldQuit = false;
       window.__wcOriginalQuit();
@@ -1019,10 +1027,10 @@ async function runQuitEmbedHarness(browser) {
       window.__wcReleaseRemove = () => resolveHold();
     });
     const deleteConfirm = history.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel });
-    await deleteConfirm.click();
-    await clickAgainWhileDisabled(deleteConfirm, "delete confirm");
+    await deleteConfirm.dblclick();
     const removeCalls = await history.frame.evaluate(() => window.__wcRemoveCalls || 0);
     if (removeCalls !== 1) throw new Error(`removeSession ran ${removeCalls} times`);
+    await assertDisabledSoon(deleteConfirm, "delete confirm");
     await history.frame.evaluate(() => window.__wcReleaseRemove());
     await history.frame.waitForFunction(() => document.querySelectorAll("ul li").length === 0);
     await history.page.close();

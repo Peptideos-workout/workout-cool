@@ -35,6 +35,7 @@ export function WorkoutSessionList() {
   const activeSession = sessions.find((s) => s.status === "active");
   const isEmbed = useIsEmbedDocument();
   const deleteLock = useRef(false);
+  const deleteDisableTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deleteButtonRefs = useRef(new Map<string, { current: HTMLButtonElement | null }>());
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -73,8 +74,10 @@ export function WorkoutSessionList() {
     if (deleteLock.current || !pendingDeleteId) return;
     deleteLock.current = true;
     const id = pendingDeleteId;
-    setIsDeleting(true);
+    if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
+    deleteDisableTimer.current = setTimeout(() => setIsDeleting(true), 0);
     void removeSession(id).finally(() => {
+      if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
       deleteLock.current = false;
       setIsDeleting(false);
       setPendingDeleteId(null);

@@ -29,12 +29,14 @@ export function QuitWorkoutDialog({
   const t = useI18n();
   const isEmbed = useIsEmbedDocument();
   const confirmLock = useRef(false);
+  const disableTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
   const handleConfirm = () => {
     if (confirmLock.current) return;
     confirmLock.current = true;
-    setIsConfirming(true);
+    if (disableTimer.current) clearTimeout(disableTimer.current);
+    disableTimer.current = setTimeout(() => setIsConfirming(true), 0);
     onQuitWithoutSave();
   };
 
@@ -42,6 +44,7 @@ export function QuitWorkoutDialog({
     if (isOpen) return;
     confirmLock.current = false;
     setIsConfirming(false);
+    if (disableTimer.current) clearTimeout(disableTimer.current);
   }, [isOpen]);
 
   if (isEmbed) {

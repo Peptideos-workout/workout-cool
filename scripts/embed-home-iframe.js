@@ -928,7 +928,13 @@ async function runQuitEmbedHarness(browser) {
     await quitConfirm.dblclick();
     const quitCalls = await light.frame.evaluate(() => window.__wcQuitCalls || 0);
     if (quitCalls !== 1) throw new Error(`quit confirm ran ${quitCalls} times`);
-    await assertDisabledSoon(quitConfirm, "quit confirm");
+    await light.frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 50)));
+    if (await quitConfirm.isDisabled()) throw new Error("quit confirm stayed disabled after a failed quit");
+    await quitConfirm.click();
+    const retried = await light.frame.evaluate(() => window.__wcQuitCalls || 0);
+    if (retried !== 2) throw new Error(`throwing quit was not clickable again (${retried})`);
+    await light.frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 50)));
+    if (await quitConfirm.isDisabled()) throw new Error("quit confirm stayed disabled after retry");
     await light.frame.evaluate(() => {
       window.__wcHoldQuit = false;
       window.__wcOriginalQuit();

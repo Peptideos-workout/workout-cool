@@ -29,27 +29,44 @@ export function QuitWorkoutDialog({
   const t = useI18n();
   const isEmbed = useIsEmbedDocument();
   const confirmLock = useRef(false);
-  const disableTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTimers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  const clearPendingTimers = () => {
+    for (const id of pendingTimers.current) clearTimeout(id);
+    pendingTimers.current = [];
+  };
+
+  const releaseConfirm = () => {
+    clearPendingTimers();
+    confirmLock.current = false;
+    setIsConfirming(false);
+  };
 
   const handleConfirm = () => {
     if (confirmLock.current) return;
     confirmLock.current = true;
-    if (disableTimer.current) clearTimeout(disableTimer.current);
-    disableTimer.current = setTimeout(() => setIsConfirming(true), 0);
-    onQuitWithoutSave();
+    clearPendingTimers();
+    pendingTimers.current.push(setTimeout(() => setIsConfirming(true), 0));
+    let failed = false;
+    try {
+      onQuitWithoutSave();
+    } catch (error) {
+      failed = true;
+      throw error;
+    } finally {
+      if (failed) pendingTimers.current.push(setTimeout(releaseConfirm, 0));
+    }
   };
 
   useEffect(() => {
     if (isOpen) return;
-    confirmLock.current = false;
-    setIsConfirming(false);
-    if (disableTimer.current) clearTimeout(disableTimer.current);
+    releaseConfirm();
   }, [isOpen]);
 
   useEffect(
     () => () => {
-      if (disableTimer.current) clearTimeout(disableTimer.current);
+      clearPendingTimers();
     },
     [],
   );

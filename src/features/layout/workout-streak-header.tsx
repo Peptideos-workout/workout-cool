@@ -155,16 +155,19 @@ export default function WorkoutStreakHeader({ className, streakCount = DEFAULT_S
     };
   }, [recentSessions, streakCount, userTimezone]);
 
-  // Handle loading state
+  // Handle loading state. The shell matches the resolved day cell so the query-key
+  // change from pending to signed-in does not resize the row.
   if (sessionsLoading) {
     return (
-      <div aria-label="Loading workout streak" className={`flex gap-1 ${className}`} role="status">
+      <div aria-label="Loading workout streak" className={cn("flex gap-1 sm:mr-2", className)} role="status">
         {[...Array(streakCount)].map((_, i) => (
           <div
             aria-hidden="true"
-            className="w-4 h-4 sm:w-6 sm:h-6 rounded-sm sm:rounded-md bg-base-300 animate-pulse transition-colors duration-200"
+            className="relative flex h-12 w-12 min-h-12 min-w-12 shrink-0 items-center justify-center rounded-md"
             key={i}
-          />
+          >
+            <span className="pointer-events-none h-4 w-4 rounded-sm bg-base-300 animate-pulse sm:h-6 sm:w-6 sm:rounded-md" />
+          </div>
         ))}
       </div>
     );

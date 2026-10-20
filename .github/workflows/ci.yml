@@ -147,9 +147,6 @@ jobs:
           NEXT_PUBLIC_TOP_CALORIE_CALCULATOR_COMPARISON_AD_SLOT: 1234567890
           NEXT_PUBLIC_BOTTOM_CALORIE_CALCULATOR_COMPARISON_AD_SLOT: 1234567890
 
-      - name: Run tests
-        run: pnpm test
-
       - name: Read Playwright version from the lockfile
         id: playwright-version
         run: |
@@ -170,6 +167,9 @@ jobs:
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Run signed-out embed iframe check
         run: pnpm test:embed-iframe

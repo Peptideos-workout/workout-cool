@@ -19,8 +19,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Get pnpm store directory
         shell: bash
@@ -31,9 +29,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-10.33.4-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ${{ runner.os }}-pnpm-10.33.4-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -56,8 +54,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Get pnpm store directory
         shell: bash
@@ -68,9 +64,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-10.33.4-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ${{ runner.os }}-pnpm-10.33.4-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -147,11 +143,29 @@ jobs:
           NEXT_PUBLIC_TOP_CALORIE_CALCULATOR_COMPARISON_AD_SLOT: 1234567890
           NEXT_PUBLIC_BOTTOM_CALORIE_CALCULATOR_COMPARISON_AD_SLOT: 1234567890
 
-      - name: Run tests
-        run: pnpm test
+      - name: Read Playwright version from the lockfile
+        id: playwright-version
+        run: |
+          version="$(node -e "const fs=require('fs'); const text=fs.readFileSync('pnpm-lock.yaml','utf8'); const match=text.match(/^  playwright@([0-9]+\\.[0-9]+\\.[0-9]+):/m); if(!match) process.exit(1); process.stdout.write(match[1]);")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-ms-playwright-${{ steps.playwright-version.outputs.version }}-chromium-webkit
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium webkit
 
       - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Run signed-out embed iframe check
         run: pnpm test:embed-iframe

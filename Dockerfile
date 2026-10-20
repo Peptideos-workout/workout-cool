@@ -1,7 +1,7 @@
 FROM node:20-alpine AS base
 
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.33.4
 
 # Install dependencies
 FROM base AS deps

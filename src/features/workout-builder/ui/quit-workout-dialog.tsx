@@ -47,6 +47,13 @@ export function QuitWorkoutDialog({
     if (disableTimer.current) clearTimeout(disableTimer.current);
   }, [isOpen]);
 
+  useEffect(
+    () => () => {
+      if (disableTimer.current) clearTimeout(disableTimer.current);
+    },
+    [],
+  );
+
   if (isEmbed) {
     if (!isOpen) return null;
     return (

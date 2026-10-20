@@ -347,7 +347,7 @@ export default Link;
   );
   writeFileSync(
     entry,
-    `import { useEffect } from "react";
+    `import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useWorkoutSessionStore } from "@/features/workout-session/model/workout-session.store";
 import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
@@ -428,6 +428,7 @@ function DeletePreview() {
 }
 
 function HistoryHarness() {
+  const [mounted, setMounted] = useState(true);
   useEffect(() => {
     const post = () => {
       window.parent.postMessage({ type: "wc:height", height: document.documentElement.scrollHeight }, "*");
@@ -436,6 +437,7 @@ function HistoryHarness() {
     const observer = new ResizeObserver(post);
     observer.observe(document.documentElement);
     window.__wcRemoveCalls = 0;
+    window.__wcUnmountHistoryList = () => setMounted(false);
     const timer = setTimeout(() => document.documentElement.setAttribute("data-wc-ready", "1"), 0);
     return () => {
       clearTimeout(timer);
@@ -444,7 +446,7 @@ function HistoryHarness() {
   }, []);
   return (
     <div>
-      <WorkoutSessionList />
+      {mounted ? <WorkoutSessionList /> : <div data-wc-list-unmounted="" />}
       <div style={{ height: 2400 }} />
     </div>
   );
@@ -726,6 +728,49 @@ async function armNonFocusingClick(button) {
   });
 }
 
+async function installDisableTimerSpy(frame) {
+  await frame.evaluate(() => {
+    window.__wcDisableTimer = { set: 0, cleared: 0, fired: 0 };
+    window.__wcUnmountStateErrors = 0;
+    const tracked = new Set();
+    const set = window.setTimeout.bind(window);
+    const clear = window.clearTimeout.bind(window);
+    const report = console.error.bind(console);
+    console.error = (...args) => {
+      const text = args.map((item) => (typeof item === "string" ? item : item instanceof Error ? item.message : "")).join(" ");
+      if (text.includes("unmounted") || text.includes("Can't perform a React state update")) window.__wcUnmountStateErrors += 1;
+      return report(...args);
+    };
+    window.setTimeout = (fn, delay, ...args) => {
+      const source = typeof fn === "function" ? fn.toString() : "";
+      const watched = source.includes("setIsConfirming") || source.includes("setIsDeleting");
+      const id = set(() => {
+        if (tracked.delete(id)) window.__wcDisableTimer.fired += 1;
+        if (typeof fn === "function") return fn(...args);
+      }, delay);
+      if (watched) {
+        tracked.add(id);
+        window.__wcDisableTimer.set += 1;
+      }
+      return id;
+    };
+    window.clearTimeout = (id) => {
+      if (tracked.delete(id)) window.__wcDisableTimer.cleared += 1;
+      return clear(id);
+    };
+  });
+}
+
+async function assertDisableTimerCleared(frame, label) {
+  await frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 50)));
+  const stats = await frame.evaluate(() => ({ ...window.__wcDisableTimer, errors: window.__wcUnmountStateErrors || 0 }));
+  if (!stats || stats.set < 1) throw new Error(`${label} did not schedule a disable timer`);
+  if (stats.fired !== 0 || stats.errors !== 0) {
+    throw new Error(`${label} setState after unmount (fired ${stats.fired}, console ${stats.errors})`);
+  }
+  if (stats.cleared < 1) throw new Error(`${label} left a pending disable timer`);
+}
+
 async function assertDisabledSoon(button, label) {
   const deadline = Date.now() + 1000;
   while (!(await button.isDisabled())) {
@@ -899,6 +944,12 @@ async function runQuitEmbedHarness(browser) {
     if (nextCompleted !== "0" || nextSet !== false) throw new Error("next workout kept stale progress");
     if (nextStore.current !== nextId) throw new Error("next workout did not become the current session");
     if (nextStore.sessions.some((session) => session.status === "completed")) throw new Error("next workout stored a completed session");
+    await installDisableTimerSpy(light.frame);
+    await light.frame.getByRole("button", { name: quitLabel }).click();
+    await light.frame.locator("[data-wc-quit-confirm]").waitFor();
+    await light.frame.getByRole("button", { name: discardLabel }).click();
+    await light.frame.locator("[data-wc-active='0']").waitFor();
+    await assertDisableTimerCleared(light.frame, "quit confirm");
     await light.page.close();
 
     const dark = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&dark=1");
@@ -1034,6 +1085,25 @@ async function runQuitEmbedHarness(browser) {
     await history.frame.evaluate(() => window.__wcReleaseRemove());
     await history.frame.waitForFunction(() => document.querySelectorAll("ul li").length === 0);
     await history.page.close();
+
+    const historyUnmount = await openPhone(browser, parentOrigin, childOrigin, "?embed=1&card=history");
+    historyUnmount.page.on("dialog", (dialog) => dialog.dismiss());
+    await installDisableTimerSpy(historyUnmount.frame);
+    await historyUnmount.frame.evaluate(() => {
+      window.__wcHoldRemove = () => new Promise(() => {});
+      const onClick = (event) => {
+        const target = event.target;
+        if (!(target instanceof Element) || !target.closest("[data-wc-delete-confirm]")) return;
+        document.removeEventListener("click", onClick, false);
+        queueMicrotask(() => window.__wcUnmountHistoryList?.());
+      };
+      document.addEventListener("click", onClick, false);
+    });
+    await historyUnmount.frame.getByRole("button", { name: deleteLabel }).click();
+    await historyUnmount.frame.locator("[data-wc-delete-confirm]").getByRole("button", { name: deleteLabel }).click();
+    await historyUnmount.frame.locator("[data-wc-list-unmounted]").waitFor({ state: "attached" });
+    await assertDisableTimerCleared(historyUnmount.frame, "delete confirm");
+    await historyUnmount.page.close();
 
     const historyPlain = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     historyPlain.on("dialog", (dialog) => dialog.dismiss());

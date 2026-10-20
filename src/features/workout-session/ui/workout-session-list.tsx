@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Repeat2, Trash2 } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
@@ -36,6 +36,13 @@ export function WorkoutSessionList() {
   const isEmbed = useIsEmbedDocument();
   const deleteLock = useRef(false);
   const deleteDisableTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
+    },
+    [],
+  );
   const deleteButtonRefs = useRef(new Map<string, { current: HTMLButtonElement | null }>());
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);

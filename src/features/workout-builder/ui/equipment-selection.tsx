@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Check } from "lucide-react";
-import { useI18n, useCurrentLocale } from "locales/client";
+import { useI18n } from "locales/client";
 import { ExerciseAttributeValueEnum } from "@prisma/client";
 
 import { EQUIPMENT_CONFIG } from "../model/equipment-config";
@@ -9,9 +9,6 @@ import { EQUIPMENT_CONFIG } from "../model/equipment-config";
 import { getEquipmentTranslation } from "@/shared/lib/workout-session/equipments";
 import { cn } from "@/shared/lib/utils";
 import { useWorkoutFeedback } from "@/shared/hooks/use-workout-feedback";
-import { env } from "@/env";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 interface EquipmentSelectionProps {
   onClearEquipment: VoidFunction;
@@ -30,106 +27,81 @@ function EquipmentCard({ equipment, isSelected, onToggle }: EquipmentCardProps) 
   const { onTap } = useWorkoutFeedback();
 
   const translation = getEquipmentTranslation(equipment.value, t);
+  const descriptionId = `equipment-desc-${equipment.value}`;
 
   return (
-    <Card
+    <button
+      aria-describedby={descriptionId}
+      aria-pressed={isSelected}
       className={cn(
-        // Base styles - Chess.com inspiration
-        "group relative overflow-hidden cursor-pointer",
-        "bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-800 dark:to-slate-900",
-        "border-2 border-slate-200 dark:border-slate-700",
-        "rounded-xl shadow-sm hover:shadow-xl",
-        // Transitions smooth
-        "transition-all duration-200 ease-out",
-        "hover:scale-[1.02] hover:-translate-y-1",
-        "active:scale-[0.97] active:translate-y-0 active:duration-75",
-        // Selected state
-        isSelected && [
-          "border-emerald-400 dark:border-emerald-500",
-          "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20",
-          "shadow-emerald-200/50 dark:shadow-emerald-900/50 shadow-lg",
-        ],
-        // Hover effects
-        !isSelected && "hover:border-slate-300 dark:hover:border-slate-600",
+        "group relative flex h-full min-h-12 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--wc-dash-text)]",
+        isSelected
+          ? "border-[var(--wc-dash-accent)] bg-[color-mix(in_srgb,var(--wc-dash-accent)_35%,var(--wc-dash-card))]"
+          : "border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)]",
       )}
       onClick={() => {
         onTap();
         onToggle();
       }}
+      type="button"
     >
-      <CardContent className="p-2 sm:p-4 h-auto flex flex-col justify-center items-center relative">
-        <div
+      {isSelected ? (
+        <span
+          aria-hidden="true"
           className={cn(
-            "absolute top-3 left-3 w-2 h-2 rounded-full transition-colors duration-200",
-            isSelected ? "bg-emerald-400" : "bg-slate-300 dark:bg-slate-600",
+            "absolute right-2 top-2 inline-flex h-6 w-6 min-h-6 min-w-6 items-center justify-center rounded-full",
+            "bg-[var(--wc-dash-accent)] text-[var(--wc-dash-ink)]",
           )}
-        />
-
-        {isSelected && (
-          <div className="absolute top-2 right-2">
-            <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-25" />
-            <Badge
-              className="relative bg-emerald-500 hover:bg-emerald-600 text-white border-0 h-6 w-6 p-0 flex items-center justify-center rounded-full"
-              variant="default"
-            >
-              <Check className="h-3 w-3" />
-            </Badge>
-          </div>
+        >
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        </span>
+      ) : null}
+      <Image
+        alt={t("workout_builder.equipment_illustration_alt", { name: translation.label })}
+        className="object-contain"
+        height={80}
+        src={equipment.icon}
+        style={{ width: "6.25rem", height: "5rem" }}
+        width={100}
+      />
+      <h3
+        className={cn(
+          "font-semibold text-lg leading-tight tracking-wide",
+          isSelected ? "text-[var(--wc-dash-text)]" : "text-[var(--wc-dash-text)] group-hover:text-[var(--wc-dash-accent)]",
         )}
-
-        <div className="flex items-center justify-center mb-3">
-          <div className={cn("relative transition-transform duration-200 group-hover:scale-110", isSelected && "scale-105")}>
-            <Image
-              alt={`${translation.label} illustration`}
-              className="object-contain filter transition-all duration-200 group-hover:brightness-110"
-              height={48}
-              src={equipment.icon}
-              style={{
-                width: "6.25rem",
-                height: "5rem",
-              }}
-              width={64}
-            />
-          </div>
-        </div>
-
-        {/* Label centré - PLUS VISIBLE MAINTENANT */}
-        <div className="text-center">
-          <h3
-            className={cn(
-              "font-semibold text-lg leading-tight tracking-wide transition-all duration-200",
-              isSelected
-                ? "text-[var(--wc-dash-accent)]"
-                : "text-[var(--wc-dash-text)] group-hover:text-[var(--wc-dash-accent)]",
-            )}
-          >
-            {translation.label}
-          </h3>
-        </div>
-
-        {/* Progress bar subtile en bas */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-700 overflow-hidden rounded-b-xl">
-          <div
-            className={cn(
-              "h-full transition-all duration-500 ease-out",
-              isSelected ? "w-full bg-gradient-to-r from-emerald-400 to-emerald-500" : "w-0 group-hover:w-1/3 bg-slate-400",
-            )}
-          />
-        </div>
-      </CardContent>
-    </Card>
+      >
+        {translation.label}
+      </h3>
+      <span className="sr-only" id={descriptionId}>
+        {translation.description}
+      </span>
+    </button>
   );
 }
 
-export function EquipmentSelection({ onToggleEquipment, selectedEquipment }: EquipmentSelectionProps) {
-  const locale = useCurrentLocale();
+export function EquipmentSelection({ onClearEquipment, onToggleEquipment, selectedEquipment }: EquipmentSelectionProps) {
+  const t = useI18n();
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3" data-wc-equipment-bar="">
+        <p className="text-lg text-[var(--wc-dash-text)]">
+          {t("workout_builder.stats.equipment_selected", { count: selectedEquipment.length })}
+        </p>
+        <button
+          className="inline-flex min-h-12 items-center rounded-lg px-3 text-lg text-[var(--wc-dash-accent)] disabled:pointer-events-none disabled:border disabled:border-[var(--wc-dash-border)] disabled:bg-[var(--wc-dash-inner)] disabled:text-[var(--wc-dash-secondary)] disabled:opacity-100"
+          disabled={selectedEquipment.length === 0}
+          onClick={onClearEquipment}
+          type="button"
+        >
+          {t("workout_builder.selection.clear_all")}
+        </button>
+      </div>
+      <div className="grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {EQUIPMENT_CONFIG.map((equipment, index) => (
           <div
-            className="animate-fade-in-up"
+            className="h-full animate-fade-in-up"
             key={equipment.value}
             style={{
               animationDelay: `${index * 50}ms`,
@@ -155,7 +127,6 @@ export function EquipmentSelection({ onToggleEquipment, selectedEquipment }: Equ
           />
         )
       )} */}
-      {/* <ActionBar onClearEquipment={onClearEquipment} selectedCount={selectedEquipment.length} /> */}
     </div>
   );
 }

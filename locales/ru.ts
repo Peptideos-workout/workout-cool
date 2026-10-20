@@ -1553,6 +1553,7 @@ export default {
     exercise: {
       watch_video: "Смотреть видео",
       shuffle: "Перемешать",
+      type: "Тип:",
       pick: "Выбрать",
       remove: "Удалить",
       no_video_available: "Видео недоступно.",
@@ -1567,6 +1568,7 @@ export default {
     addExercise: "Добавить упражнение",
     exerciseAdded: "{name} добавлено в тренировку",
     exercises: "упражнения",
+    equipment_illustration_alt: "Иллюстрация {name}",
     equipment: {
       bodyweight: {
         label: "Собственный вес",

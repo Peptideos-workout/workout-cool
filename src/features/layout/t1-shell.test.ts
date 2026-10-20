@@ -99,17 +99,21 @@ test("T1 keeps nav hrefs, header auth hrefs, and stepper handlers", () => {
     assert.match(read(`locales/${locale}.ts`), /trophy_alt:/);
   }
   assert.doesNotMatch(stepper, /Build your workout/);
-  assert.doesNotMatch(stepper, /data-wc-lead/);
+  assert.match(stepper, /data-wc-lead/);
+  assert.match(stepper, /workout_builder\.selection\.select_equipment_description/);
   assert.doesNotMatch(read("src/features/embed/embed-theme.css"), /data-wc-lead/);
+  assert.doesNotMatch(stepper, /className="hidden[^"]*" data-wc-intro/);
   assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /const StepTitle = isActive \? "h2" : "h3"/);
   assert.match(stepper, /data-wc-step-sheet/);
-  assert.match(stepper, /bottom_navigation\.workouts/);
+  assert.match(stepper, /data-wc-kicker="">\s*\{steps\.find\(\(step\) => step\.stepNumber === currentStep\)\?\.title\}/);
+  assert.match(stepper, /workout_builder\.steps\.equipment\.title/);
   assert.match(footer, /data-wc-step-next/);
   assert.match(footer, /data-wc-step-previous/);
   assert.match(footer, /disabled=\{isFirstStep\}/);
   assert.match(read("src/features/workout-builder/ui/stepper-header.tsx"), /data-wc-step-mark/);
   assert.match(read("src/features/embed/embed-theme.css"), /data-wc-intro/);
   assert.match(read("src/features/embed/embed-theme.css"), /data-wc-step-sheet/);
+  assert.match(read("src/features/embed/embed-theme.css"), /order:\s*-1/);
 });
 
 test("T1 public shell classes stay in place and the embed line is a separate node", () => {

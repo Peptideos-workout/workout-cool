@@ -52,7 +52,7 @@ export function ExerciseListItemOverlay({ exercise, muscle }: { exercise: Exerci
         {muscle.charAt(0)}
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 block truncate">{exerciseName}</span>
+        <span className="block break-words text-lg font-semibold text-slate-900 dark:text-slate-100">{exerciseName}</span>
       </div>
     </div>
   );
@@ -97,7 +97,6 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
   const isGhost = isDragging;
 
   const exerciseName = locale === "fr" ? exercise.name : exercise.nameEn;
-  const muscleColor = MUSCLE_CONFIGS[muscle] || "bg-gray-500";
   const muscleTitle = t(("workout_builder.muscles." + muscle.toLowerCase()) as keyof typeof t);
 
   const handleShuffle = useCallback(() => {
@@ -115,7 +114,7 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
       className={`border-b select-none transition-all duration-200 ${
         isGhost
           ? "border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/40 dark:bg-blue-950/20 rounded-lg"
-          : "flex items-center gap-2 sm:gap-3 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+          : "flex flex-wrap items-center gap-2 sm:gap-3 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
       } p-2 sm:p-3`}
       ref={setNodeRef}
       style={{
@@ -133,17 +132,17 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
       ) : (
         <>
           <div
-            className="cursor-grab active:cursor-grabbing touch-none select-none p-1.5 -m-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-blue-100 dark:active:bg-blue-900/30 transition-colors"
+            className="flex h-12 w-12 min-h-12 min-w-12 shrink-0 cursor-grab items-center justify-center rounded-md hover:bg-slate-100 active:cursor-grabbing active:bg-blue-100 dark:hover:bg-slate-800 dark:active:bg-blue-900/30 touch-none select-none transition-colors"
             style={{ touchAction: "none" }}
             {...attributes}
             {...listeners}
           >
-            <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 transition-colors group-hover:text-slate-500" />
+            <GripVertical className="h-5 w-5 text-slate-400 transition-colors group-hover:text-slate-500" />
           </div>
 
           {exercise.fullVideoImageUrl && (
             <div
-              className="relative h-8 w-8 sm:h-10 sm:w-10 rounded overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800 cursor-pointer border border-slate-200 dark:border-slate-700/50"
+              className="relative h-12 w-12 min-h-12 min-w-12 shrink-0 cursor-pointer overflow-hidden rounded border border-slate-200 bg-slate-200 dark:border-slate-700/50 dark:bg-slate-800"
               onClick={() => { setModalTab("video"); playVideo.setTrue(); }}
             >
               <Image
@@ -160,38 +159,57 @@ export const ExerciseListItem = React.memo(function ExerciseListItem({
             </div>
           )}
 
-          <div
-            className={`tooltip tooltip-bottom w-4 h-4 sm:w-5 sm:h-5 rounded text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shrink-0 cursor-pointer ${muscleColor}`}
-            data-tip={muscleTitle}
-          >
-            {muscle.charAt(0)}
+          <span className="inline-flex min-h-12 items-center rounded-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] px-3 text-lg font-bold text-[var(--wc-dash-text)]">
+            {muscleTitle}
+          </span>
+
+          <div className="min-w-[120px] flex-1" data-wc-exercise-name="">
+            <span className="block break-words text-lg font-medium text-[var(--wc-dash-text)]">{exerciseName}</span>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 block truncate">{exerciseName}</span>
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
+            <Button
+              className="!min-h-12 !border-[var(--wc-dash-border)] !text-lg !text-[var(--wc-dash-text)] hover:!scale-100 touch-manipulation"
+              disabled={isShuffling}
+              onClick={handleShuffle}
+              variant="outline"
+            >
+              {isShuffling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shuffle className="h-4 w-4" />}
+              <span>{t("workout_builder.exercise.shuffle")}</span>
+            </Button>
+
+            {exercise.fullVideoUrl ? (
+              <button
+                className="inline-flex min-h-12 items-center gap-1 px-2 text-lg text-[var(--wc-dash-text)]"
+                onClick={() => {
+                  setModalTab("video");
+                  playVideo.setTrue();
+                }}
+                type="button"
+              >
+                <Play className="h-4 w-4" />
+                <span>{t("workout_builder.exercise.watch_video")}</span>
+              </button>
+            ) : null}
+
+            <button
+              aria-label={t("statistics.title")}
+              className="inline-flex min-h-12 min-w-12 items-center justify-center p-1 text-[var(--wc-dash-text)]"
+              onClick={() => { setModalTab("statistics"); playVideo.setTrue(); }}
+              type="button"
+            >
+              <BarChart3 className="h-5 w-5" />
+            </button>
+
+            <button
+              className="inline-flex min-h-12 items-center gap-1 px-2 text-lg text-[var(--wc-dash-error)]"
+              onClick={handleDelete}
+              type="button"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>{t("workout_builder.exercise.remove")}</span>
+            </button>
           </div>
-
-          <Button
-            className="p-2 sm:p-2 min-h-[44px] min-w-[44px] sm:min-h-min sm:min-w-min touch-manipulation"
-            disabled={isShuffling}
-            onClick={handleShuffle}
-            size="small"
-            variant="outline"
-          >
-            {isShuffling ? <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" /> : <Shuffle className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
-            <span className="hidden sm:inline ml-1">{t("workout_builder.exercise.shuffle")}</span>
-          </Button>
-
-          <button
-            className="p-1 sm:p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-            onClick={() => { setModalTab("statistics"); playVideo.setTrue(); }}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </button>
-
-          <button className="p-1 sm:p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4" />
-          </button>
 
           {exercise.fullVideoUrl && <ExerciseVideoModal defaultTab={modalTab} exercise={exercise} onOpenChange={playVideo.toggle} open={playVideo.value} />}
         </>

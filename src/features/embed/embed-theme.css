@@ -432,6 +432,11 @@ html[data-wc-embed="1"] [data-wc-step-previous] {
   transform: none !important;
 }
 
+html[data-wc-embed="1"] [data-wc-step-actions] > :has([data-wc-step-next]) {
+  order: -1;
+  width: 100%;
+}
+
 html[data-wc-embed="1"] [data-wc-step-next] {
   order: -1;
   min-height: 56px !important;
@@ -466,6 +471,21 @@ html[data-wc-embed="1"] [data-wc-step-previous] {
   background-image: none !important;
   color: var(--wc-dash-text) !important;
   font-weight: 700 !important;
+}
+
+html[data-wc-embed="1"] [data-wc-step-previous]:disabled {
+  border-color: var(--wc-dash-border) !important;
+  background: var(--wc-dash-inner) !important;
+  color: var(--wc-dash-secondary) !important;
+  box-shadow: none !important;
+}
+
+html[data-wc-embed="1"] [data-wc-step-next]:not(:disabled):hover {
+  background: color-mix(in srgb, var(--wc-dash-accent) 78%, var(--wc-dash-ink)) !important;
+}
+
+html[data-wc-embed="1"] [data-wc-step-previous]:not(:disabled):hover {
+  background: var(--wc-dash-card) !important;
 }
 
 html[data-wc-embed="1"] [data-wc-step-next] svg,

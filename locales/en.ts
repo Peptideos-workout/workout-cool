@@ -1559,6 +1559,7 @@ export default {
     exercise: {
       watch_video: "Watch video",
       shuffle: "Shuffle",
+      type: "Type:",
       pick: "Pick",
       remove: "Remove",
       no_video_available: "No video available.",
@@ -1573,6 +1574,7 @@ export default {
     addExercise: "Add exercise",
     exerciseAdded: "{name} added to workout",
     exercises: "exercises",
+    equipment_illustration_alt: "{name} illustration",
     equipment: {
       bodyweight: {
         label: "Bodyweight",

@@ -684,6 +684,7 @@ export default {
     exercise: {
       watch_video: "观看视频",
       shuffle: "随机",
+      type: "类型：",
       pick: "选择",
       remove: "移除",
       no_video_available: "无可用视频。",
@@ -698,6 +699,7 @@ export default {
     addExercise: "添加练习",
     exerciseAdded: "{name} 已添加到锻炼",
     exercises: "练习",
+    equipment_illustration_alt: "{name}插图",
     equipment: {
       bodyweight: {
         label: "自重",

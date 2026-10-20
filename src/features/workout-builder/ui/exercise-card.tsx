@@ -80,16 +80,19 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
             <div className="absolute top-3 right-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="h-8 w-8 bg-white/90 hover:bg-white" size="small" variant="ghost">
+                  <Button className="h-12 w-12 min-h-12 min-w-12 bg-white/90 hover:bg-white" size="small" variant="ghost">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onShuffle(exercise.id, muscle)}>
+                  <DropdownMenuItem className="min-h-12 text-lg" onClick={() => onShuffle(exercise.id, muscle)}>
                     <Shuffle className="h-4 w-4 mr-2" />
                     {t("workout_builder.exercise.shuffle")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(exercise.id, muscle)}>
+                  <DropdownMenuItem
+                    className="min-h-12 text-lg text-[var(--wc-dash-error)]"
+                    onClick={() => onDelete(exercise.id, muscle)}
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     {t("workout_builder.exercise.remove")}
                   </DropdownMenuItem>
@@ -102,10 +105,10 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
         <CardContent className="p-4">
           {/* Titre de l'exercice */}
           <div className="flex items-start justify-between mb-3">
-            <h4 className="font-semibold text-slate-900 dark:text-slate-200 text-sm leading-tight line-clamp-2">{exercise.name}</h4>
+            <h4 className="break-words text-lg font-semibold leading-tight text-slate-900 dark:text-slate-200">{exercise.name}</h4>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button className="h-8 w-8 ml-2 flex-shrink-0" size="small" variant="ghost">
+                <Button className="h-12 w-12 min-h-12 min-w-12 ml-2 flex-shrink-0" size="small" variant="ghost">
                   <Info className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -114,7 +117,7 @@ export function ExerciseCard({ exercise, muscle, onShuffle, onPick, onDelete }: 
                   <p className="text-sm">{exercise.introduction}</p>
                   {mechanicsTypeValue && (
                     <p className="text-xs text-slate-500">
-                      <strong>Type:</strong> {mechanicsTypeValue.map((mt) => mt.replace("_", " ")).join(", ")}
+                      <strong>{t("workout_builder.exercise.type")}</strong> {mechanicsTypeValue.map((mt) => mt.replace("_", " ")).join(", ")}
                     </p>
                   )}
                 </div>

@@ -689,6 +689,7 @@ export default {
     exercise: {
       watch_video: "Ver video",
       shuffle: "Mezclar",
+      type: "Tipo:",
       pick: "Elegir",
       remove: "Eliminar",
       no_video_available: "No hay video disponible.",
@@ -703,6 +704,7 @@ export default {
     addExercise: "Añadir ejercicio",
     exerciseAdded: "{name} añadido al entrenamiento",
     exercises: "ejercicios",
+    equipment_illustration_alt: "Ilustración de {name}",
     equipment: {
       bodyweight: {
         label: "Peso corporal",

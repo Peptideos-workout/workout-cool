@@ -52,9 +52,12 @@ export const Header = () => {
     "bg-[var(--wc-dash-accent)] px-4 !text-lg !font-bold !leading-none !text-[var(--wc-dash-ink)] !no-underline " +
     "shadow-none hover:bg-[var(--wc-dash-accent)] " +
     "dark:shadow-[0_0_22px_color-mix(in_srgb,var(--wc-dash-accent)_55%,transparent)]";
-  const loginLinkClass =
-    "!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center";
-  const authClusterClass = "ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2";
+  const loginLinkClass = "!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center";
+  const authClusterClass = "ml-1 flex max-w-full flex-wrap items-center justify-end gap-1 sm:gap-2 [grid-area:auth]";
+  const authSlotClass = "grid min-w-0 max-w-full justify-items-end [grid-template-areas:'auth']";
+  const authAccountClass = "dropdown dropdown-end ml-1 [grid-area:auth]";
+  const authHiddenClass = "invisible pointer-events-none";
+  const avatarButtonClass = "btn btn-ghost btn-circle avatar relative !min-h-12 !min-w-12";
   const loginLabel = t("commons.login");
   const signupLabel = t("commons.signup");
 
@@ -100,117 +103,126 @@ export const Header = () => {
             <LanguageSelector />
           </div>
 
-          {authChrome === "pending" ? (
-            <div aria-hidden="true" className={authClusterClass} data-wc-header-auth="pending">
-              <span className={`${loginLinkClass} invisible`}>{loginLabel}</span>
-              <span className={`${publicSignupClass} invisible`}>{signupLabel}</span>
-            </div>
-          ) : authChrome === "signed-out" ? (
-            <div className={authClusterClass}>
-              <Link
-                className="!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center"
-                href={getConfiguredPeptideOsLoginUrl()}
-                prefetch={false}
-                size="sm"
-                variant="nav"
-              >
-                {t("commons.login")}
-              </Link>
-              <Link
-                className={publicSignupClass}
-                href={getConfiguredPeptideOsSignupUrl()}
-                prefetch={false}
-                size="lg"
-                variant="button"
-              >
-                {t("commons.signup")}
-              </Link>
-            </div>
-          ) : (
-            <div className="dropdown dropdown-end ml-1">
-              <div className="tooltip tooltip-bottom" data-tip={t("commons.profile")}>
-                <div className="btn btn-ghost btn-circle avatar relative !min-h-12 !min-w-12" role="button" tabIndex={0}>
-                  <div className="w-8 rounded-full bg-primary text-primary-content !flex items-center justify-center text-sm font-medium">
-                    {userAvatar || <User className="w-4 h-4" />}
-                  </div>
-                  {!allFeaturesFree && isPremium && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full !flex items-center justify-center">
-                      <Crown className="w-2.5 h-2.5 text-amber-900" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <ul
-                className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 dark:bg-black dark:text-gray-200 rounded-box w-52 border border-slate-200 dark:border-gray-800"
-                onClick={handleCloseDropdown}
-                tabIndex={0}
-              >
-                <li>
-                  <Link className="!no-underline min-h-12 text-lg" href="/profile" size="base" variant="nav">
-                    <User className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                    {t("commons.profile")}
-                  </Link>
-                </li>
-                <ChangePasswordMenuItem />
-
-                {!allFeaturesFree && (
-                  <li>
-                    <Link
-                      className="!no-underline min-h-12 text-lg"
-                      data-wc-entry="premium"
-                      href={isPremium ? "/api/premium/billing-portal" : "/premium"}
-                      size="base"
-                      variant="nav"
-                      {...(isPremium && {
-                        onClick: async (e) => {
-                          e.preventDefault();
-                          try {
-                            const response = await fetch("/api/premium/billing-portal", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ returnUrl: window.location.origin + "/profile" }),
-                            });
-                            const data = await response.json();
-                            if (data.success && data.url) {
-                              assignCheckoutUrl(data.url);
-                            }
-                          } catch (error) {
-                            console.error("Error opening billing portal:", error);
-                          }
-                        },
-                      })}
-                    >
-                      {isPremium ? (
-                        <>
-                          <Crown className="w-4 h-4 text-amber-500" />
-                          {t("commons.manage_subscription")}
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 text-purple-500" />
-                          {t("commons.remove_ads")}
-                        </>
-                      )}
-                    </Link>
-                  </li>
-                )}
-
-                <hr className="my-1 border-slate-200 dark:border-gray-800" />
-
-                <li>
-                  <button
-                    className="flex min-h-12 items-center gap-2 text-lg text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
-                    data-wc-signout=""
-                    onClick={handleSignOut}
+          <div className={authSlotClass} data-wc-header-auth={authChrome}>
+            <div
+              aria-hidden={authChrome === "signed-out" ? undefined : true}
+              className={`${authClusterClass}${authChrome === "signed-out" ? "" : ` ${authHiddenClass}`}`}
+            >
+              {authChrome === "signed-out" ? (
+                <>
+                  <Link
+                    className="!inline-flex !min-h-12 !min-w-12 !shrink-0 items-center justify-center !text-lg !no-underline px-2 text-center"
+                    href={getConfiguredPeptideOsLoginUrl()}
+                    prefetch={false}
+                    size="sm"
+                    variant="nav"
                   >
-                    <LogOut className="w-4 h-4" />
-                    {t("commons.logout")}
-                  </button>
-                </li>
-              </ul>
+                    {t("commons.login")}
+                  </Link>
+                  <Link className={publicSignupClass} href={getConfiguredPeptideOsSignupUrl()} prefetch={false} size="lg" variant="button">
+                    {t("commons.signup")}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <span className={`${loginLinkClass} invisible`}>{loginLabel}</span>
+                  <span className={`${publicSignupClass} invisible`}>{signupLabel}</span>
+                </>
+              )}
             </div>
-          )}
+            <div
+              aria-hidden={authChrome === "signed-in" ? undefined : true}
+              className={`${authAccountClass}${authChrome === "signed-in" ? "" : ` ${authHiddenClass}`}`}
+            >
+              {authChrome === "signed-in" ? (
+                <>
+                  <div className="tooltip tooltip-bottom" data-tip={t("commons.profile")}>
+                    <div className={avatarButtonClass} role="button" tabIndex={0}>
+                      <div className="w-8 rounded-full bg-primary text-primary-content !flex items-center justify-center text-sm font-medium">
+                        {userAvatar || <User className="w-4 h-4" />}
+                      </div>
+                      {!allFeaturesFree && isPremium && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full !flex items-center justify-center">
+                          <Crown className="w-2.5 h-2.5 text-amber-900" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <ul
+                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 dark:bg-black dark:text-gray-200 rounded-box w-52 border border-slate-200 dark:border-gray-800"
+                    onClick={handleCloseDropdown}
+                    tabIndex={0}
+                  >
+                    <li>
+                      <Link className="!no-underline min-h-12 text-lg" href="/profile" size="base" variant="nav">
+                        <User className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                        {t("commons.profile")}
+                      </Link>
+                    </li>
+                    <ChangePasswordMenuItem />
+
+                    {!allFeaturesFree && (
+                      <li>
+                        <Link
+                          className="!no-underline min-h-12 text-lg"
+                          data-wc-entry="premium"
+                          href={isPremium ? "/api/premium/billing-portal" : "/premium"}
+                          size="base"
+                          variant="nav"
+                          {...(isPremium && {
+                            onClick: async (e) => {
+                              e.preventDefault();
+                              try {
+                                const response = await fetch("/api/premium/billing-portal", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ returnUrl: window.location.origin + "/profile" }),
+                                });
+                                const data = await response.json();
+                                if (data.success && data.url) {
+                                  assignCheckoutUrl(data.url);
+                                }
+                              } catch (error) {
+                                console.error("Error opening billing portal:", error);
+                              }
+                            },
+                          })}
+                        >
+                          {isPremium ? (
+                            <>
+                              <Crown className="w-4 h-4 text-amber-500" />
+                              {t("commons.manage_subscription")}
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 text-purple-500" />
+                              {t("commons.remove_ads")}
+                            </>
+                          )}
+                        </Link>
+                      </li>
+                    )}
+
+                    <hr className="my-1 border-slate-200 dark:border-gray-800" />
+
+                    <li>
+                      <button
+                        className="flex min-h-12 items-center gap-2 text-lg text-gray-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                        data-wc-signout=""
+                        onClick={handleSignOut}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {t("commons.logout")}
+                      </button>
+                    </li>
+                  </ul>
+                </>
+              ) : (
+                <span className={avatarButtonClass} />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </>

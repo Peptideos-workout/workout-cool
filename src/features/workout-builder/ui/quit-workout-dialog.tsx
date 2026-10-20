@@ -19,28 +19,28 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
 
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
-      <DialogContent className="max-w-md bg-white dark:bg-slate-900/95 border-slate-200 dark:border-slate-700/50 backdrop-blur-md">
+      <DialogContent className="max-w-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] [&>button]:!h-12 [&>button]:!w-12">
         <DialogHeader className="pb-6">
-          <DialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-white">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-500/20">
-              <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+          <DialogTitle className="flex items-center gap-3 text-lg font-bold text-[var(--wc-dash-text)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-inner)]">
+              <AlertTriangle className="h-5 w-5 text-[var(--wc-dash-error)]" />
             </div>
             {t("workout_builder.session.quit_workout_title")}
           </DialogTitle>
         </DialogHeader>
 
         {/* Progress Summary */}
-        <div className="bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4 mb-6">
+        <div className="mb-6 rounded-xl border border-[var(--wc-dash-border)] bg-[var(--wc-dash-inner)] p-4">
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-300">{t("workout_builder.session.progress")}</span>
-              <span className="font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between">
+              <span className="text-lg text-[var(--wc-dash-secondary)]">{t("workout_builder.session.progress")}</span>
+              <span className="text-lg font-bold text-[var(--wc-dash-text)]">
                 {exercisesCompleted} / {totalExercises}
               </span>
             </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+            <div className="h-2 w-full rounded-full bg-[var(--wc-dash-card)]">
               <div
-                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300"
+                className="h-full rounded-full bg-[var(--wc-dash-accent)] transition-all duration-300"
                 style={{ width: `${(exercisesCompleted / totalExercises) * 100}%` }}
               />
             </div>
@@ -48,18 +48,18 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
         </div>
 
         {/* Warning Message */}
-        <div className="text-center mb-6">
-          <p className="text-slate-500 dark:text-slate-300 leading-relaxed">{t("workout_builder.session.quit_warning")}</p>
+        <div className="mb-6 text-center">
+          <p className="text-lg leading-relaxed text-[var(--wc-dash-secondary)]">{t("workout_builder.session.quit_warning")}</p>
         </div>
 
         {/* Action Buttons */}
         <div className="space-y-3">
           {/* Quit without saving */}
           <Button
-            className="w-full bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 hover:border-red-300 dark:hover:border-red-500"
+            className="w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12"
             onClick={onQuitWithoutSave}
             size="large"
-            variant="default"
+            variant="ghost"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             {t("workout_builder.session.quit_without_save")}
@@ -67,7 +67,10 @@ export function QuitWorkoutDialog({ isOpen, onClose, onQuitWithoutSave, exercise
 
           {/* Cancel */}
           <Button
-            className="w-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+            className={
+              "w-full border border-[var(--wc-dash-border)] shadow-none " +
+              "hover:bg-transparent !min-h-12 !text-lg !text-[var(--wc-dash-text)]"
+            }
             onClick={onClose}
             size="large"
             variant="ghost"

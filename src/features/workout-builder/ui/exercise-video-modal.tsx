@@ -65,7 +65,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-w-2xl p-0 max-h-[80vh]">
+      <DialogContent className="max-w-2xl p-0 max-h-[80vh] [&>button]:!h-12 [&>button]:!w-12">
         <DialogHeader className="flex flex-row items-center justify-between px-4 pt-4 pb-2">
           <DialogTitle className="text-lg md:text-xl font-bold flex flex-col gap-2">
             <span className="text-slate-700 dark:text-slate-200 pr-10 text-left">{title}</span>
@@ -81,11 +81,11 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
         {/* @ts-expect-error Tabs shadcn */}
         <Tabs className="flex-1" onValueChange={setActiveTab} value={activeTab}>
           <TabsList className="grid w-full grid-cols-2 mx-4" style={{ width: "calc(100% - 2rem)" }}>
-            <TabsTrigger className="flex items-center gap-2" value="video">
+            <TabsTrigger className="flex min-h-12 items-center gap-2 text-lg" value="video">
               <Play size={16} />
               {t("statistics.tabs.video")}
             </TabsTrigger>
-            <TabsTrigger className="flex items-center gap-2" value="statistics">
+            <TabsTrigger className="flex min-h-12 items-center gap-2 text-lg" value="statistics">
               <BarChart3 size={16} />
               {t("statistics.title") || "Statistics"}
             </TabsTrigger>

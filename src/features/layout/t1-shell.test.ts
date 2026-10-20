@@ -267,7 +267,14 @@ test("phone nav clearance matches the two-column nav", () => {
   assert.match(footer, /max-sm:bottom-\[var\(--wc-nav-h\)\]/);
   assert.match(footer, /disabled:pointer-events-auto/);
   assert.doesNotMatch(footer, /max-sm:bottom-14/);
-  assert.match(read("src/features/workout-session/ui/workout-session-timer.tsx"), /bottom-\[var\(--wc-nav-h\)\]/);
+  assert.match(
+    read("src/features/workout-session/ui/workout-session-timer.tsx"),
+    new RegExp(
+      "fixed bottom-\\[calc\\(var\\(--wc-nav-h\\)\\+96px\\)\\] left-1\\/2 z-50 mb-0 " +
+        "max-w-\\[calc\\(100vw-16px\\)\\] -translate-x-1\\/2 sm:bottom-\\[320px\\]",
+    ),
+  );
+  assert.doesNotMatch(read("src/features/workout-session/ui/workout-session-timer.tsx"), /sm:bottom-20/);
   assert.doesNotMatch(main, /max-sm:pb-36/);
   assert.doesNotMatch(version, /bottom-36/);
   for (const locale of ["en", "fr", "pt", "es", "ru", "zh-CN"]) {

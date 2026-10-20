@@ -203,6 +203,88 @@ test("program session quit reads the embed flag from the document", () => {
   assert.match(program, /isEmbed: document\.documentElement\.getAttribute\("data-wc-embed"\) === "1"/);
 });
 
+function installLocalStorage() {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => (values.has(key) ? values.get(key)! : null),
+    setItem: (key: string, value: string) => {
+      values.set(key, String(value));
+    },
+    removeItem: (key: string) => {
+      values.delete(key);
+    },
+    clear: () => {
+      values.clear();
+    },
+    key: (index: number) => [...values.keys()][index] ?? null,
+    get length() {
+      return values.size;
+    },
+  };
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
+}
+
+test("quitWorkout clears the saved session, zeroes counters, and returns to step 1", async () => {
+  installLocalStorage();
+  // Same specifiers quitWorkout and the header resolve. Import the builder first so Node 20's
+  // loader reuses that module when the session store imports it, instead of a second instance.
+  const { useWorkoutBuilderStore } = await import("@/features/workout-builder/model/workout-builder.store");
+  const { workoutSessionLocal } = await import("@/shared/lib/workout-session/workout-session.local");
+  await import("@/features/workout-session/model/use-workout-session");
+  const { useWorkoutSessionStore } = await import("@/features/workout-session/model/workout-session.store");
+  const builderAgain = await import("@/features/workout-builder/model/workout-builder.store");
+  assert.equal(builderAgain.useWorkoutBuilderStore, useWorkoutBuilderStore);
+
+  const seenSteps: number[] = [];
+  const originalSetStep = useWorkoutBuilderStore.getState().setStep;
+  useWorkoutBuilderStore.setState({
+    setStep: (step) => {
+      seenSteps.push(step);
+      originalSetStep(step);
+    },
+  });
+
+  useWorkoutBuilderStore.getState().setStep(3);
+  useWorkoutSessionStore.getState().startWorkout([{ id: "ex-1", name: "Squat", attributes: [] } as never], [], []);
+  useWorkoutSessionStore.setState({
+    exercisesCompleted: 2,
+    totalExercises: 4,
+    progressPercent: 50,
+    elapsedTime: 90,
+  });
+
+  const before = useWorkoutSessionStore.getState();
+  assert.equal(useWorkoutBuilderStore.getState().currentStep, 3);
+  assert.ok(before.session);
+  assert.equal(before.session.status, "active");
+  assert.equal(workoutSessionLocal.getCurrent(), before.session.id);
+  assert.ok(workoutSessionLocal.getAll().some((session) => session.id === before.session?.id && session.status === "active"));
+  assert.equal(before.exercisesCompleted, 2);
+  assert.equal(before.totalExercises, 4);
+  assert.equal(before.progressPercent, 50);
+  assert.equal(before.elapsedTime, 90);
+
+  useWorkoutSessionStore.getState().quitWorkout();
+
+  const after = useWorkoutSessionStore.getState();
+  assert.deepEqual(seenSteps, [3, 1]);
+  assert.equal(useWorkoutBuilderStore.getState().currentStep, 1);
+  assert.equal(workoutSessionLocal.getCurrent(), null);
+  assert.equal(localStorage.getItem("currentWorkoutSessionId"), null);
+  assert.deepEqual(workoutSessionLocal.getAll(), []);
+  assert.equal(after.session, null);
+  assert.equal(after.isWorkoutActive, false);
+  assert.equal(after.exercisesCompleted, 0);
+  assert.equal(after.totalExercises, 0);
+  assert.equal(after.progressPercent, 0);
+  assert.equal(after.elapsedTime, 0);
+  assert.equal(after.isTimerRunning, false);
+  assert.equal(
+    workoutSessionLocal.getAll().some((session) => session.status === "completed"),
+    false,
+  );
+});
+
 test("non-embed quit clears the session, returns to step 1, and does not navigate", () => {
   const store = read("src/features/workout-session/model/workout-session.store.ts");
   const quitStart = store.indexOf("quitWorkout: () => {");

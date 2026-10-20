@@ -302,6 +302,12 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request (one issue = one PR)
 
+### Signed-out embed iframe check
+
+`pnpm test:embed-iframe` opens a parent page on another localhost origin and frames `/en/?embed=1` and `/en?embed=1` with no cookie. It expects the signed-out embed document, and it expects the workout builder not to render. Run `pnpm build` first, then `pnpm exec playwright install chromium` if the browser is not installed yet.
+
+The script's forwarder is the only place a localhost parent is added to `frame-ancestors`, and that change stays in the test process. Production CSP is still `frame-ancestors 'self' https://peptideos.us https://www.peptideos.us`. CI runs this after the production build, with `pnpm exec playwright install --with-deps chromium`.
+
 **📋 For complete contribution guidelines, see our [Contributing Guide](CONTRIBUTING.md)**
 
 ### Code Style

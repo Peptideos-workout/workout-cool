@@ -1689,6 +1689,10 @@ export default {
       save_and_quit: "Save & Quit",
       quit_without_save: "Quit Without Saving",
       continue_workout: "Continue Workout",
+      embed_quit_title: "Quit this workout?",
+      embed_quit_warning: "Your progress in this workout won't be saved.",
+      embed_quit_confirm: "Quit without saving",
+      embed_quit_cancel: "Keep going",
       history: "Workout History [{count}]",
       no_workout_yet: "No workout yet.",
       start: "start",
@@ -1696,6 +1700,7 @@ export default {
       exercise: "EXERCISE",
       repeat: "Repeat",
       delete: "Delete",
+      delete_workout_title: "Delete this workout?",
     },
     attribute_value: {
       bodyweight: "Bodyweight",

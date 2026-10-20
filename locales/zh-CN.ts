@@ -815,6 +815,10 @@ export default {
       save_and_quit: "保存并退出",
       quit_without_save: "不保存退出",
       continue_workout: "继续锻炼",
+      embed_quit_title: "退出这次锻炼？",
+      embed_quit_warning: "这次锻炼的进度不会保存。",
+      embed_quit_confirm: "不保存并退出",
+      embed_quit_cancel: "继续",
       history: "锻炼历史 [{count}]",
       no_workout_yet: "尚无锻炼记录。",
       start: "开始",
@@ -822,6 +826,7 @@ export default {
       exercise: "练习",
       repeat: "重复",
       delete: "删除",
+      delete_workout_title: "删除这次锻炼？",
     },
     attribute_value: {
       bodyweight: "自重",

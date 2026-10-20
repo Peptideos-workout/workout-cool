@@ -1689,6 +1689,10 @@ export default {
       save_and_quit: "Сохранить и выйти",
       quit_without_save: "Выйти без сохранения",
       continue_workout: "Продолжить тренировку",
+      embed_quit_title: "Выйти из этой тренировки?",
+      embed_quit_warning: "Прогресс в этой тренировке не сохранится.",
+      embed_quit_confirm: "Выйти без сохранения",
+      embed_quit_cancel: "Продолжить",
       history: "История тренировок [{count}]",
       no_workout_yet: "Пока нет тренировок.",
       start: "начало",
@@ -1696,6 +1700,7 @@ export default {
       exercise: "УПРАЖНЕНИЕ",
       repeat: "Повторить",
       delete: "Удалить",
+      delete_workout_title: "Удалить эту тренировку?",
     },
     attribute_value: {
       bodyweight: "Собственный вес",

@@ -154,15 +154,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-ms-playwright-${{ steps.playwright-version.outputs.version }}
+          key: ${{ runner.os }}-ms-playwright-${{ steps.playwright-version.outputs.version }}-chromium-webkit
 
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium
+        run: pnpm exec playwright install-deps chromium webkit
 
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: Run tests
         run: pnpm test

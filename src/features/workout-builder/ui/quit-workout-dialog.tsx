@@ -9,6 +9,9 @@ import { useIsEmbedDocument } from "@/shared/lib/use-is-embed-document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
+// A second tap is often 80-300ms after the first. Hold a failed quit long enough to ignore it.
+const DOUBLE_ACTIVATION_GUARD_MS = 500;
+
 interface QuitWorkoutDialogProps {
   isOpen: boolean;
   onClose: VoidFunction;
@@ -46,6 +49,7 @@ export function QuitWorkoutDialog({
   const handleConfirm = async () => {
     if (confirmLock.current) return;
     confirmLock.current = true;
+    const lockedAt = Date.now();
     clearPendingTimers();
     pendingTimers.current.push(setTimeout(() => setIsConfirming(true), 0));
     let failed = false;
@@ -53,14 +57,16 @@ export function QuitWorkoutDialog({
       await onQuitWithoutSave();
     } catch (error) {
       failed = true;
-      throw error;
+      // The click handler used to throw synchronously. An async rethrow is an unhandled rejection.
+      console.error("Error quitting workout:", error);
     } finally {
       if (failed) {
-        // WebKit and Firefox run a 0ms timer between the two clicks of a double-click.
-        // Keep the ref set until that second click has been ignored.
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 32);
-        });
+        const remaining = DOUBLE_ACTIVATION_GUARD_MS - (Date.now() - lockedAt);
+        if (remaining > 0) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, remaining);
+          });
+        }
         releaseConfirm();
       }
     }

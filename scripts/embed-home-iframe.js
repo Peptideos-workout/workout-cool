@@ -1047,13 +1047,39 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     });
     await phone.frame.getByRole("button", { name: quitLabel }).click();
     await phone.frame.getByRole("dialog", { name: title }).waitFor();
-    await phone.frame.getByRole("button", { name: discardLabel }).dblclick();
-    const quitCalls = await phone.frame.evaluate(() => window.__wcQuitCalls || 0);
-    if (quitCalls !== 1) throw new Error(`${engine} throwing quit ran ${quitCalls} times`);
+    const confirm = phone.frame.getByRole("button", { name: discardLabel });
+    const quitCalls = async () => phone.frame.evaluate(() => window.__wcQuitCalls || 0);
+    const wait = (ms) => phone.frame.evaluate((delay) => new Promise((resolve) => window.setTimeout(resolve, delay)), ms);
+    const resetCalls = () =>
+      phone.frame.evaluate(() => {
+        window.__wcQuitCalls = 0;
+      });
+    await confirm.dblclick();
+    if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times`);
+    await wait(520);
+    await resetCalls();
+    await confirm.click();
+    await wait(150);
+    await confirm.click({ force: true });
+    if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times after 150ms`);
+    await wait(520);
+    await resetCalls();
+    await confirm.click();
+    await wait(300);
+    await confirm.click({ force: true });
+    if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times after 300ms`);
+    await wait(520);
+    await resetCalls();
+    const started = Date.now();
+    await confirm.click();
+    const elapsed = Date.now() - started;
+    if (700 - elapsed > 0) await wait(700 - elapsed);
+    await confirm.click();
+    if ((await quitCalls()) !== 2) throw new Error(`${engine} throwing quit retry ran ${await quitCalls()} times`);
   } finally {
     await phone.page.close();
   }
-  console.log(`THROWING_QUIT ${engine} dblclick=1`);
+  console.log(`THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2`);
 }
 
 async function runFirefoxThrowingQuit(parentOrigin, childOrigin) {
@@ -1419,12 +1445,12 @@ async function runQuitEmbedHarness(browser) {
     await quitConfirm.dblclick();
     const quitCalls = await light.frame.evaluate(() => window.__wcQuitCalls || 0);
     if (quitCalls !== 1) throw new Error(`quit confirm ran ${quitCalls} times`);
-    await light.frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 50)));
+    await light.frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 700)));
     if (await quitConfirm.isDisabled()) throw new Error("quit confirm stayed disabled after a failed quit");
     await quitConfirm.click();
     const retried = await light.frame.evaluate(() => window.__wcQuitCalls || 0);
     if (retried !== 2) throw new Error(`throwing quit was not clickable again (${retried})`);
-    await light.frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 50)));
+    await light.frame.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 700)));
     if (await quitConfirm.isDisabled()) throw new Error("quit confirm stayed disabled after retry");
     await light.frame.evaluate(() => {
       window.__wcHoldQuit = false;

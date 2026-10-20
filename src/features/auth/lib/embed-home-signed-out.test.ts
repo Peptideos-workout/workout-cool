@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 import { NextRequest } from "next/server";
@@ -7,6 +8,7 @@ import { locales } from "locales/types";
 import { proxy } from "../../../../proxy";
 
 import { embedSignedOutSessionBootstrap } from "@/features/embed/lib/embed-mode";
+import { shouldRedirectSignedOutRequest } from "@/features/auth/lib/signed-out-gate";
 
 const APP = "https://workouts.peptideos.us";
 const SESSION = "better-auth.session_token=1";
@@ -149,6 +151,25 @@ test("embed + /en/ with one trailing slash returns the signed-out document, and 
   assert.equal(deeper.body.includes("data-wc-embed-fallback"), false);
   const doubleSlash = await run(`${APP}//?embed=1`, { "accept-language": "en" });
   assert.equal(doubleSlash.body.includes("data-wc-embed-fallback"), false);
+});
+
+test("/en-foo, //, /en//, and /en/x are rejected and are not embed-home documents", async () => {
+  const proxySource = readFileSync("proxy.ts", "utf8");
+  assert.match(proxySource, /pathname === `\/\$\{locale\}` \|\| pathname === `\/\$\{locale\}\/`/);
+  assert.doesNotMatch(proxySource, /startsWith\(`\/\$\{locale\}/);
+
+  // `//` and `/en//` are public, so a rejected home is not a signed-out document.
+  // `/en-foo` and `/en/x` are gated unknown paths, so the signed-out gate still answers.
+  for (const path of ["/en-foo", "//", "/en//", "/en/x"]) {
+    const { body } = await run(`${APP}${path}?embed=1`, { "accept-language": "en" });
+    const signedOutDoc = body.includes("data-wc-embed-fallback");
+    const gated = shouldRedirectSignedOutRequest(path, false);
+    assert.equal(path === "/" || /^\/(?:en|fr|es|zh-CN|ru|pt)\/?$/.test(path), false, path);
+    assert.equal(signedOutDoc, gated, path);
+    if (!gated) {
+      assert.equal(signedOutDoc, false, path);
+    }
+  }
 });
 
 test("embed sign-out paths still return a document that posts no session", async () => {

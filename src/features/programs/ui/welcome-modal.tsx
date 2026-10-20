@@ -60,18 +60,20 @@ export function WelcomeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--wc-dash-page)_80%,transparent)] p-4">
       <div
-        className={`relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all duration-500 ${
-          isAnimating ? "scale-100 opacity-100" : "scale-95 opacity-0"
-        }`}
+        className={`
+          relative w-full max-w-md rounded-2xl border
+          border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)]
+          text-[var(--wc-dash-text)] transition-all duration-500 ${isAnimating ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
       >
         {/* Close button */}
         <button
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          aria-label={t("programs.welcome_modal.close")}
+          className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full text-[var(--wc-dash-text)]"
           onClick={onClose}
         >
-          <X className="text-gray-500" size={20} />
+          <X className="h-5 w-5" size={20} />
         </button>
 
         {/* Content */}
@@ -81,77 +83,72 @@ export function WelcomeModal({
             <div className="relative inline-block mb-4">
               <div className="w-24 h-24 mx-auto relative animate-bounce">
                 <Image
-                  alt="WorkoutCool Mascot"
+                  alt=""
                   className="object-contain"
                   height={96}
                   src="/images/emojis/WorkoutCoolSwag.png"
                   width={96}
                 />
               </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#FFD700] rounded-full flex items-center justify-center animate-pulse">
-                <Trophy className="text-white" size={16} />
+              <div className="absolute -right-2 -top-2 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-accent)]">
+                <Trophy className="h-5 w-5 text-[var(--wc-dash-ink)]" size={16} />
               </div>
             </div>
 
-            <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-[#4F8EF7] to-[#25CB78] bg-clip-text text-transparent">
+            <h2 className="mb-2 text-2xl font-bold text-[var(--wc-dash-text)]">
               {t("programs.welcome_modal.welcome_title", { programTitle })}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">{t("programs.welcome_modal.subtitle")}</p>
+            <p className="text-lg text-[var(--wc-dash-secondary)]">{t("programs.welcome_modal.subtitle")}</p>
           </div>
 
           {/* Program quick info */}
-          <div className="bg-gradient-to-r from-[#4F8EF7]/10 to-[#25CB78]/10 rounded-xl p-4 space-y-3">
+          <div className="space-y-3 rounded-xl bg-[var(--wc-dash-card)] p-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#4F8EF7] rounded-lg flex items-center justify-center">
-                <Zap className="text-white" size={16} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--wc-dash-accent)]">
+                <Zap className="h-5 w-5 text-[var(--wc-dash-ink)]" size={16} />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t("programs.welcome_modal.level_label")}</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{programLevel}</p>
+                <p className="text-lg text-[var(--wc-dash-secondary)]">{t("programs.welcome_modal.level_label")}</p>
+                <p className="text-lg font-semibold text-[var(--wc-dash-text)]">{programLevel}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#25CB78] rounded-lg flex items-center justify-center">
-                <Calendar className="text-white" size={16} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--wc-dash-accent)]">
+                <Calendar className="h-5 w-5 text-[var(--wc-dash-ink)]" size={16} />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t("programs.welcome_modal.duration_label")}</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{programDuration}</p>
+                <p className="text-lg text-[var(--wc-dash-secondary)]">{t("programs.welcome_modal.duration_label")}</p>
+                <p className="text-lg font-semibold text-[var(--wc-dash-text)]">{programDuration}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#4F8EF7] rounded-lg flex items-center justify-center">
-                <Target className="text-white" size={16} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--wc-dash-accent)]">
+                <Target className="h-5 w-5 text-[var(--wc-dash-ink)]" size={16} />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t("programs.welcome_modal.frequency_label")}</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{programFrequency}</p>
+                <p className="text-lg text-[var(--wc-dash-secondary)]">{t("programs.welcome_modal.frequency_label")}</p>
+                <p className="text-lg font-semibold text-[var(--wc-dash-text)]">{programFrequency}</p>
               </div>
             </div>
           </div>
 
-          {/* Tips */}
-          {/* <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
-            <div className="flex gap-3">
-              <Image alt="Tip" className="object-contain" height={32} src="/images/emojis/WorkoutCoolHappy.png" width={32} />
-              <div className="text-sm">
-                <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">Astuce du coach</p>
-                <p className="text-yellow-700 dark:text-yellow-300">
-                  Commence doucement et augmente l&apos;intensité progressivement. La régularité est la clé du succès !
-                </p>
-              </div>
-            </div>
-          </div> */}
-
           {/* Actions */}
           <div className="flex gap-3">
-            <Button className="flex-1" onClick={onClose} size="large" variant="outline">
+            <Button
+              className={
+                "!min-h-12 flex-1 !border !border-[var(--wc-dash-border)] " +
+                "!bg-[var(--wc-dash-panel)] !text-lg !text-[var(--wc-dash-text)]"
+              }
+              onClick={onClose}
+              size="large"
+              variant="outline"
+            >
               {t("programs.welcome_modal.later_button")}
             </Button>
             <Button
-              className="flex-1 bg-gradient-to-r from-[#4F8EF7] to-[#25CB78] hover:from-[#4F8EF7]/80 hover:to-[#25CB78]/80 text-white border-0"
+              className="!min-h-12 flex-1 !border-0 !bg-[var(--wc-dash-accent)] !text-lg !text-[var(--wc-dash-ink)]"
               onClick={handleJoin}
               size="large"
             >

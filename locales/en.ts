@@ -51,6 +51,7 @@ export default {
     no_equipment: "No equipment",
     workout_programs_title: "Workout programs (+ in progress)",
     workout_programs: "Workout programs",
+    kicker: "Programs",
     workout_programs_description: "Choose your challenge and become stronger! 💪",
     no_programs_available: "No programs available",
     no_programs_available_description: "Programs will be available soon!",
@@ -60,7 +61,12 @@ export default {
     not_found: "Program not found",
     characteristics: "Characteristics",
     weeks: "weeks",
+    "weeks#one": "week",
+    "weeks#other": "weeks",
+    cover_alt: "{title} cover",
     sessions_per_week: "sessions/week",
+    "sessions_per_week#one": "session/week",
+    "sessions_per_week#other": "sessions/week",
     session_duration: "min/session",
     "your_coach#zero": "Your cool coach",
     "your_coach#one": "Your cool coach",
@@ -108,6 +114,7 @@ export default {
       frequency_label: "Frequency",
       later_button: "Later",
       start_button: "Let's go!",
+      close: "Close",
     },
   },
   premium: {
@@ -424,6 +431,7 @@ export default {
   },
   breadcrumbs: {
     home: "Home",
+    label: "Breadcrumb",
   },
   bottom_navigation: {
     statistics: "Statistics",

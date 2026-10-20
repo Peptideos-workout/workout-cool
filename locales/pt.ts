@@ -52,6 +52,7 @@ export default {
     no_equipment: "Nenhum equipamento",
     workout_programs_title: "Programas de treino (+ em curso de criação)",
     workout_programs: "Programas de treino",
+    kicker: "Programas",
     workout_programs_description: "Escolha o seu desafio e torne-se mais forte! 💪",
     no_programs_available: "Nenhum programa disponível",
     no_programs_available_description: "Os programas estarão disponíveis em breve!",
@@ -68,7 +69,12 @@ export default {
     not_found: "Programa não encontrado",
     characteristics: "Características",
     weeks: "semanas",
+    "weeks#one": "semana",
+    "weeks#other": "semanas",
+    cover_alt: "Capa de {title}",
     sessions_per_week: "sessões/semana",
+    "sessions_per_week#one": "sessão/semana",
+    "sessions_per_week#other": "sessões/semana",
     session_duration: "min/sessão",
     "your_coach#zero": "Seu coach",
     "your_coach#one": "Seu coach",
@@ -109,6 +115,7 @@ export default {
       frequency_label: "Frequência",
       later_button: "Mais tarde",
       start_button: "Vamos lá!",
+      close: "Fechar",
     },
   },
   premium: {
@@ -447,6 +454,7 @@ export default {
   },
   breadcrumbs: {
     home: "Início",
+    label: "Trilha de navegação",
   },
   bottom_navigation: {
     statistics: "Estatísticas",

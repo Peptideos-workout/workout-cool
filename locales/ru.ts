@@ -52,6 +52,7 @@ export default {
     no_equipment: "Без оборудования",
     workout_programs_title: "Программы тренировок (+ в процессе создания)",
     workout_programs: "Программы тренировок",
+    kicker: "Программы",
     workout_programs_description: "Выберите свой вызов и станьте сильнее! 💪",
     no_programs_available: "Программы не найдены",
     no_programs_available_description: "Программы будут доступны в ближайшее время!",
@@ -68,7 +69,16 @@ export default {
     not_found: "Программа не найдена",
     characteristics: "Характеристики",
     weeks: "недель",
+    "weeks#one": "неделя",
+    "weeks#few": "недели",
+    "weeks#many": "недель",
+    "weeks#other": "недель",
+    cover_alt: "Обложка {title}",
     sessions_per_week: "сессий/неделя",
+    "sessions_per_week#one": "сессия/неделя",
+    "sessions_per_week#few": "сессии/неделя",
+    "sessions_per_week#many": "сессий/неделя",
+    "sessions_per_week#other": "сессий/неделя",
     session_duration: "мин/сессия",
     "your_coach#zero": "Ваш крутой тренер",
     "your_coach#one": "Ваш крутой тренер",
@@ -107,6 +117,7 @@ export default {
       level_label: "Уровень",
       duration_label: "Продолжительность",
       frequency_label: "Частота",
+      close: "Закрыть",
       later_button: "Позже",
       start_button: "Поехали!",
     },
@@ -1513,6 +1524,7 @@ export default {
 
   breadcrumbs: {
     home: "Главная",
+    label: "Хлебные крошки",
   },
 
   // Workout Builder

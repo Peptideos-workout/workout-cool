@@ -52,6 +52,7 @@ export default {
     no_equipment: "Aucun équipement",
     workout_programs_title: "Programmes d'entraînement",
     workout_programs: "Programmes d'entraînement",
+    kicker: "Programmes",
     workout_programs_description: "Choisissez votre défi et devenez plus fort ! 💪",
     no_programs_available: "Aucun programme disponible",
     no_programs_available_description: "Les programmes seront bientôt disponibles !",
@@ -61,7 +62,12 @@ export default {
     not_found: "Programme non trouvé",
     characteristics: "Caractéristiques",
     weeks: "semaines",
+    "weeks#one": "semaine",
+    "weeks#other": "semaines",
+    cover_alt: "Couverture de {title}",
     sessions_per_week: "séances/semaine",
+    "sessions_per_week#one": "séance/semaine",
+    "sessions_per_week#other": "séances/semaine",
     session_duration: "min/séance",
     "your_coach#zero": "Ton coach cool",
     "your_coach#one": "Ton coach cool",
@@ -110,6 +116,7 @@ export default {
       frequency_label: "Fréquence",
       later_button: "Plus tard",
       start_button: "C'est parti !",
+      close: "Fermer",
     },
   },
   premium: {
@@ -426,6 +433,7 @@ export default {
   },
   breadcrumbs: {
     home: "Accueil",
+    label: "Fil d'Ariane",
   },
   bottom_navigation: {
     statistics: "Statistiques",

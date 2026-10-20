@@ -196,14 +196,23 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
           />
         )}
         {/* Hero Image Section with Gamification */}
-        <div className="relative h-40 sm:h-64 bg-gradient-to-br from-[#4F8EF7] to-[#25CB78]">
-          <Image alt={programTitle} className="absolute inset-0 object-cover opacity-30" fill src={program.image} />
-          <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative min-h-40 bg-[var(--wc-dash-accent)] pr-24 sm:min-h-64">
+          <Image
+            alt={t("programs.cover_alt", { title: programTitle })}
+            className="absolute inset-0 object-cover opacity-30"
+            fill
+            src={program.image}
+          />
 
           {/* Mascot Emoji */}
-          <div className="absolute top-4 right-4 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full border-2 border-white/30 flex items-center justify-center">
+          <div
+            className={
+              "absolute right-4 top-4 flex h-16 w-16 items-center justify-center rounded-full " +
+              "border-2 border-[var(--wc-dash-ink)] bg-[var(--wc-dash-accent)]"
+            }
+          >
             <Image
-              alt="Mascotte WorkoutCool"
+              alt=""
               className="w-12 h-12 object-contain"
               height={48}
               src="/images/emojis/WorkoutCoolSwag.png"
@@ -211,32 +220,40 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
             />
           </div>
 
-          <div className="relative h-full flex items-end p-6">
-            <div className="text-white flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="bg-[#4F8EF7] text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                  <Zap size={12} />
+          <div className="relative flex min-h-40 items-end p-6 sm:min-h-64">
+            <div className="flex-1 text-[var(--wc-dash-ink)]">
+              <div className="mb-3 flex items-center gap-2">
+                <span
+                  className={
+                    "inline-flex min-h-12 items-center gap-1 rounded-full bg-[var(--wc-dash-ink)] " +
+                    "px-3 text-lg font-medium text-[var(--wc-dash-accent)]"
+                  }
+                >
+                  <Zap className="h-5 w-5" size={12} />
                   {t(`levels.${program.level}` as keyof typeof t)}
                 </span>
-                <span className="bg-[#25CB78] text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                  <Users size={12} />
+                <span
+                  className={
+                    "inline-flex min-h-12 items-center gap-1 rounded-full border border-[var(--wc-dash-border)] " +
+                    "bg-[var(--wc-dash-panel)] px-3 text-lg font-medium text-[var(--wc-dash-text)]"
+                  }
+                >
+                  <Users className="h-5 w-5" size={12} />
                   {program.participantCount}+
                 </span>
-                {/* TODO: i18n category */}
-                {/* {program.isPremium && <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-medium">Premium</span>} */}
               </div>
-              <h1 className="text-3xl font-bold mb-2">{programTitle}</h1>
-              {/* TODO: i18n category */}
-              {/* <p className="text-white/90 text-sm">{program.category}</p> */}
+              <h1 className="mb-2 text-3xl font-bold text-[var(--wc-dash-ink)]">{programTitle}</h1>
             </div>
           </div>
         </div>
 
         <div className="px-0 sm:px-4 py-4">
-          <div className="tabs tabs-lift" role="tablist">
+          <div className="flex flex-wrap gap-2" role="tablist">
             <button
-              aria-label="À propos"
-              className={`tab ${tab === "about" ? "tab-active" : ""}`}
+              aria-label={t("programs.about")}
+              className={`min-h-12 rounded-xl px-4 text-lg ${
+                tab === "about" ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]" : "!text-[var(--wc-dash-text)]"
+              }`}
               onClick={() => setTab("about")}
               type="button"
             >
@@ -244,7 +261,9 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
             </button>
             <button
               aria-label={t("programs.sessions")}
-              className={`tab ${tab === "sessions" ? "tab-active" : ""}`}
+              className={`min-h-12 rounded-xl px-4 text-lg ${
+                tab === "sessions" ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]" : "!text-[var(--wc-dash-text)]"
+              }`}
               onClick={() => setTab("sessions")}
               type="button"
             >
@@ -254,31 +273,36 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
 
           {/* About Tab Content */}
           {tab === "about" && (
-            <div className="bg-base-100 border-base-300 rounded-md p-2 sm:p-6">
+            <div className="rounded-md border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-2 sm:p-6">
               <div className="space-y-6">
                 {/* User Progress - Only show if authenticated */}
                 {isAuthenticated && <ProgramProgress programId={program.id} />}
 
                 {/* Early Access Teaser Section - Only show if not premium */}
                 {!isPremium && (
-                  <div className="relative bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 border-2 border-dashed border-blue-200 dark:border-blue-700 rounded-xl p-6 overflow-hidden">
+                  <div
+                    className={
+                      "relative overflow-hidden rounded-xl border-2 border-dashed " +
+                      "border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-6"
+                    }
+                  >
                     {/* Subtle animation background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#4F8EF7]/5 to-[#25CB78]/5 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-[var(--wc-dash-inner)]"></div>
 
                     <div className="relative z-10">
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-gradient-to-r from-[#4F8EF7] to-[#25CB78] rounded-full flex items-center justify-center">
-                            <Trophy className="text-white" size={24} />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wc-dash-accent)]">
+                            <Trophy className="text-[var(--wc-dash-ink)]" size={24} />
                           </div>
                         </div>
 
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t("programs.important_info")}</h3>
+                            <h3 className="text-lg font-bold text-[var(--wc-dash-text)]">{t("programs.important_info")}</h3>
                           </div>
 
-                          <p className="text-sm text-gray-600 dark:text-gray-400  italic">💡 {t("programs.donation_teaser")}</p>
+                          <p className="text-lg italic text-[var(--wc-dash-secondary)]">💡 {t("programs.donation_teaser")}</p>
                         </div>
                       </div>
                     </div>
@@ -286,12 +310,12 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                 )}
 
                 {/* Gamified Community Stats */}
-                <div className="bg-gradient-to-r from-[#4F8EF7]/10 to-[#25CB78]/10 border-2 border-[#4F8EF7]/20 rounded-xl p-4">
+                <div className="rounded-xl border-2 border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
                         <Image
-                          alt="Communauté"
+                          alt=""
                           className="w-10 h-10 object-contain"
                           height={40}
                           src="/images/emojis/WorkoutCoolHappy.png"
@@ -300,9 +324,9 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-bold text-[#4F8EF7]">{t("programs.community")}</span>
+                          <span className="text-lg font-bold text-[var(--wc-dash-accent)]">{t("programs.community")}</span>
                         </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-lg text-[var(--wc-dash-secondary)]">
                           +{program.participantCount} {t("programs.community_count")}
                         </span>
                       </div>
@@ -315,49 +339,49 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 border-2 border-[#25CB78]/20 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <h3 className="font-bold text-lg text-[#4F8EF7]">{t("programs.characteristics")}</h3>
+                <div className="rounded-xl border-2 border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-4">
+                  <div className="mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[var(--wc-dash-accent)]">{t("programs.characteristics")}</h3>
                   </div>
 
                   {/* Compact Layout - Mobile: List, Desktop: 2 columns */}
                   <div className="space-y-4 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-4 md:space-y-0">
                     <div className="flex items-center gap-4">
-                      <BarChart3 className="text-[#4F8EF7] flex-shrink-0" size={20} />
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <BarChart3 className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
+                      <span className="text-lg font-medium text-[var(--wc-dash-text)]">
                         {t(`levels.${program.level}` as keyof typeof t)}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <Target className="text-[#25CB78] flex-shrink-0" size={20} />
-                      <span className="text-base font-medium text-gray-900 dark:text-white">{getAttributeValueLabel(program.type, t)}</span>
+                      <Target className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
+                      <span className="text-lg font-medium text-[var(--wc-dash-text)]">{getAttributeValueLabel(program.type, t)}</span>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <Clock className="text-[#4F8EF7] flex-shrink-0" size={20} />
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {program.durationWeeks} {t("programs.weeks")}
+                      <Clock className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
+                      <span className="text-lg font-medium text-[var(--wc-dash-text)]">
+                        {program.durationWeeks} {t("programs.weeks", { count: program.durationWeeks })}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <Calendar className="text-[#25CB78] flex-shrink-0" size={20} />
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {program.sessionsPerWeek} {t("programs.sessions_per_week")}
+                      <Calendar className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
+                      <span className="text-lg font-medium text-[var(--wc-dash-text)]">
+                        {program.sessionsPerWeek} {t("programs.sessions_per_week", { count: program.sessionsPerWeek })}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <Timer className="text-[#4F8EF7] flex-shrink-0" size={20} />
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <Timer className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
+                      <span className="text-lg font-medium text-[var(--wc-dash-text)]">
                         ~{program.sessionDurationMin} {t("programs.session_duration")}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <Dumbbell className="text-[#25CB78] flex-shrink-0" size={20} />
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <Dumbbell className="h-5 w-5 flex-shrink-0 text-[var(--wc-dash-accent)]" size={20} />
+                      <span className="text-lg font-medium text-[var(--wc-dash-text)]">
                         {program.equipment.map((equipment, index) => {
                           const isFirst = index === 0;
                           const label = t(ATTRIBUTE_VALUE_TRANSLATION_KEYS[equipment] as keyof typeof t);
@@ -371,33 +395,46 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
 
                 {/* Description */}
                 <div className="space-y-4">
-                  <p className="text-gray-700 dark:text-gray-300 text-center">{programDescription}</p>
+                  <p className="text-center text-lg text-[var(--wc-dash-text)]">{programDescription}</p>
                 </div>
 
                 {/* Gamified Coaches Section */}
                 {program.coaches.length > 0 && (
-                  <div className="bg-gradient-to-r from-[#25CB78]/10 to-[#4F8EF7]/10 border-2 border-[#25CB78]/20 rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-lg font-bold text-[#25CB78]">{t("programs.your_coach", { count: program.coaches.length })}</h3>
-                      <div className="bg-[#25CB78] text-white px-2 py-1 rounded-full text-xs font-bold">{program.coaches.length}</div>
+                  <div className="rounded-xl border-2 border-[var(--wc-dash-border)] bg-[var(--wc-dash-card)] p-5">
+                    <div className="mb-4 flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-[var(--wc-dash-accent)]">
+                        {t("programs.your_coach", { count: program.coaches.length })}
+                      </h3>
+                      <div
+                        className={
+                          "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                          "text-lg font-bold text-[var(--wc-dash-ink)]"
+                        }
+                      >
+                        {program.coaches.length}
+                      </div>
                     </div>
                     <div className="flex gap-6 overflow-x-auto pb-2">
                       {program.coaches.map((coach) => (
                         <div
-                          className="flex flex-col items-center gap-3 flex-shrink-0 p-3 bg-white dark:bg-gray-800 rounded-xl border-2 border-[#25CB78]/20 hover:border-[#25CB78] transition-all duration-200 ease-in-out"
+                          className={
+                            "flex flex-shrink-0 flex-col items-center gap-3 rounded-xl border-2 " +
+                            "border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-3 transition-all " +
+                            "duration-200 ease-in-out"
+                          }
                           key={coach.id}
                         >
                           <div className="relative">
                             <Image
                               alt={coach.name}
-                              className="w-24 h-24 rounded-full border-3 border-[#25CB78] object-cover"
+                              className="h-24 w-24 rounded-full border-4 border-[var(--wc-dash-accent)] object-cover"
                               height={96}
                               src={coach.image}
                               width={96}
                             />
                             <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center">
                               <Image
-                                alt="Coachs"
+                                alt=""
                                 className="w-6 h-6 object-contain"
                                 height={24}
                                 src="/images/emojis/WorkoutCoolLove.png"
@@ -405,7 +442,7 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                               />
                             </div>
                           </div>
-                          <span className="text-sm font-bold text-center">{coach.name}</span>
+                          <span className="text-center text-lg font-bold text-[var(--wc-dash-text)]">{coach.name}</span>
                         </div>
                       ))}
                     </div>
@@ -417,14 +454,18 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
 
           {/* Sessions Tab Content */}
           {tab === "sessions" && (
-            <div className="bg-base-100 border-base-300 rounded-box p-6">
+            <div className="rounded-box border border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-6">
               <div className="space-y-6">
                 {/* Week Selector with DaisyUI Tabs */}
                 <div className="overflow-x-auto">
-                  <div className="tabs tabs-box w-fit flex-nowrap">
+                  <div className="flex w-fit flex-nowrap gap-2">
                     {program.weeks.map((week) => (
                       <button
-                        className={`tab flex-shrink-0 ${selectedWeek === week.weekNumber ? "tab-active" : ""}`}
+                        className={`min-h-12 flex-shrink-0 rounded-xl px-4 text-lg ${
+                          selectedWeek === week.weekNumber
+                            ? "!bg-[var(--wc-dash-accent)] !text-[var(--wc-dash-ink)]"
+                            : "!text-[var(--wc-dash-text)]"
+                        }`}
                         key={week.id}
                         onClick={() => setSelectedWeek(week.weekNumber)}
                       >
@@ -435,8 +476,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                 </div>
 
                 {/* Current Week Title */}
-                <h2 className="text-xl font-bold">{currentWeekTitle}</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{currentWeekDescription}</p>
+                <h2 className="text-xl font-bold text-[var(--wc-dash-text)]">{currentWeekTitle}</h2>
+                <p className="text-lg text-[var(--wc-dash-secondary)]">{currentWeekDescription}</p>
 
                 {/* Gamified Sessions List */}
                 <div className="space-y-3">
@@ -445,13 +486,17 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
 
                     if (currentWeekSessions.length === 0) {
                       return (
-                        <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center">
+                        <div
+                          className={
+                            "rounded-xl border-2 border-dashed border-[var(--wc-dash-border)] " + "bg-[var(--wc-dash-card)] p-8 text-center"
+                          }
+                        >
                           <div className="flex flex-col items-center gap-3">
-                            <div className="w-16 h-16 bg-gradient-to-r from-[#4F8EF7]/20 to-[#25CB78]/20 rounded-full flex items-center justify-center">
-                              <Timer className="text-[#4F8EF7]" size={32} />
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--wc-dash-inner)]">
+                              <Timer className="h-8 w-8 text-[var(--wc-dash-accent)]" size={32} />
                             </div>
-                            <h4 className="font-bold text-gray-900 dark:text-white text-lg">{t("programs.sessions_coming_soon")}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">{t("programs.sessions_in_creation")}</p>
+                            <h4 className="text-lg font-bold text-[var(--wc-dash-text)]">{t("programs.sessions_coming_soon")}</h4>
+                            <p className="max-w-md text-lg text-[var(--wc-dash-secondary)]">{t("programs.sessions_in_creation")}</p>
                           </div>
                         </div>
                       );
@@ -466,13 +511,16 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                       const isCompleted = completedSessions.has(session.id);
                       return (
                         <div
-                          className={`bg-white dark:bg-gray-800 rounded-xl p-4 border-2 cursor-pointer transition-all duration-200 ease-in-out flex items-center gap-4 ${
-                            isCompleted
-                              ? "border-[#25CB78] bg-[#25CB78]/5"
-                              : sessionPaywalled
-                                ? "border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10 hover:border-yellow-300 hover:scale-[1.02]"
-                                : "border-[#25CB78]/20 hover:border-[#25CB78] hover:scale-[1.02]"
-                          }`}
+                          className={`
+                            flex min-h-12 cursor-pointer items-center gap-4 rounded-xl border-2
+                            bg-[var(--wc-dash-card)] p-4 text-[var(--wc-dash-text)] transition-all
+                            duration-200 ease-in-out ${
+                              isCompleted
+                                ? "border-[var(--wc-dash-accent)] bg-[var(--wc-dash-inner)]"
+                                : sessionPaywalled
+                                  ? "border-[var(--wc-dash-link)] bg-[var(--wc-dash-inner)]"
+                                  : "border-[var(--wc-dash-border)]"
+                            }`}
                           key={session.id}
                           onClick={() => {
                             window.location.href = `/${currentLocale}/programs/${program.slug}/session/${sessionSlug}`;
@@ -481,15 +529,17 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                           {/* Session Number Badge */}
                           <div className="relative">
                             <div
-                              className={`w-8 sm:w-12 h-8 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-white ${
-                                isCompleted
-                                  ? "bg-[#25CB78]"
-                                  : sessionPaywalled
-                                    ? isPremium
-                                      ? "bg-[#4F8EF7]"
-                                      : "bg-yellow-500"
-                                    : "bg-[#25CB78]"
-                              }`}
+                              className={`
+                                flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl
+                                font-bold text-[var(--wc-dash-ink)] ${
+                                  isCompleted
+                                    ? "bg-[var(--wc-dash-accent)]"
+                                    : sessionPaywalled
+                                      ? isPremium
+                                        ? "bg-[var(--wc-dash-accent)]"
+                                        : "bg-[var(--wc-dash-link)]"
+                                      : "bg-[var(--wc-dash-accent)]"
+                                }`}
                             >
                               {isCompleted ? (
                                 <CheckCircle2 size={18} />
@@ -508,37 +558,58 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
                           {/* Session Info */}
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h4 className={`font-bold ${isCompleted ? "text-[#25CB78]" : "text-gray-900 dark:text-white"}`}>
+                              <h4
+                                className={`
+                                  text-lg font-bold ${isCompleted ? "text-[var(--wc-dash-accent)]" : "text-[var(--wc-dash-text)]"}`}
+                              >
                                 {sessionName}
                               </h4>
                               {isCompleted && (
-                                <div className="bg-[#25CB78] text-white px-2 py-1 rounded-full text-xs font-bold">
+                                <div
+                                  className={
+                                    "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                                    "text-lg font-bold text-[var(--wc-dash-ink)]"
+                                  }
+                                >
                                   {t("programs.completed")}
                                 </div>
                               )}
                               {!isCompleted && !sessionPaywalled && (
-                                <div className="bg-[#25CB78] text-white px-2 py-1 rounded-full text-xs font-bold">{t("programs.free")}</div>
+                                <div
+                                  className={
+                                    "inline-flex min-h-12 items-center rounded-full bg-[var(--wc-dash-accent)] px-3 " +
+                                    "text-lg font-bold text-[var(--wc-dash-ink)]"
+                                  }
+                                >
+                                  {t("programs.free")}
+                                </div>
                               )}
                               {!isCompleted && sessionPaywalled && (
-                                <div className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                <div
+                                  className={
+                                    "inline-flex min-h-12 items-center rounded-full border " +
+                                    "border-[var(--wc-dash-link)] bg-[var(--wc-dash-card)] px-3 text-lg font-bold " +
+                                    "text-[var(--wc-dash-link)]"
+                                  }
+                                >
                                   {t("programs.premium")}
                                 </div>
                               )}
                             </div>
                             {sessionDescription && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">{sessionDescription}</p>
+                              <p className="flex items-center gap-1 text-lg text-[var(--wc-dash-secondary)]">{sessionDescription}</p>
                             )}
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="mt-1 text-lg text-[var(--wc-dash-secondary)]">
                               {session.totalExercises} {t("programs.exercises")} • {session.estimatedMinutes} {t("programs.min_short")}
                             </p>
                           </div>
 
                           {/* Status Icon */}
-                          <div className="w-10 h-10 flex items-center justify-center">
+                          <div className="flex h-12 w-12 items-center justify-center">
                             {isCompleted ? (
-                              <CheckCircle2 className="text-[#25CB78]" size={24} />
+                              <CheckCircle2 className="h-6 w-6 text-[var(--wc-dash-accent)]" size={24} />
                             ) : (
-                              <ArrowRight className="text-gray-600 dark:text-gray-400" size={24} />
+                              <ArrowRight className="h-6 w-6 text-[var(--wc-dash-secondary)]" size={24} />
                             )}
                           </div>
                         </div>
@@ -563,25 +634,33 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
         <div className="absolute bottom-2 right-0 left-0 max-w-sm mx-auto px-4 z-[10]">
           <button
             className={
-              "w-full bg-gradient-to-r from-[#4F8EF7] to-[#25CB78] hover:from-[#4F8EF7]/90 hover:to-[#25CB78]/90 text-white px-6 py-4 font-bold border-2 border-white/20 hover:scale-[1.02] transition-all duration-200 ease-in-out z-1 flex items-center justify-center gap-2 shadow-xl rounded-full"
+              "z-1 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-0 " +
+              "bg-[var(--wc-dash-accent)] px-6 py-4 text-lg font-bold text-[var(--wc-dash-ink)] " +
+              "transition-all duration-200 ease-in-out"
             }
             onClick={handleCTAClick}
           >
-            <Image alt="Rejoindre" className="w-6 h-6 object-contain" height={24} src="/images/emojis/WorkoutCoolSwag.png" width={24} />
+            <Image alt="" className="w-6 h-6 object-contain" height={24} src="/images/emojis/WorkoutCoolSwag.png" width={24} />
             <div className="flex flex-col items-center">
-              <span className="text-base">{isAuthenticated && hasJoinedProgram ? t("programs.continue") : t("programs.join_cta")}</span>
+              <span className="text-lg">{isAuthenticated && hasJoinedProgram ? t("programs.continue") : t("programs.join_cta")}</span>
             </div>
-            <Trophy className="text-white animate-bounce" size={18} />
+            <Trophy className="h-5 w-5 text-[var(--wc-dash-ink)]" size={18} />
           </button>
         </div>
       )}
 
       {/* Program Completed Message */}
       {isProgramCompleted && (
-        <div className="absolute bottom-2 right-0 left-0 max-w-xs mx-auto bg-gradient-to-r from-[#25CB78] to-[#4F8EF7] text-white px-4 py-3 rounded-full font-bold border-2 border-white/20 z-1 flex items-center justify-center gap-2">
-          <Trophy className="text-white" size={18} />
+        <div
+          className={
+            "absolute bottom-2 left-0 right-0 z-1 mx-auto flex min-h-12 max-w-xs items-center " +
+            "justify-center gap-2 rounded-full bg-[var(--wc-dash-accent)] px-4 py-3 text-lg " +
+            "font-bold text-[var(--wc-dash-ink)]"
+          }
+        >
+          <Trophy className="h-5 w-5 text-[var(--wc-dash-ink)]" size={18} />
           {t("programs.program_completed")}
-          <CheckCircle2 className="text-white" size={18} />
+          <CheckCircle2 className="h-5 w-5 text-[var(--wc-dash-ink)]" size={18} />
         </div>
       )}
 
@@ -590,8 +669,8 @@ export function ProgramDetailPage({ program, isAuthenticated }: ProgramDetailPag
         isOpen={showWelcomeModal}
         onClose={() => setShowWelcomeModal(false)}
         onJoin={handleJoinProgram}
-        programDuration={`${program.durationWeeks} ${t("programs.weeks")}`}
-        programFrequency={`${program.sessionsPerWeek} ${t("programs.sessions_per_week")}`}
+        programDuration={`${program.durationWeeks} ${t("programs.weeks", { count: program.durationWeeks })}`}
+        programFrequency={`${program.sessionsPerWeek} ${t("programs.sessions_per_week", { count: program.sessionsPerWeek })}`}
         programLevel={t(`levels.${program.level}` as keyof typeof t)}
         programTitle={programTitle}
       />

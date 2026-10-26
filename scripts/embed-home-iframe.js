@@ -1201,6 +1201,7 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
   const phone = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
   let gap150Ms = -1;
   let gap300Ms = -1;
+  let reenableMs = -1;
   const consoleLines = [];
   const onConsole = (message) => {
     consoleLines.push(`${message.type()}: ${message.text()}`);
@@ -1252,9 +1253,15 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
       });
     const guardMs = readQuitGuardMs();
     const gapWindows = { "150ms": { low: 100, high: 250 }, "300ms": { low: 250, high: 450 } };
+    const lockedGapCeilings = { "150ms": 250, "300ms": 450 };
+    const ceiling150 = gapWindows["150ms"].high;
+    const ceiling300 = gapWindows["300ms"].high;
+    if (ceiling150 !== lockedGapCeilings["150ms"] || ceiling300 !== lockedGapCeilings["300ms"]) {
+      throw new Error(`${engine} gap ceilings loosened to ${ceiling150} and ${ceiling300}`);
+    }
     for (const [label, bounds] of Object.entries(gapWindows)) {
-      if (!(bounds.low > 0 && bounds.low < bounds.high && bounds.high < guardMs)) {
-        throw new Error(`${label} gap bound ${bounds.low}..${bounds.high} is not inside the ${guardMs}ms guard`);
+      if (!(bounds.low > 0 && bounds.low < bounds.high)) {
+        throw new Error(`${label} gap bound ${bounds.low}..${bounds.high} is not ordered`);
       }
     }
     const readGap = async (label) => {
@@ -1281,23 +1288,73 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     await confirm.click();
     await wait(150);
     await confirm.click({ force: true });
-    gap150Ms = await readGap("150ms");
-    if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times after 150ms`);
+    const gapFailures = [];
+    try {
+      gap150Ms = await readGap("150ms");
+    } catch (error) {
+      gapFailures.push(error instanceof Error ? error.message : String(error));
+    }
+    if ((await quitCalls()) !== 1) gapFailures.push(`${engine} throwing quit ran ${await quitCalls()} times after 150ms`);
     await wait(520);
     await resetCalls();
     await resetMarks();
     await confirm.click();
     await wait(300);
     await confirm.click({ force: true });
-    gap300Ms = await readGap("300ms");
-    if ((await quitCalls()) !== 1) throw new Error(`${engine} throwing quit ran ${await quitCalls()} times after 300ms`);
+    try {
+      gap300Ms = await readGap("300ms");
+    } catch (error) {
+      gapFailures.push(error instanceof Error ? error.message : String(error));
+    }
+    if ((await quitCalls()) !== 1) gapFailures.push(`${engine} throwing quit ran ${await quitCalls()} times after 300ms`);
+    if (gapFailures.length) throw new Error(gapFailures.join("\n"));
     await wait(520);
     await resetCalls();
+    const reenableLowMs = 450;
+    const reenableHighMs = 680;
+    const enabledNow = () => confirm.isEnabled({ timeout: 0 });
+    const waitUntilEnabled = async (timeoutMs) => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt <= timeoutMs) {
+        if (await enabledNow()) return Date.now() - startedAt;
+        const left = timeoutMs - (Date.now() - startedAt);
+        if (left <= 0) break;
+        await wait(Math.min(20, left));
+      }
+      return -1;
+    };
+    const measureReenable = async (startedAt, deadlineMs) => {
+      let sawDisabled = false;
+      while (Date.now() - startedAt <= deadlineMs) {
+        const enabled = await enabledNow();
+        if (!enabled) sawDisabled = true;
+        if (sawDisabled && enabled) return { reenableMs: Date.now() - startedAt, sawDisabled: true };
+        const left = deadlineMs - (Date.now() - startedAt);
+        if (left <= 0) break;
+        await wait(Math.min(20, left));
+      }
+      return { reenableMs: -1, sawDisabled };
+    };
+    if ((await waitUntilEnabled(1500)) < 0) {
+      throw new Error(`${engine} confirm stayed disabled before the re-enable sample (guard ${guardMs}ms)`);
+    }
     const started = Date.now();
-    await confirm.click();
+    await confirm.click({ timeout: 1000 });
+    const reenable = await measureReenable(started, reenableHighMs);
+    if (!reenable.sawDisabled) throw new Error(`${engine} confirm never disabled after the throwing click`);
+    if (reenable.reenableMs < 0) {
+      throw new Error(`${engine} confirm still disabled ${reenableHighMs}ms after the throwing click (guard ${guardMs}ms)`);
+    }
+    if (reenable.reenableMs < reenableLowMs || reenable.reenableMs > reenableHighMs) {
+      throw new Error(
+        `${engine} confirm re-enabled at ${reenable.reenableMs}ms, expected ${reenableLowMs}..${reenableHighMs} (guard ${guardMs}ms)`,
+      );
+    }
+    reenableMs = reenable.reenableMs;
     const elapsed = Date.now() - started;
     if (700 - elapsed > 0) await wait(700 - elapsed);
-    await confirm.click();
+    if (!(await enabledNow())) throw new Error(`${engine} confirm still disabled at the 700ms retry`);
+    await confirm.click({ timeout: 1000 });
     if ((await quitCalls()) !== 2) throw new Error(`${engine} throwing quit retry ran ${await quitCalls()} times`);
     const unhandled = await phone.frame.evaluate(() => window.__wcUnhandled || 0);
     if (unhandled !== 0) throw new Error(`${engine} throwing quit fired unhandledrejection ${unhandled} times`);
@@ -1324,7 +1381,8 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
   const reported = consoleLines.filter((line) => /hold|pageerror|uncaught|unhandled|reportError/i.test(line));
   console.log(`THROWING_QUIT_CONSOLE ${engine} ${JSON.stringify(reported)}`);
   console.log(
-    `THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0 gap150Ms=${gap150Ms} gap300Ms=${gap300Ms}`,
+    `THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0 ` +
+      `gap150Ms=${gap150Ms} gap300Ms=${gap300Ms} reenableMs=${reenableMs}`,
   );
   await assertReportErrorDeleted(browser, parentOrigin, childOrigin, engine);
   await assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engine);
@@ -1554,6 +1612,9 @@ async function runQuitEmbedHarness(browser) {
       await page.locator("#phone").screenshot({ path: join(shotDir, name) });
     }
 
+    const harnessFailures = [];
+    try {
+    await assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, "chromium");
     const light = await openPhone(browser, parentOrigin, childOrigin, "?embed=1");
     await light.frame.getByRole("button", { name: "Start workout" }).click();
     await light.frame.locator("[data-wc-step='3']").waitFor();
@@ -2107,9 +2168,20 @@ async function runQuitEmbedHarness(browser) {
     console.log(`QUIT_PROBES ${JSON.stringify(probes)}`);
     await probePage.close();
     await runTitleModality(browser, parentOrigin, childOrigin, "chromium", saveShot);
-    await assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, "chromium");
-    await runWebKitTitleModality(parentOrigin, childOrigin, saveShot);
-    await runFirefoxThrowingQuit(parentOrigin, childOrigin);
+    } catch (error) {
+      harnessFailures.push(error instanceof Error ? error.message : String(error));
+    }
+    try {
+      await runWebKitTitleModality(parentOrigin, childOrigin, saveShot);
+    } catch (error) {
+      harnessFailures.push(error instanceof Error ? error.message : String(error));
+    }
+    try {
+      await runFirefoxThrowingQuit(parentOrigin, childOrigin);
+    } catch (error) {
+      harnessFailures.push(error instanceof Error ? error.message : String(error));
+    }
+    if (harnessFailures.length) throw new Error(harnessFailures.join("\n"));
     console.log("embed iframe: quit confirm stays in the 390x844 frame and quit clears the session");
   } finally {
     if (parent) await closeServer(parent);

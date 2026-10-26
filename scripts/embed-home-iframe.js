@@ -1202,6 +1202,8 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
   let gap150Ms = -1;
   let gap300Ms = -1;
   let reenableMs = -1;
+  let holdMs = -1;
+  let holdFrom = "none";
   const consoleLines = [];
   const onConsole = (message) => {
     consoleLines.push(`${message.type()}: ${message.text()}`);
@@ -1256,14 +1258,30 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     const lockedGapCeilings = { "150ms": 250, "300ms": 450 };
     const ceiling150 = gapWindows["150ms"].high;
     const ceiling300 = gapWindows["300ms"].high;
-    if (ceiling150 !== lockedGapCeilings["150ms"] || ceiling300 !== lockedGapCeilings["300ms"]) {
-      throw new Error(`${engine} gap ceilings loosened to ${ceiling150} and ${ceiling300}`);
-    }
-    for (const [label, bounds] of Object.entries(gapWindows)) {
-      if (!(bounds.low > 0 && bounds.low < bounds.high)) {
-        throw new Error(`${label} gap bound ${bounds.low}..${bounds.high} is not ordered`);
+    const locked150 = lockedGapCeilings["150ms"];
+    const locked300 = lockedGapCeilings["300ms"];
+    const assertGapCeilings = () => {
+      if (!(ceiling300 <= guardMs - 50)) {
+        throw new Error(`${engine} 300ms gap ceiling ${ceiling300} exceeds guard ${guardMs} - 50`);
       }
-    }
+      if (!(ceiling150 <= ceiling300 - 200)) {
+        throw new Error(`${engine} 150ms gap ceiling ${ceiling150} exceeds ${ceiling300} - 200`);
+      }
+      if (!(locked300 <= guardMs - 50)) {
+        throw new Error(`${engine} locked 300ms gap ceiling ${locked300} exceeds guard ${guardMs} - 50`);
+      }
+      if (!(locked150 <= locked300 - 200)) {
+        throw new Error(`${engine} locked 150ms gap ceiling ${locked150} exceeds ${locked300} - 200`);
+      }
+      if (ceiling150 !== locked150 || ceiling300 !== locked300) {
+        throw new Error(`${engine} gap ceilings loosened to ${ceiling150} and ${ceiling300}`);
+      }
+      for (const [label, bounds] of Object.entries(gapWindows)) {
+        if (!(bounds.low > 0 && bounds.low < bounds.high && bounds.high < guardMs)) {
+          throw new Error(`${label} gap bound ${bounds.low}..${bounds.high} is not ordered`);
+        }
+      }
+    };
     const readGap = async (label) => {
       const bounds = gapWindows[label];
       const gap = await phone.frame.evaluate(() => {
@@ -1310,7 +1328,7 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
     if (gapFailures.length) throw new Error(gapFailures.join("\n"));
     await wait(520);
     await resetCalls();
-    const reenableLowMs = 450;
+    const holdFloorMs = 495;
     const reenableHighMs = 680;
     const enabledNow = () => confirm.isEnabled({ timeout: 0 });
     const waitUntilEnabled = async (timeoutMs) => {
@@ -1335,22 +1353,83 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
       }
       return { reenableMs: -1, sawDisabled };
     };
+    const armHoldProbe = () =>
+      confirm.evaluate((button) => {
+        const hold = { clickAt: 0, handlerAt: 0, disabledAt: 0, enabledAt: 0 };
+        window.__wcHold = hold;
+        const mark = () => {
+          const now = performance.now();
+          if (button.disabled) {
+            if (!hold.disabledAt) hold.disabledAt = now;
+            return;
+          }
+          if (hold.disabledAt && !hold.enabledAt) hold.enabledAt = now;
+        };
+        const onClick = () => {
+          if (!hold.clickAt) hold.clickAt = performance.now();
+        };
+        button.addEventListener("click", onClick, true);
+        const observer = new MutationObserver(mark);
+        observer.observe(button, { attributes: true, attributeFilter: ["disabled"] });
+        const timer = window.setInterval(mark, 5);
+        const nativeSetTimeout = window.setTimeout.bind(window);
+        window.setTimeout = (fn, delay, ...args) => {
+          const delayMs = Number(delay) || 0;
+          if (hold.clickAt && !hold.handlerAt && delayMs < 5) hold.handlerAt = performance.now();
+          return nativeSetTimeout(fn, delay, ...args);
+        };
+        window.__wcHoldStop = () => {
+          window.setTimeout = nativeSetTimeout;
+          button.removeEventListener("click", onClick, true);
+          observer.disconnect();
+          window.clearInterval(timer);
+        };
+      });
+    const readHold = () =>
+      confirm.evaluate(() => {
+        const hold = window.__wcHold || { clickAt: 0, handlerAt: 0, disabledAt: 0, enabledAt: 0 };
+        if (window.__wcHoldStop) window.__wcHoldStop();
+        const start = hold.handlerAt || hold.disabledAt;
+        const end = hold.enabledAt;
+        return {
+          holdMs: start && end ? Math.round(end - start) : -1,
+          from: hold.handlerAt ? "handler" : hold.disabledAt ? "disabled" : "none",
+        };
+      });
     if ((await waitUntilEnabled(1500)) < 0) {
       throw new Error(`${engine} confirm stayed disabled before the re-enable sample (guard ${guardMs}ms)`);
     }
     const started = Date.now();
+    await armHoldProbe();
     await confirm.click({ timeout: 1000 });
+    const disabledAt430 = await confirm.evaluate((button) => {
+      return new Promise((resolve) => {
+        const start = (window.__wcHold && window.__wcHold.clickAt) || performance.now();
+        const sample = () => resolve(Boolean(button.disabled));
+        const left = start + 430 - performance.now();
+        if (left <= 0) sample();
+        else window.setTimeout(sample, left);
+      });
+    });
+    if (!disabledAt430) {
+      throw new Error(`${engine} confirm re-enabled before 430ms after the throwing click (guard ${guardMs}ms)`);
+    }
     const reenable = await measureReenable(started, reenableHighMs);
     if (!reenable.sawDisabled) throw new Error(`${engine} confirm never disabled after the throwing click`);
     if (reenable.reenableMs < 0) {
       throw new Error(`${engine} confirm still disabled ${reenableHighMs}ms after the throwing click (guard ${guardMs}ms)`);
     }
-    if (reenable.reenableMs < reenableLowMs || reenable.reenableMs > reenableHighMs) {
-      throw new Error(
-        `${engine} confirm re-enabled at ${reenable.reenableMs}ms, expected ${reenableLowMs}..${reenableHighMs} (guard ${guardMs}ms)`,
-      );
+    if (reenable.reenableMs > reenableHighMs) {
+      throw new Error(`${engine} confirm re-enabled at ${reenable.reenableMs}ms, expected <= ${reenableHighMs} (guard ${guardMs}ms)`);
+    }
+    const hold = await readHold();
+    if (hold.holdMs < holdFloorMs) {
+      throw new Error(`${engine} confirm hold was ${hold.holdMs}ms, expected >= ${holdFloorMs} (guard ${guardMs}ms)`);
     }
     reenableMs = reenable.reenableMs;
+    holdMs = hold.holdMs;
+    holdFrom = hold.from;
+    assertGapCeilings();
     const elapsed = Date.now() - started;
     if (700 - elapsed > 0) await wait(700 - elapsed);
     if (!(await enabledNow())) throw new Error(`${engine} confirm still disabled at the 700ms retry`);
@@ -1382,7 +1461,7 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
   console.log(`THROWING_QUIT_CONSOLE ${engine} ${JSON.stringify(reported)}`);
   console.log(
     `THROWING_QUIT ${engine} dblclick=1 gap150=1 gap300=1 retry700=2 success=1 unhandled=0 ` +
-      `gap150Ms=${gap150Ms} gap300Ms=${gap300Ms} reenableMs=${reenableMs}`,
+      `gap150Ms=${gap150Ms} gap300Ms=${gap300Ms} holdMs=${holdMs} holdFrom=${holdFrom} reenableMs=${reenableMs}`,
   );
   await assertReportErrorDeleted(browser, parentOrigin, childOrigin, engine);
   await assertSecondWorkoutQuit(browser, parentOrigin, childOrigin, engine);

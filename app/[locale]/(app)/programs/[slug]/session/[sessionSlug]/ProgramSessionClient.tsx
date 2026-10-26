@@ -12,6 +12,7 @@ import { WorkoutSessionHeader } from "@/features/workout-session/ui/workout-sess
 import { useWorkoutSession } from "@/features/workout-session/model/use-workout-session";
 import { SessionAccessGuard } from "@/features/programs/ui/session-access-guard";
 import { getSessionDescription, getSessionTitle, getSessionSlug, getProgramTitle } from "@/features/programs/lib/translations-mapper";
+import { quitProgramSession } from "@/features/programs/lib/quit-program-session";
 import { startProgramSession } from "@/features/programs/actions/start-program-session.action";
 import { enrollInProgram } from "@/features/programs/actions/enroll-program.action";
 import { completeProgramSession } from "@/features/programs/actions/complete-program-session.action";
@@ -173,8 +174,12 @@ export function ProgramSessionClient({ program, week, session, isAuthenticated, 
   };
 
   const handleQuitWorkout = () => {
-    quitWorkout();
-    setHasStartedWorkout(false);
+    quitProgramSession({
+      isEmbed: document.documentElement.getAttribute("data-wc-embed") === "1",
+      quitWorkout,
+      setHasStartedWorkout,
+      push: (href) => router.push(href),
+    });
   };
 
   // Show workout interface if user has started the workout

@@ -120,6 +120,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>((set, get) => 
     if (session) {
       workoutSessionLocal.remove(session.id);
     }
+    workoutSessionLocal.clearCurrent();
     set({
       session: null,
       progress: {},
@@ -128,7 +129,11 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>((set, get) => 
       isWorkoutActive: false,
       currentExerciseIndex: 0,
       currentExercise: null,
+      exercisesCompleted: 0,
+      totalExercises: 0,
+      progressPercent: 0,
     });
+    useWorkoutBuilderStore.getState().setStep(1);
   },
 
   completeWorkout: () => {

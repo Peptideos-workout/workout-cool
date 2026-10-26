@@ -1,9 +1,12 @@
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Repeat2, Trash2 } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 import { ExerciseAttributeNameEnum } from "@prisma/client";
 
+import { EmbedFlowConfirm } from "@/shared/ui/embed-flow-confirm";
 import { useWorkoutSessionService } from "@/shared/lib/workout-session/use-workout-session.service";
+import { useIsEmbedDocument } from "@/shared/lib/use-is-embed-document";
 import { useWorkoutFeedback } from "@/shared/hooks/use-workout-feedback";
 import { useWorkoutSessions } from "@/features/workout-session/model/use-workout-sessions";
 import { useWorkoutBuilderStore } from "@/features/workout-builder/model/workout-builder.store";
@@ -30,20 +33,97 @@ export function WorkoutSessionList() {
 
   const { data: sessions = [], refetch } = useWorkoutSessions();
   const activeSession = sessions.find((s) => s.status === "active");
+  const isEmbed = useIsEmbedDocument();
+  const deleteLock = useRef(false);
+  const deleteDisableTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm(t("workout_builder.confirm_delete"));
+  useEffect(
+    () => () => {
+      if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
+    },
+    [],
+  );
+  const deleteButtonRefs = useRef(new Map<string, { current: HTMLButtonElement | null }>());
+  const historyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const focusAfterDeleteId = useRef<string | null>(null);
+  const focusAfterDeleteIndex = useRef<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-    if (!confirmed) return;
+  useEffect(() => {
+    const deletedId = focusAfterDeleteId.current;
+    if (!deletedId) return;
+    if (sessions.some((session) => session.id === deletedId)) return;
+    const index = focusAfterDeleteIndex.current ?? -1;
+    focusAfterDeleteId.current = null;
+    focusAfterDeleteIndex.current = null;
+    const nextSession = sessions[index] ?? (index > 0 ? sessions[index - 1] : undefined);
+    const nextButton = nextSession ? deleteButtonRefs.current.get(nextSession.id)?.current : null;
+    if (nextButton?.isConnected) {
+      nextButton.focus();
+      return;
+    }
+    historyHeadingRef.current?.focus();
+  }, [sessions]);
 
+  const deleteTriggerRef = (id: string) => {
+    const existing = deleteButtonRefs.current.get(id);
+    if (existing) return existing;
+    const created = { current: null };
+    deleteButtonRefs.current.set(id, created);
+    return created;
+  };
+
+  const removeSession = async (id: string) => {
     try {
       feedback.onDelete();
       await remove(id);
       refetch();
+      return true;
     } catch (error) {
       console.error("Error deleting session:", error);
       alert("Error deleting session");
+      focusAfterDeleteId.current = null;
+      focusAfterDeleteIndex.current = null;
+      return false;
     }
+  };
+
+  const handleDelete = (id: string) => {
+    if (isEmbed) {
+      setPendingDeleteId(id);
+      return;
+    }
+
+    const confirmed = window.confirm(t("workout_builder.confirm_delete"));
+    if (!confirmed) return;
+    void removeSession(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteLock.current || !pendingDeleteId) return;
+    deleteLock.current = true;
+    const id = pendingDeleteId;
+    focusAfterDeleteId.current = id;
+    focusAfterDeleteIndex.current = sessions.findIndex((session) => session.id === id);
+    if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
+    deleteDisableTimer.current = setTimeout(() => setIsDeleting(true), 0);
+    void removeSession(id).then((deleted) => {
+      if (deleteDisableTimer.current) clearTimeout(deleteDisableTimer.current);
+      deleteLock.current = false;
+      setIsDeleting(false);
+      setPendingDeleteId(null);
+      if (deleted) return;
+      const trigger = deleteButtonRefs.current.get(id);
+      queueMicrotask(() => {
+        const button = trigger?.current;
+        if (button?.isConnected) {
+          button.focus();
+          return;
+        }
+        historyHeadingRef.current?.focus();
+      });
+    });
   };
 
   const handleRepeat = (id: string) => {
@@ -99,7 +179,7 @@ export function WorkoutSessionList() {
 
   return (
     <div className="space-y-4 mt-10">
-      <h2 className="text-xl font-bold mt-5 mb-2 text-slate-900 dark:text-slate-200">
+      <h2 className="text-xl font-bold mt-5 mb-2 text-slate-900 dark:text-slate-200" ref={historyHeadingRef} tabIndex={-1}>
         {t("workout_builder.session.history", { count: sessions.length })}
       </h2>
       {sessions.length === 0 && <div className="text-slate-500 dark:text-slate-400">{t("workout_builder.session.no_workout_yet")}</div>}
@@ -161,46 +241,62 @@ export function WorkoutSessionList() {
                   );
                 })}
               </div>
-              <div className="flex gap-2 items-center mt-2 sm:mt-0">
-                {isActive && (
-                  <Link className="w-auto flex items-center gap-2 flex-col" href="/" variant="nav">
-                    <Play className="w-7 h-7 text-blue-500 dark:text-blue-400" />
-                    <span className="sr-only">{t("workout_builder.session.back_to_workout")}</span>
-                    <span>{t("workout_builder.session.back_to_workout")}</span>
-                  </Link>
-                )}
-                {!isActive && (
-                  <div
-                    className="tooltip tooltip-left"
-                    data-tip={
-                      activeSession ? t("workout_builder.session.already_have_a_active_session") : t("workout_builder.session.repeat")
-                    }
-                  >
-                    <Button
-                      aria-label={t("workout_builder.session.repeat")}
-                      className="w-12 h-12"
-                      disabled={!!activeSession}
-                      onClick={() => handleRepeat(session.id)}
-                      size="icon"
-                      variant="ghost"
+              <div className={isEmbed ? "flex w-full min-w-0 flex-col gap-2 sm:w-72" : "flex gap-2 items-center mt-2 sm:mt-0"}>
+                {isEmbed && pendingDeleteId === session.id ? (
+                  <EmbedFlowConfirm
+                    body={t("workout_builder.confirm_delete")}
+                    cancelLabel={t("commons.cancel")}
+                    confirmDisabled={isDeleting}
+                    confirmLabel={t("workout_builder.session.delete")}
+                    marker="delete"
+                    onCancel={() => setPendingDeleteId(null)}
+                    onConfirm={handleConfirmDelete}
+                    title={t("workout_builder.session.delete_workout_title")}
+                    triggerRef={deleteTriggerRef(session.id)}
+                  />
+                ) : null}
+                <div className="flex gap-2 items-center">
+                  {isActive && (
+                    <Link className="w-auto flex items-center gap-2 flex-col" href="/" variant="nav">
+                      <Play className="w-7 h-7 text-blue-500 dark:text-blue-400" />
+                      <span className="sr-only">{t("workout_builder.session.back_to_workout")}</span>
+                      <span>{t("workout_builder.session.back_to_workout")}</span>
+                    </Link>
+                  )}
+                  {!isActive && (
+                    <div
+                      className="tooltip tooltip-left"
+                      data-tip={
+                        activeSession ? t("workout_builder.session.already_have_a_active_session") : t("workout_builder.session.repeat")
+                      }
                     >
-                      <Repeat2 className="w-7 h-7 text-blue-500 dark:text-blue-400" />
-                    </Button>
-                  </div>
-                )}
+                      <Button
+                        aria-label={t("workout_builder.session.repeat")}
+                        className="w-12 h-12"
+                        disabled={!!activeSession}
+                        onClick={() => handleRepeat(session.id)}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <Repeat2 className="w-7 h-7 text-blue-500 dark:text-blue-400" />
+                      </Button>
+                    </div>
+                  )}
 
-                {!isActive && (
-                  <div className="tooltip" data-tip={t("workout_builder.session.delete")}>
-                    <Button
-                      aria-label={t("workout_builder.session.delete")}
-                      onClick={() => handleDelete(session.id)}
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <Trash2 className="w-7 h-7 text-red-500 dark:text-red-400" />
-                    </Button>
-                  </div>
-                )}
+                  {!isActive && (
+                    <div className="tooltip" data-tip={t("workout_builder.session.delete")}>
+                      <Button
+                        aria-label={t("workout_builder.session.delete")}
+                        onClick={() => handleDelete(session.id)}
+                        ref={deleteTriggerRef(session.id)}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <Trash2 className="w-7 h-7 text-red-500 dark:text-red-400" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </li>
           );

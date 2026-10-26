@@ -28,6 +28,10 @@ function getCurrent(): string | null {
   return localStorage.getItem(CURRENT_SESSION_KEY);
 }
 
+function clearCurrent() {
+  localStorage.removeItem(CURRENT_SESSION_KEY);
+}
+
 export const workoutSessionLocal = {
   getAll,
   getActive: () => getAll().find((s) => s.status === "active"),
@@ -55,4 +59,5 @@ export const workoutSessionLocal = {
   getById,
   setCurrent,
   getCurrent,
+  clearCurrent,
 };

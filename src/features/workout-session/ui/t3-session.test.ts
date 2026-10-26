@@ -2,6 +2,8 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
+import { quitProgramSession } from "../../programs/lib/quit-program-session";
+
 function read(path: string) {
   return readFileSync(path, "utf8");
 }
@@ -11,7 +13,8 @@ const TIMER = "src/features/workout-session/ui/workout-session-timer.tsx";
 const SETS = "src/features/workout-session/ui/workout-session-sets.tsx";
 const SET = "src/features/workout-session/ui/workout-session-set.tsx";
 const QUIT = "src/features/workout-builder/ui/quit-workout-dialog.tsx";
-const FILES = [HEADER, TIMER, SETS, SET, QUIT];
+const CONFIRM = "src/shared/ui/embed-flow-confirm.tsx";
+const FILES = [HEADER, TIMER, SETS, SET, QUIT, CONFIRM];
 
 const DASH_NAMES = ["page", "panel", "inner", "card", "border", "text", "secondary", "accent", "ink", "link", "error"];
 
@@ -116,15 +119,17 @@ test("watch video, quit, and remove stay labeled at 18px and 48px", () => {
   const header = read(HEADER);
   const row = read(SET);
   const quit = read(QUIT);
+  assert.match(quit, /embedQuitButtonClass/);
   assert.match(sets, /\{t\("workout_builder\.exercise\.watch_video"\)\}/);
   assert.match(sets, /!min-h-12 !border !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-panel\)\]/);
   assert.match(sets, /!text-lg !text-\[var\(--wc-dash-text\)\]/);
+  // prettier-ignore
   const quitClass =
     "className=\"max-w-full border-0 bg-transparent px-3 !text-lg !whitespace-normal !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
   assert.match(header, new RegExp(quitClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const dialogQuit =
-    "className=\"w-full border-0 bg-transparent !text-lg !text-[var(--wc-dash-error)] shadow-none hover:bg-transparent !min-h-12\"";
-  assert.match(quit, new RegExp(dialogQuit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    "w-full !min-h-12 !bg-[var(--wc-dash-error)] !text-lg !text-[var(--wc-dash-ink)] shadow-none hover:!bg-[var(--wc-dash-error)]";
+  assert.match(read(CONFIRM), new RegExp(dialogQuit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(
     row,
     /aria-label=\{t\("workout_builder\.session\.delete_set"\)\}[\s\S]*className=\{`\$\{plainErrorButton\} !min-h-12 !min-w-12 px-3`\}/,
@@ -143,6 +148,7 @@ test("session contrast pairs meet AA", () => {
   const { light, dark } = tokens();
   const pairs = [
     ["ink", "accent"],
+    ["ink", "error"],
     ["error", "panel"],
     ["error", "card"],
     ["text", "panel"],
@@ -158,6 +164,168 @@ test("session contrast pairs meet AA", () => {
     assert.ok(contrast(light[foreground], light[background]) >= 4.5, `light ${foreground} on ${background}`);
     assert.ok(contrast(dark[foreground], dark[background]) >= 4.5, `dark ${foreground} on ${background}`);
   }
+});
+
+test("program quit navigates only inside embed", () => {
+  const run = (isEmbed: boolean) => {
+    const pushes: string[] = [];
+    let quitCalls = 0;
+    let started = true;
+    quitProgramSession({
+      isEmbed,
+      quitWorkout: () => {
+        quitCalls += 1;
+      },
+      setHasStartedWorkout: (value) => {
+        started = value;
+      },
+      push: (href) => {
+        pushes.push(href);
+      },
+    });
+    return { quitCalls, started, pushes };
+  };
+
+  const plain = run(false);
+  assert.equal(plain.quitCalls, 1);
+  assert.equal(plain.started, false);
+  assert.deepEqual(plain.pushes, []);
+
+  const embed = run(true);
+  assert.equal(embed.quitCalls, 1);
+  assert.equal(embed.started, false);
+  assert.deepEqual(embed.pushes, ["/?embed=1"]);
+});
+
+test("program session quit reads the embed flag from the document", () => {
+  const program = read("app/[locale]/(app)/programs/[slug]/session/[sessionSlug]/ProgramSessionClient.tsx");
+  assert.match(program, /quitProgramSession\(\{/);
+  assert.match(program, /isEmbed: document\.documentElement\.getAttribute\("data-wc-embed"\) === "1"/);
+});
+
+function installLocalStorage() {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => (values.has(key) ? values.get(key)! : null),
+    setItem: (key: string, value: string) => {
+      values.set(key, String(value));
+    },
+    removeItem: (key: string) => {
+      values.delete(key);
+    },
+    clear: () => {
+      values.clear();
+    },
+    key: (index: number) => [...values.keys()][index] ?? null,
+    get length() {
+      return values.size;
+    },
+  };
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
+}
+
+test("quitWorkout clears the saved session, zeroes counters, and returns to step 1", async (t) => {
+  installLocalStorage();
+  const previousSkipEnvValidation = process.env.SKIP_ENV_VALIDATION;
+  const previousBetterAuthUrl = process.env.BETTER_AUTH_URL;
+  const previousAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const restoreProcessEnv = () => {
+    if (previousSkipEnvValidation === undefined) delete process.env.SKIP_ENV_VALIDATION;
+    else process.env.SKIP_ENV_VALIDATION = previousSkipEnvValidation;
+    if (previousBetterAuthUrl === undefined) delete process.env.BETTER_AUTH_URL;
+    else process.env.BETTER_AUTH_URL = previousBetterAuthUrl;
+    if (previousAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previousAppUrl;
+  };
+  t.after(restoreProcessEnv);
+  process.env.SKIP_ENV_VALIDATION = "1";
+  if (!process.env.BETTER_AUTH_URL) process.env.BETTER_AUTH_URL = "http://localhost:3000";
+  if (!process.env.NEXT_PUBLIC_APP_URL) process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+  try {
+    // Same specifiers quitWorkout and the header resolve. Import the builder first so Node 20's
+    // loader reuses that module when the session store imports it, instead of a second instance.
+    const { useWorkoutBuilderStore } = await import("@/features/workout-builder/model/workout-builder.store");
+    const { workoutSessionLocal } = await import("@/shared/lib/workout-session/workout-session.local");
+    await import("@/features/workout-session/model/use-workout-session");
+    const { useWorkoutSessionStore } = await import("@/features/workout-session/model/workout-session.store");
+    const builderAgain = await import("@/features/workout-builder/model/workout-builder.store");
+    assert.equal(builderAgain.useWorkoutBuilderStore, useWorkoutBuilderStore);
+
+    const seenSteps: number[] = [];
+    const originalSetStep = useWorkoutBuilderStore.getState().setStep;
+    useWorkoutBuilderStore.setState({
+      setStep: (step) => {
+        seenSteps.push(step);
+        originalSetStep(step);
+      },
+    });
+
+    useWorkoutBuilderStore.getState().setStep(3);
+    useWorkoutSessionStore.getState().startWorkout([{ id: "ex-1", name: "Squat", attributes: [] } as never], [], []);
+    useWorkoutSessionStore.setState({
+      exercisesCompleted: 2,
+      totalExercises: 4,
+      progressPercent: 50,
+      elapsedTime: 90,
+    });
+
+    const before = useWorkoutSessionStore.getState();
+    assert.equal(useWorkoutBuilderStore.getState().currentStep, 3);
+    assert.ok(before.session);
+    assert.equal(before.session.status, "active");
+    assert.equal(workoutSessionLocal.getCurrent(), before.session.id);
+    assert.ok(workoutSessionLocal.getAll().some((session) => session.id === before.session?.id && session.status === "active"));
+    assert.equal(before.exercisesCompleted, 2);
+    assert.equal(before.totalExercises, 4);
+    assert.equal(before.progressPercent, 50);
+    assert.equal(before.elapsedTime, 90);
+
+    useWorkoutSessionStore.getState().quitWorkout();
+
+    const after = useWorkoutSessionStore.getState();
+    assert.deepEqual(seenSteps, [3, 1]);
+    assert.equal(useWorkoutBuilderStore.getState().currentStep, 1);
+    assert.equal(workoutSessionLocal.getCurrent(), null);
+    assert.equal(localStorage.getItem("currentWorkoutSessionId"), null);
+    assert.deepEqual(workoutSessionLocal.getAll(), []);
+    assert.equal(after.session, null);
+    assert.equal(after.isWorkoutActive, false);
+    assert.equal(after.exercisesCompleted, 0);
+    assert.equal(after.totalExercises, 0);
+    assert.equal(after.progressPercent, 0);
+    assert.equal(after.elapsedTime, 0);
+    assert.equal(after.isTimerRunning, false);
+    assert.equal(
+      workoutSessionLocal.getAll().some((session) => session.status === "completed"),
+      false,
+    );
+    restoreProcessEnv();
+    assert.equal(process.env.SKIP_ENV_VALIDATION, previousSkipEnvValidation);
+    assert.equal(process.env.BETTER_AUTH_URL, previousBetterAuthUrl);
+    assert.equal(process.env.NEXT_PUBLIC_APP_URL, previousAppUrl);
+    assert.equal(Object.hasOwn(process.env, "SKIP_ENV_VALIDATION"), previousSkipEnvValidation !== undefined);
+    assert.equal(Object.hasOwn(process.env, "BETTER_AUTH_URL"), previousBetterAuthUrl !== undefined);
+    assert.equal(Object.hasOwn(process.env, "NEXT_PUBLIC_APP_URL"), previousAppUrl !== undefined);
+  } finally {
+    restoreProcessEnv();
+  }
+});
+
+test("non-embed quit clears the session, returns to step 1, and does not navigate", () => {
+  const store = read("src/features/workout-session/model/workout-session.store.ts");
+  const quitStart = store.indexOf("quitWorkout: () => {");
+  const quitStore = store.slice(quitStart, store.indexOf("completeWorkout: () => {", quitStart));
+  assert.match(quitStore, /workoutSessionLocal\.remove\(session\.id\)/);
+  assert.match(quitStore, /workoutSessionLocal\.clearCurrent\(\)/);
+  assert.match(quitStore, /useWorkoutBuilderStore\.getState\(\)\.setStep\(1\)/);
+  assert.match(quitStore, /isWorkoutActive: false/);
+  assert.doesNotMatch(quitStore, /status: "completed"/);
+  assert.doesNotMatch(quitStore, /router\.push|window\.location|history\.pushState/);
+  const header = read(HEADER);
+  const handlerStart = header.indexOf("const handleQuitWithoutSave");
+  const handler = header.slice(handlerStart, header.indexOf("return (", handlerStart));
+  assert.match(handler, /onQuitWorkout\(\)/);
+  assert.doesNotMatch(handler, /router\.push|window\.location|history\.pushState/);
 });
 
 test("session handlers, disabled expressions, conditionals, and copy stay locked with regex matches", () => {
@@ -181,14 +349,43 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(header, /t\("workout_builder\.session\.total_volume"\)/);
   assert.match(header, /t\("workout_builder\.session\.complete"\)/);
 
-  assert.match(quit, /onClick=\{onQuitWithoutSave\}/);
+  assert.match(quit, /onClick=\{handleConfirm\}/);
   assert.match(quit, /onClick=\{onClose\}/);
   assert.match(quit, /onOpenChange=\{onClose\}/);
+  assert.match(quit, /useIsEmbedDocument\(\)/);
+  assert.match(quit, /marker="quit"/);
+  assert.match(quit, /<Dialog onOpenChange=\{onClose\} open=\{isOpen\}>/);
+  assert.doesNotMatch(quit, /document\./);
+  assert.doesNotMatch(quit, /window\.confirm|window\.alert|window\.prompt|window\.top/);
+  const confirm = read(CONFIRM);
+  assert.match(confirm, /scrollIntoView\(\{ block: "center" \}\)/);
+  assert.match(confirm, /titleRef\.current\?\.focus\(\)/);
+  assert.match(confirm, /tabIndex=\{-1\}/);
+  assert.match(confirm, /event\.key !== "Tab"/);
+  assert.match(confirm, /activeButton === last/);
+  assert.match(confirm, /activeButton === first/);
+  assert.match(confirm, /event\.key === "Escape"/);
+  assert.match(confirm, /const titleId = useId\(\)/);
+  assert.match(confirm, /aria-labelledby=\{titleId\}/);
+  assert.match(confirm, /id=\{titleId\}/);
+  assert.doesNotMatch(confirm, /aria-modal/);
+  assert.doesNotMatch(confirm, /wc-embed-confirm-title/);
+  assert.match(confirm, /data-wc-quit-confirm=\{marker === "quit" \? "" : undefined\}/);
+  assert.match(confirm, /role="dialog"/);
+  assert.match(confirm, /w-full border border-\[var\(--wc-dash-border\)\] shadow-none/);
+  assert.match(confirm, /hover:bg-transparent !min-h-12 !text-lg !text-\[var\(--wc-dash-text\)\]/);
+  assert.doesNotMatch(confirm, /embedKeepButtonClass[\s\S]*!bg-\[var\(--wc-dash-panel\)\]/);
+  assert.match(read("src/shared/lib/use-is-embed-document.ts"), /useState\(false\)/);
+  assert.match(read("src/shared/lib/use-is-embed-document.ts"), /getAttribute\("data-wc-embed"\) === "1"/);
   assert.match(quit, /t\("workout_builder\.session\.quit_workout_title"\)/);
   assert.match(quit, /t\("workout_builder\.session\.progress"\)/);
   assert.match(quit, /t\("workout_builder\.session\.quit_warning"\)/);
   assert.match(quit, /t\("workout_builder\.session\.quit_without_save"\)/);
   assert.match(quit, /t\("workout_builder\.session\.continue_workout"\)/);
+  assert.match(quit, /t\("workout_builder\.session\.embed_quit_title"\)/);
+  assert.match(quit, /t\("workout_builder\.session\.embed_quit_warning"\)/);
+  assert.match(quit, /t\("workout_builder\.session\.embed_quit_confirm"\)/);
+  assert.match(quit, /t\("workout_builder\.session\.embed_quit_cancel"\)/);
 
   assert.match(timer, /<Timer initialSeconds=\{0\} isRunning=\{isTimerRunning\} key=\{resetCount\} \/>/);
   assert.match(
@@ -256,7 +453,10 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(timer, /!h-12 !w-12 !min-h-12 !min-w-12/);
   assert.match(sets, /px-3 max-sm:pb-\[calc\(var\(--wc-nav-h\)\+168px\)\] sm:px-6 sm:pb-40/);
   assert.doesNotMatch(sets, /\[html\[data-wc-embed='1'\]_&\]:pb-8/);
-  assert.match(header, /<h2 className="mb-3 text-2xl font-bold text-\[var\(--wc-dash-text\)\]">\{t\("workout_builder\.session\.workout_in_progress"\)\}<\/h2>/);
+  assert.match(
+    header,
+    /<h2 className="mb-3 text-2xl font-bold text-\[var\(--wc-dash-text\)\]">\{t\("workout_builder\.session\.workout_in_progress"\)\}<\/h2>/,
+  );
   assert.match(sets, /\{t\("workout_builder\.session\.next_exercise"\)\}\n\s+<ArrowRight className="h-5 w-5" \/>/);
   assert.doesNotMatch(sets, /<ArrowRight className="h-5 w-5" \/>\n\s+\{t\("workout_builder\.session\.next_exercise"\)\}/);
   assert.match(row, /\+ \{t\("workout_builder\.session\.add_row"\)\}/);
@@ -268,7 +468,10 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.match(sets, /min-w-0 flex-1 !whitespace-normal/);
   assert.match(sets, /details\?\.fullVideoUrl \? \([\s\S]*workout_builder\.exercise\.watch_video/);
   assert.match(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /text-lg text-\[var\(--wc-dash-secondary\)\]/);
-  assert.match(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /!min-h-12 !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-card\)\]/);
+  assert.match(
+    read("src/features/workout-builder/ui/favorite-exercise-button.tsx"),
+    /!min-h-12 !border-\[var\(--wc-dash-border\)\] !bg-\[var\(--wc-dash-card\)\]/,
+  );
   assert.doesNotMatch(read("src/features/workout-builder/ui/favorite-exercise-button.tsx"), /text-sm text-slate-500/);
   assert.match(sets, /aria-label=\{t\("workout_builder\.session\.add_set"\)\}/);
   assert.match(sets, /aria-label=\{t\("workout_builder\.session\.next_exercise"\)\}/);
@@ -286,6 +489,59 @@ test("session handlers, disabled expressions, conditionals, and copy stay locked
   assert.doesNotMatch(header, /elapsed_time/);
   assert.match(header, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
   assert.match(quit, /style=\{\{ width: `\$\{\(exercisesCompleted \/ totalExercises\) \* 100\}%` \}\}/);
+  const store = read("src/features/workout-session/model/workout-session.store.ts");
+  const quitStart = store.indexOf("quitWorkout: () => {");
+  const quitStore = store.slice(quitStart, store.indexOf("completeWorkout: () => {", quitStart));
+  assert.match(quitStore, /workoutSessionLocal\.remove\(session\.id\)/);
+  assert.match(quitStore, /workoutSessionLocal\.clearCurrent\(\)/);
+  assert.match(quitStore, /useWorkoutBuilderStore\.getState\(\)\.setStep\(1\)/);
+  assert.match(quitStore, /exercisesCompleted: 0/);
+  assert.doesNotMatch(quitStore, /status: "completed"/);
+  assert.match(read("src/shared/lib/workout-session/workout-session.local.ts"), /function clearCurrent\(\)/);
+  assert.match(read("src/features/workout-builder/model/workout-builder.store.ts"), /setStep: \(step\) => set\(\{ currentStep: step \}\)/);
+  assert.doesNotMatch(read("src/features/workout-builder/model/workout-builder.store.ts"), /workout-session\.store/);
+  const program = read("app/[locale]/(app)/programs/[slug]/session/[sessionSlug]/ProgramSessionClient.tsx");
+  assert.match(program, /quitProgramSession\(\{/);
+  assert.doesNotMatch(program, /router\.push\(embed \? "\/\?embed=1" : "\/"\)/);
+  assert.doesNotMatch(program, /window\.top|window\.confirm/);
+  const list = read("src/features/workout-session/ui/workout-session-list.tsx");
+  assert.match(list, /if \(isEmbed\)/);
+  assert.match(list, /marker="delete"/);
+  assert.match(list, /title=\{t\("workout_builder\.session\.delete_workout_title"\)\}/);
+  assert.match(list, /window\.confirm\(t\("workout_builder\.confirm_delete"\)\)/);
+  assert.match(read("locales/en.ts"), /delete_workout_title: "Delete this workout\?"/);
+  assert.match(read("locales/es.ts"), /delete_workout_title: "¿Eliminar este entrenamiento\?"/);
+  assert.match(read("locales/fr.ts"), /delete_workout_title: "Supprimer cet entraînement \?"/);
+  assert.match(read("locales/pt.ts"), /delete_workout_title: "Eliminar este treino\?"/);
+  assert.match(read("locales/ru.ts"), /delete_workout_title: "Удалить эту тренировку\?"/);
+  assert.match(read("locales/zh-CN.ts"), /delete_workout_title: "删除这次锻炼？"/);
+  const embedScript = read("scripts/embed-home-iframe.js");
+  assert.doesNotMatch(embedScript, /\/cursor\/stores\/bot\/wc-quit-triage/);
+  assert.match(embedScript, /WC_EMBED_SHOT_DIR/);
+  assert.match(embedScript, /rmSync\(dir, \{ recursive: true, force: true \}\)/);
+  assert.match(read("locales/en.ts"), /quit_workout_title: "Quit Workout\?"/);
+  assert.match(read("locales/en.ts"), /quit_warning: "Are you sure you want to quit\? You can save your progress or lose it completely\."/);
+  assert.match(read("locales/en.ts"), /quit_without_save: "Quit Without Saving"/);
+  assert.match(read("locales/en.ts"), /continue_workout: "Continue Workout"/);
+  assert.match(read("locales/en.ts"), /embed_quit_title: "Quit this workout\?"/);
+  assert.match(read("locales/en.ts"), /embed_quit_warning: "Your progress in this workout won't be saved\."/);
+  assert.match(read("locales/en.ts"), /embed_quit_confirm: "Quit without saving"/);
+  assert.match(read("locales/en.ts"), /embed_quit_cancel: "Keep going"/);
+  assert.match(read("locales/es.ts"), /quit_workout_title: "¿Abandonar entrenamiento\?"/);
+  assert.match(read("locales/es.ts"), /continue_workout: "Continuar entrenamiento"/);
+  assert.match(read("locales/es.ts"), /embed_quit_cancel: "Seguir"/);
+  assert.match(read("locales/fr.ts"), /quit_workout_title: "Quitter l'entraînement \?"/);
+  assert.match(read("locales/fr.ts"), /continue_workout: "Continuer l'entraînement"/);
+  assert.match(read("locales/fr.ts"), /embed_quit_cancel: "Continuer"/);
+  assert.match(read("locales/pt.ts"), /quit_workout_title: "Abandonar treino\?"/);
+  assert.match(read("locales/pt.ts"), /continue_workout: "Continuar treino"/);
+  assert.match(read("locales/pt.ts"), /embed_quit_cancel: "Continuar"/);
+  assert.match(read("locales/ru.ts"), /quit_workout_title: "Завершить тренировку\?"/);
+  assert.match(read("locales/ru.ts"), /continue_workout: "Продолжить тренировку"/);
+  assert.match(read("locales/ru.ts"), /embed_quit_cancel: "Продолжить"/);
+  assert.match(read("locales/zh-CN.ts"), /quit_workout_title: "退出锻炼？"/);
+  assert.match(read("locales/zh-CN.ts"), /continue_workout: "继续锻炼"/);
+  assert.match(read("locales/zh-CN.ts"), /embed_quit_cancel: "继续"/);
   assert.match(timer, /onClick=\{toggleTimer\}/);
   assert.match(timer, /onClick=\{handleReset\}/);
   assert.match(timer, /isTimerRunning \? <Pause className="h-5 w-5" \/> : <Play className="h-5 w-5" \/>/);

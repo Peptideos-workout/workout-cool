@@ -1694,6 +1694,10 @@ export default {
       save_and_quit: "Guardar e sair",
       quit_without_save: "Sair sem guardar",
       continue_workout: "Continuar treino",
+      embed_quit_title: "Sair deste treino?",
+      embed_quit_warning: "O seu progresso neste treino não será guardado.",
+      embed_quit_confirm: "Sair sem guardar",
+      embed_quit_cancel: "Continuar",
       history: "Histórico de treinos [{count}]",
       no_workout_yet: "Ainda sem treinos.",
       start: "iniciar",
@@ -1701,6 +1705,7 @@ export default {
       exercise: "EXERCÍCIO",
       repeat: "Repetir",
       delete: "Eliminar",
+      delete_workout_title: "Eliminar este treino?",
     },
     attribute_value: {
       bodyweight: "Peso corporal",

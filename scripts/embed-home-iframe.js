@@ -1277,8 +1277,11 @@ async function assertThrowingQuitDblclick(browser, parentOrigin, childOrigin, en
         throw new Error(`${engine} gap ceilings loosened to ${ceiling150} and ${ceiling300}`);
       }
       for (const [label, bounds] of Object.entries(gapWindows)) {
-        if (!(bounds.low > 0 && bounds.low < bounds.high && bounds.high < guardMs)) {
-          throw new Error(`${label} gap bound ${bounds.low}..${bounds.high} is not ordered`);
+        if (!(bounds.low > 0 && bounds.low < bounds.high)) {
+          throw new Error(`${engine} ${label} gap bound ${bounds.low}..${bounds.high} is not ordered`);
+        }
+        if (!(bounds.high < guardMs)) {
+          throw new Error(`${engine} ${label} gap ceiling ${bounds.high} is not below guard ${guardMs}`);
         }
       }
     };

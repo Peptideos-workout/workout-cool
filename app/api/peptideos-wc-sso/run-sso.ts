@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { applySsoResponseHeaders, ssoClientError } from "./sso-response";
+import { prefersBrowserSsoErrorPage, ssoErrorHtml } from "./sso-error-page";
 import { logSsoEvent } from "./sso-error-log";
 import { handoffDisposition } from "./handoff-disposition";
 import { runWithHandoffClaim } from "./consume-handoff";
@@ -388,11 +389,50 @@ function ssoPayloadTooLarge(request: NextRequest, workoutOrigin: string): NextRe
   return ssoClientError(request, { error: "payload_too_large" }, 413, tryAgainHref, embedFromRequest(request));
 }
 
+/** Reload, back, and restore send this. Header names are case-insensitive; the value is a token. */
+function isNavigateRequest(request: NextRequest): boolean {
+  return request.headers.get("sec-fetch-mode")?.trim().toLowerCase() === "navigate";
+}
+
 /**
- * Non-POST methods are not a handoff. Arguments are ignored, so a `?token=` query value
- * is never read, validated, logged, or consumed.
+ * A browser re-navigation asks for HTML, or sets Sec-Fetch-Mode to navigate.
+ * Neither check reads the URL.
  */
-export function ssoMethodNotAllowed(..._ignored: unknown[]): NextResponse {
+function isBrowserNavigation(request: NextRequest): boolean {
+  return prefersBrowserSsoErrorPage(request.headers.get("accept")) || isNavigateRequest(request);
+}
+
+/** Existing SSO HTML page. Uses Accept-Language only, never the request URL. */
+function browserMethodNotAllowed(request: NextRequest, tryAgainHref: string): NextResponse {
+  const locale = request.headers.get("accept-language")?.split(",")[0]?.split(";")[0] ?? "en";
+  const response = new NextResponse(ssoErrorHtml({ locale, error: "method_not_allowed", tryAgainHref }), {
+    status: 405,
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+  response.headers.set("Allow", "POST");
+  return applySsoResponseHeaders(response);
+}
+
+/** A caller may pass a request. Anything else, including unused deps, is ignored. */
+function requestFromArgs(args: unknown[]): NextRequest | undefined {
+  const value = args[0];
+  if (!value || typeof value !== "object") return undefined;
+  const headers = (value as { headers?: { get?: unknown } }).headers;
+  if (!headers || typeof headers.get !== "function") return undefined;
+  return value as NextRequest;
+}
+
+/**
+ * Non-POST methods are not a handoff. The query string is never read, so a `?token=`
+ * value is never validated, logged, or consumed. Browser navigations get the existing
+ * SSO error page. Every other caller keeps the JSON 405.
+ */
+export function ssoMethodNotAllowed(...args: unknown[]): NextResponse {
+  const request = requestFromArgs(args);
+  if (request && isBrowserNavigation(request)) {
+    const tryAgainHref = resolvePeptideOsWorkoutsSsoUrl(process.env.NEXT_PUBLIC_PEPTIDEOS_URL, process.env.NEXT_PUBLIC_APP_URL);
+    return browserMethodNotAllowed(request, tryAgainHref);
+  }
   const response = NextResponse.json({ error: "method_not_allowed" }, { status: 405 });
   response.headers.set("Allow", "POST");
   return applySsoResponseHeaders(response);

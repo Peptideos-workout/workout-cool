@@ -2,10 +2,39 @@
 
 interface YouTubeEmbedOptions {
   autoplay?: boolean;
-  // Add other embed options if needed (e.g., controls, loop, start)
-  // controls?: boolean;
-  // loop?: boolean;
-  // start?: number; // Start time in seconds
+  controls?: boolean;
+  loop?: boolean;
+  start?: number;
+}
+
+function secondsQueryParam(value: string | null): number | undefined {
+  if (!value || !/^\d+$/.test(value)) return undefined;
+  return Number(value);
+}
+
+function isYouTubeHost(hostname: string): boolean {
+  return hostname === "youtube.com" || hostname.endsWith(".youtube.com");
+}
+
+/** Player options stored on an exercise video URL. Callers pass these into `getYouTubeEmbedUrl`. */
+export function youTubeEmbedOptionsFromUrl(url: string): YouTubeEmbedOptions {
+  if (!url) return {};
+  let params: URLSearchParams;
+  try {
+    params = new URL(url).searchParams;
+  } catch {
+    return {};
+  }
+
+  const options: YouTubeEmbedOptions = {};
+  if (params.get("autoplay") === "1") options.autoplay = true;
+  const controls = params.get("controls");
+  if (controls === "0") options.controls = false;
+  else if (controls === "1") options.controls = true;
+  if (params.get("loop") === "1") options.loop = true;
+  const start = secondsQueryParam(params.get("start") ?? params.get("t"));
+  if (start !== undefined) options.start = start;
+  return options;
 }
 
 /**
@@ -32,7 +61,7 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
     const searchParams = urlObject.searchParams;
 
     // 1. Check for standard video URLs (youtube.com/watch?v=...)
-    if (hostname.includes("youtube.com") && pathname === "/watch") {
+    if (isYouTubeHost(hostname) && pathname === "/watch") {
       videoId = searchParams.get("v");
       // Check if it's also part of a playlist
       if (searchParams.get("list")) {
@@ -44,15 +73,15 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
       videoId = pathname.substring(1); // Remove leading '/'
     }
     // 3. Check for embed URLs (/embed/...)
-    else if (hostname.includes("youtube.com") && pathname.startsWith("/embed/")) {
+    else if (isYouTubeHost(hostname) && pathname.startsWith("/embed/")) {
       videoId = pathname.substring("/embed/".length);
     }
     // 4. Check for shorts URLs (/shorts/...)
-    else if (hostname.includes("youtube.com") && pathname.startsWith("/shorts/")) {
+    else if (isYouTubeHost(hostname) && pathname.startsWith("/shorts/")) {
       videoId = pathname.substring("/shorts/".length);
     }
     // 5. Check for playlist URLs (youtube.com/playlist?list=...)
-    else if (hostname.includes("youtube.com") && pathname === "/playlist") {
+    else if (isYouTubeHost(hostname) && pathname === "/playlist") {
       playlistId = searchParams.get("list");
     }
     // Note: Channel URLs (/channel/..., /c/..., /@handle) are not directly embeddable in the same way.
@@ -71,20 +100,28 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
 
   if (options.autoplay) {
     queryParams.set("autoplay", "1");
+    queryParams.set("mute", "1");
   }
 
   // Maximum `YouTube` branding removal
   queryParams.set("modestbranding", "1");
   queryParams.set("rel", "0");
   queryParams.set("showinfo", "0");
-  queryParams.set("mute", "1");
-  queryParams.set("controls", "1");
+  queryParams.set("controls", options.controls === false ? "0" : "1");
   queryParams.set("iv_load_policy", "3"); // Hide annotations
   queryParams.set("cc_load_policy", "0"); // Hide captions by default
-  queryParams.set("fs", "0"); // Disable fullscreen button
+  queryParams.set("fs", "1");
   queryParams.set("disablekb", "1"); // Disable keyboard controls
   queryParams.set("playsinline", "1"); // Mobile optimization
   queryParams.set("origin", typeof window !== "undefined" ? window.location.origin : "");
+  if (options.loop) queryParams.set("loop", "1");
+  if (typeof options.start === "number" && Number.isFinite(options.start) && options.start >= 0) {
+    queryParams.set("start", String(Math.floor(options.start)));
+  }
+
+  if (videoId && !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+    videoId = null;
+  }
 
   // Prioritize playlist embed if playlistId is found
   if (playlistId) {
@@ -96,8 +133,7 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
   }
   // Otherwise, embed the single video if videoId is found
   else if (videoId) {
-    // If looping a single video, playlist param needs to be the videoId itself
-    // if (options.loop) queryParams.set('playlist', videoId);
+    if (options.loop) queryParams.set("playlist", videoId);
     return `${baseEmbedUrl}${videoId}?${queryParams.toString()}`;
   }
 

@@ -120,12 +120,61 @@ export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHr
     <title>${escapeHtml(copy.title)}</title>
     ${input.embed ? `<script>${embedSignedOutSessionBootstrap()}</script>` : ""}
     <style>
-      body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
-      main { max-width: 28rem; margin: 12vh auto; padding: 2rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; }
-      h1 { font-size: 1.35rem; margin: 0 0 0.75rem; }
-      p { line-height: 1.5; margin: 0 0 1rem; color: #334155; }
-      a { display: inline-block; padding: 0.65rem 1rem; border-radius: 0.75rem; background: #2563eb; color: #fff; text-decoration: none; }
-      .support { font-size: 0.9rem; color: #475569; }
+      body {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 18px;
+        line-height: 1.5;
+        margin: 0;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+      main {
+        max-width: 28rem;
+        margin: 12vh auto;
+        padding: 2rem;
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+      }
+      h1 {
+        font-size: 32px;
+        line-height: 1.2;
+        margin: 0 0 0.75rem;
+        color: #0f172a;
+      }
+      p {
+        font-size: 18px;
+        line-height: 1.5;
+        margin: 0 0 1rem;
+        color: #1e293b;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        margin: 0 12px 12px 0;
+        padding: 12px 20px;
+        border-radius: 0.75rem;
+        background: #1e3a8a;
+        color: #ffffff;
+        font-size: 18px;
+        line-height: 1.2;
+        text-decoration: none;
+      }
+      .support {
+        font-size: 18px;
+        color: #1e293b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #020617; color: #f8fafc; }
+        main { background: #0f172a; color: #f8fafc; border-color: #334155; }
+        h1 { color: #f8fafc; }
+        p { color: #e2e8f0; }
+        a { background: #bfdbfe; color: #0f172a; }
+        .support { color: #e2e8f0; }
+      }
     </style>
   </head>
   <body>

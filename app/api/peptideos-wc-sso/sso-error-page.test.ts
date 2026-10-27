@@ -188,7 +188,7 @@ function painted(
 function assertReadable(label: string, foreground: string, background: string): void {
   const ratio = contrast(foreground, background);
   console.log(`${label}: ${foreground} on ${background} = ${ratio.toFixed(2)}:1`);
-  assert.ok(ratio >= 4.5, `${label} contrast ${ratio.toFixed(2)} is below 4.5`);
+  assert.ok(ratio >= 7, `${label} contrast ${ratio.toFixed(2)} is below 7`);
 }
 
 function renderedErrorPage(): string {

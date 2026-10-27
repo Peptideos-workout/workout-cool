@@ -49,3 +49,29 @@ test("youtube embed applies the options the exercise modal passes through", () =
   assert.equal(passed.get("controls"), "0");
   assert.equal(passed.get("fs"), "1");
 });
+
+test("youtube embed rejects a video id that would inject player parameters", () => {
+  const embed = getYouTubeEmbedUrl("https://www.youtube.com/watch?v=abc%3Ffs%3D0%26mute%3D1");
+  assert.equal(embed, null);
+  assert.doesNotMatch(embed ?? "", /(?:^|[?&])fs=0(?:&|$)/);
+  assert.doesNotMatch(embed ?? "", /(?:^|[?&])mute=1(?:&|$)/);
+});
+
+test("youtube embed accepts only youtube.com hosts and youtu.be", () => {
+  const id = "NmfQzqGktgs";
+  const rejected = [
+    `https://notyoutube.com/watch?v=${id}`,
+    `https://youtube.com.evil.example/watch?v=${id}`,
+    `https://evilyoutube.com/watch?v=${id}`
+  ];
+  for (const url of rejected) {
+    assert.equal(getYouTubeEmbedUrl(url), null, url);
+  }
+
+  const accepted = [`https://www.youtube.com/watch?v=${id}`, `https://m.youtube.com/watch?v=${id}`, `https://youtu.be/${id}`];
+  for (const url of accepted) {
+    const embed = getYouTubeEmbedUrl(url);
+    assert.ok(embed, url);
+    assert.match(embed, new RegExp(`/embed/${id}(?:\\?|$)`));
+  }
+});

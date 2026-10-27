@@ -12,6 +12,10 @@ function secondsQueryParam(value: string | null): number | undefined {
   return Number(value);
 }
 
+function isYouTubeHost(hostname: string): boolean {
+  return hostname === "youtube.com" || hostname.endsWith(".youtube.com");
+}
+
 /** Player options stored on an exercise video URL. Callers pass these into `getYouTubeEmbedUrl`. */
 export function youTubeEmbedOptionsFromUrl(url: string): YouTubeEmbedOptions {
   if (!url) return {};
@@ -57,7 +61,7 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
     const searchParams = urlObject.searchParams;
 
     // 1. Check for standard video URLs (youtube.com/watch?v=...)
-    if (hostname.includes("youtube.com") && pathname === "/watch") {
+    if (isYouTubeHost(hostname) && pathname === "/watch") {
       videoId = searchParams.get("v");
       // Check if it's also part of a playlist
       if (searchParams.get("list")) {
@@ -69,15 +73,15 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
       videoId = pathname.substring(1); // Remove leading '/'
     }
     // 3. Check for embed URLs (/embed/...)
-    else if (hostname.includes("youtube.com") && pathname.startsWith("/embed/")) {
+    else if (isYouTubeHost(hostname) && pathname.startsWith("/embed/")) {
       videoId = pathname.substring("/embed/".length);
     }
     // 4. Check for shorts URLs (/shorts/...)
-    else if (hostname.includes("youtube.com") && pathname.startsWith("/shorts/")) {
+    else if (isYouTubeHost(hostname) && pathname.startsWith("/shorts/")) {
       videoId = pathname.substring("/shorts/".length);
     }
     // 5. Check for playlist URLs (youtube.com/playlist?list=...)
-    else if (hostname.includes("youtube.com") && pathname === "/playlist") {
+    else if (isYouTubeHost(hostname) && pathname === "/playlist") {
       playlistId = searchParams.get("list");
     }
     // Note: Channel URLs (/channel/..., /c/..., /@handle) are not directly embeddable in the same way.
@@ -113,6 +117,10 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
   if (options.loop) queryParams.set("loop", "1");
   if (typeof options.start === "number" && Number.isFinite(options.start) && options.start >= 0) {
     queryParams.set("start", String(Math.floor(options.start)));
+  }
+
+  if (videoId && !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+    videoId = null;
   }
 
   // Prioritize playlist embed if playlistId is found

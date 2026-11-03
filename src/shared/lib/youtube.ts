@@ -53,6 +53,7 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
 
   let videoId: string | null = null;
   let playlistId: string | null = null;
+  let videoIdFromPath = false;
 
   try {
     const urlObject = new URL(url);
@@ -71,14 +72,17 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
     // 2. Check for short URLs (youtu.be/...)
     else if (hostname === "youtu.be") {
       videoId = pathname.substring(1); // Remove leading '/'
+      videoIdFromPath = true;
     }
     // 3. Check for embed URLs (/embed/...)
     else if (isYouTubeHost(hostname) && pathname.startsWith("/embed/")) {
       videoId = pathname.substring("/embed/".length);
+      videoIdFromPath = true;
     }
     // 4. Check for shorts URLs (/shorts/...)
     else if (isYouTubeHost(hostname) && pathname.startsWith("/shorts/")) {
       videoId = pathname.substring("/shorts/".length);
+      videoIdFromPath = true;
     }
     // 5. Check for playlist URLs (youtube.com/playlist?list=...)
     else if (isYouTubeHost(hostname) && pathname === "/playlist") {
@@ -117,6 +121,14 @@ export function getYouTubeEmbedUrl(url: string, options: YouTubeEmbedOptions = {
   if (options.loop) queryParams.set("loop", "1");
   if (typeof options.start === "number" && Number.isFinite(options.start) && options.start >= 0) {
     queryParams.set("start", String(Math.floor(options.start)));
+  }
+
+  if (videoIdFromPath && videoId) {
+    try {
+      videoId = decodeURIComponent(videoId);
+    } catch {
+      videoId = null;
+    }
   }
 
   if (videoId && !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {

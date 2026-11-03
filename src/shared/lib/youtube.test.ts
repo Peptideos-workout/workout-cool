@@ -75,3 +75,35 @@ test("youtube embed accepts only youtube.com hosts and youtu.be", () => {
     assert.match(embed, new RegExp(`/embed/${id}(?:\\?|$)`));
   }
 });
+
+function videoIdShapes(id: string): string[] {
+  return [
+    `https://www.youtube.com/watch?v=${id}`,
+    `https://youtu.be/${id}`,
+    `https://www.youtube.com/embed/${id}`,
+    `https://www.youtube.com/shorts/${id}`
+  ];
+}
+
+function embeddedVideoId(url: string): string | null {
+  const embed = getYouTubeEmbedUrl(url);
+  if (!embed) return null;
+  return new URL(embed).pathname.split("/").pop() ?? null;
+}
+
+test("youtube embed decodes a percent-encoded video id from every url shape", () => {
+  for (const url of videoIdShapes("Nmf%51zqGktgs")) {
+    assert.equal(embeddedVideoId(url), "NmfQzqGktgs", url);
+  }
+  for (const url of videoIdShapes("Nmf%3FzqGktgs")) {
+    assert.equal(getYouTubeEmbedUrl(url), null, url);
+  }
+});
+
+test("youtube embed accepts an id of exactly 11 characters", () => {
+  assert.equal(getYouTubeEmbedUrl("https://www.youtube.com/watch?v=NmfQzqGktg"), null);
+  assert.equal(getYouTubeEmbedUrl("https://www.youtube.com/watch?v=NmfQzqGktgsEXTRA"), null);
+  const embed = getYouTubeEmbedUrl("https://www.youtube.com/watch?v=NmfQzqGktgs");
+  assert.ok(embed);
+  assert.match(embed, /\/embed\/NmfQzqGktgs(?:\?|$)/);
+});

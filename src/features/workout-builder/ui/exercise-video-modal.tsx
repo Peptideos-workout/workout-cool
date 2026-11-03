@@ -6,7 +6,7 @@ import { ExerciseAttributeNameEnum, ExerciseAttributeValueEnum } from "@prisma/c
 
 import type { ExerciseWithAttributes } from "@/entities/exercise/types/exercise.types";
 
-import { getYouTubeEmbedUrl } from "@/shared/lib/youtube";
+import { getYouTubeEmbedUrl, youTubeEmbedOptionsFromUrl } from "@/shared/lib/youtube";
 import { useIsPremium } from "@/shared/lib/premium/use-premium";
 import { getAttributeValueLabel } from "@/shared/lib/attribute-value-translation";
 import { StatisticsTimeframe } from "@/shared/constants/statistics";
@@ -38,7 +38,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
   const introduction = locale === "fr" ? exercise.introduction : exercise.introductionEn || exercise.introduction;
   const description = locale === "fr" ? exercise.description : exercise.descriptionEn || exercise.description;
   const videoUrl = exercise.fullVideoUrl;
-  const youTubeEmbedUrl = getYouTubeEmbedUrl(videoUrl ?? "");
+  const youTubeEmbedUrl = getYouTubeEmbedUrl(videoUrl ?? "", youTubeEmbedOptionsFromUrl(videoUrl ?? ""));
 
   const type = getExerciseAttributesValueOf(exercise, ExerciseAttributeNameEnum.TYPE);
   const pMuscles = getExerciseAttributesValueOf(exercise, ExerciseAttributeNameEnum.PRIMARY_MUSCLE);
@@ -111,7 +111,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
               {videoUrl ? (
                 youTubeEmbedUrl ? (
                   <iframe
-                    allow="autoplay; encrypted-media"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
                     className="w-full h-full border-0"
                     referrerPolicy="strict-origin-when-cross-origin"
@@ -119,7 +119,14 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                     title={title ?? ""}
                   />
                 ) : (
-                  <video autoPlay className="h-full w-full bg-[var(--wc-dash-page)] object-contain" controls poster="" src={videoUrl} />
+                  <video
+                    autoPlay
+                    className="h-full w-full bg-[var(--wc-dash-page)] object-contain"
+                    controls
+                    playsInline
+                    poster=""
+                    src={videoUrl}
+                  />
                 )
               ) : (
                 <div className="p-8 text-center text-lg text-[var(--wc-dash-text)]">{t("workout_builder.exercise.no_video_available")}</div>

@@ -1078,9 +1078,10 @@ function guardedRejection(
   let urlReads = 0;
   let depCalls = 0;
   const guardedRequest = new Proxy(request, {
-    get(target, prop, receiver) {
+    get(target, prop) {
       if (prop === "nextUrl" || prop === "url") urlReads += 1;
-      return Reflect.get(target, prop, receiver);
+      // Bind to the request. Node 24's headers getter rejects a proxy receiver.
+      return Reflect.get(target, prop, target);
     }
   });
   const guardedDeps = new Proxy(deps, {
@@ -1213,12 +1214,13 @@ test("GET is 405 and POST is Origin-checked outside Better Auth", () => {
   const proxy = readFileSync("proxy.ts", "utf8");
   const auth = readFileSync("src/features/auth/lib/better-auth.ts", "utf8");
 
-  for (const method of ["GET", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
+  for (const method of ["PUT", "PATCH", "DELETE", "OPTIONS"]) {
     assert.match(route, new RegExp(`export function ${method}\\(\\) \\{\\s*return ssoMethodNotAllowed\\(\\);\\s*\\}`));
   }
+  assert.match(route, /export function GET\(request: NextRequest\) \{\s*return ssoMethodNotAllowed\(request\);\s*\}/);
   assert.match(route, /export function HEAD\(\) \{\s*return ssoHeadNotAllowed\(\);\s*\}/);
-  assert.doesNotMatch(route, /export function GET\(\) \{[^}]*ssoDeps/);
-  assert.doesNotMatch(route, /export function GET\(\) \{[^}]*searchParams/);
+  assert.doesNotMatch(route, /export function GET\([^)]*\) \{[^}]*ssoDeps/);
+  assert.doesNotMatch(route, /export function GET\([^)]*\) \{[^}]*searchParams/);
   assert.doesNotMatch(route, /runPeptideOsSso[^P\w]/);
   assert.doesNotMatch(runner, /searchParams\.get\(\s*["']token["']\)/);
   assert.doesNotMatch(runner, /searchParams\.get\(\s*["']return["']\)/);

@@ -95,9 +95,27 @@ test("youtube embed decodes a percent-encoded video id from every url shape", ()
   for (const url of videoIdShapes("Nmf%51zqGktgs")) {
     assert.equal(embeddedVideoId(url), "NmfQzqGktgs", url);
   }
-  for (const url of videoIdShapes("Nmf%3FzqGktgs")) {
-    assert.equal(getYouTubeEmbedUrl(url), null, url);
+  for (const id of ["Nmf%3FzqGktgs", "Nmf%2FzqGktgs"]) {
+    for (const url of videoIdShapes(id)) {
+      assert.equal(getYouTubeEmbedUrl(url), null, url);
+    }
   }
+});
+
+test("youtube embed rejects ids outside the anchored 11-character allowlist", () => {
+  for (const id of ["NmfQzqGktg", "NmfQzqGktgs1", "xNmfQzqGktgs", "NmfQzqGktgs."]) {
+    for (const url of videoIdShapes(id)) {
+      assert.equal(getYouTubeEmbedUrl(url), null, url);
+    }
+  }
+  for (const url of videoIdShapes("NmfQzqGktgs")) {
+    assert.equal(embeddedVideoId(url), "NmfQzqGktgs", url);
+  }
+});
+
+test("youtube embed rejects lookalike youtu.be hosts", () => {
+  assert.equal(getYouTubeEmbedUrl("https://evil.youtu.be/NmfQzqGktgs"), null);
+  assert.equal(getYouTubeEmbedUrl("https://sub.youtu.be/NmfQzqGktgs"), null);
 });
 
 test("youtube embed accepts an id of exactly 11 characters", () => {

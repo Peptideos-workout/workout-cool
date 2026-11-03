@@ -80,13 +80,22 @@ function channel(hex: string): number[] {
   return [0, 2, 4].map((start) => Number.parseInt(full.slice(start, start + 2), 16));
 }
 
+function channelsOf(color: string): number[] {
+  const trimmed = color.trim();
+  const hex = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hex) return channel(`#${hex[1]}`);
+  const rgb = trimmed.match(/^rgba?\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)/i);
+  assert.ok(rgb, `unparsed color ${trimmed}`);
+  return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+}
+
 function contrast(foreground: string, background: string): number {
   const linear = (amount: number) => {
     const unit = amount / 255;
     return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
   };
-  const luminance = (hex: string) => {
-    const [red, green, blue] = channel(hex);
+  const luminance = (input: string) => {
+    const [red, green, blue] = channelsOf(input);
     return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
   };
   const [hi, lo] = [luminance(foreground), luminance(background)].sort((left, right) => right - left);
@@ -248,5 +257,96 @@ test("SSO error page text meets AA contrast in light and dark schemes", () => {
     assertReadable(`${scheme} paragraph`, paragraph.color, paragraph.background);
     assertReadable(`${scheme} support`, support.color, support.background);
     assertReadable(`${scheme} button`, button.color, button.background);
+  }
+});
+
+interface FocusPaint {
+  focused: boolean;
+  outlineColor: string;
+  outlineWidth: string;
+  outlineStyle: string;
+  outlineOffset: string;
+  borderTopWidth: string;
+  borderRightWidth: string;
+  borderBottomWidth: string;
+  borderLeftWidth: string;
+  minHeight: string;
+  fontSize: string;
+  buttonBackground: string;
+  cardBackground: string;
+  width: number;
+  height: number;
+}
+
+function readFocusPaint(): FocusPaint | null {
+  const link = document.querySelector("a");
+  const card = document.querySelector("main");
+  if (!(link instanceof HTMLElement) || !(card instanceof HTMLElement)) return null;
+  const linkStyle = getComputedStyle(link);
+  const rect = link.getBoundingClientRect();
+  return {
+    focused: document.activeElement === link,
+    outlineColor: linkStyle.outlineColor,
+    outlineWidth: linkStyle.outlineWidth,
+    outlineStyle: linkStyle.outlineStyle,
+    outlineOffset: linkStyle.outlineOffset,
+    borderTopWidth: linkStyle.borderTopWidth,
+    borderRightWidth: linkStyle.borderRightWidth,
+    borderBottomWidth: linkStyle.borderBottomWidth,
+    borderLeftWidth: linkStyle.borderLeftWidth,
+    minHeight: linkStyle.minHeight,
+    fontSize: linkStyle.fontSize,
+    buttonBackground: linkStyle.backgroundColor,
+    cardBackground: getComputedStyle(card).backgroundColor,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+test("Try again focus ring contrasts with the button and the card", { timeout: 120000 }, async () => {
+  const playwright = await import("playwright");
+  const engines = [
+    ["chromium", playwright.chromium],
+    ["firefox", playwright.firefox],
+    ["webkit", playwright.webkit]
+  ] as const;
+  const html = renderedErrorPage();
+  for (const [engine, browserType] of engines) {
+    const browser = await browserType.launch({ headless: true });
+    try {
+      for (const scheme of ["light", "dark"] as const) {
+        const page = await browser.newPage({ colorScheme: scheme });
+        try {
+          await page.setContent(html, { waitUntil: "domcontentloaded" });
+          const before = await page.evaluate(readFocusPaint);
+          assert.ok(before, `${engine} ${scheme} paint`);
+          await page.keyboard.press("Tab");
+          const after = await page.evaluate(readFocusPaint);
+          assert.ok(after, `${engine} ${scheme} focused paint`);
+          assert.equal(after.focused, true, `${engine} ${scheme} keyboard focus`);
+          assert.equal(after.outlineStyle, "solid", `${engine} ${scheme} outline style ${after.outlineStyle}`);
+          assert.ok(pixels(after.outlineWidth) >= 3, `${engine} ${scheme} outline width ${after.outlineWidth}`);
+          assert.ok(pixels(after.outlineOffset) >= 2, `${engine} ${scheme} outline offset ${after.outlineOffset}`);
+          for (const edge of [after.borderTopWidth, after.borderRightWidth, after.borderBottomWidth, after.borderLeftWidth]) {
+            assert.equal(pixels(edge), 0, `${engine} ${scheme} border ${edge}`);
+          }
+          assert.equal(after.width, before.width, `${engine} ${scheme} width shift`);
+          assert.equal(after.height, before.height, `${engine} ${scheme} height shift`);
+          assert.ok(pixels(after.minHeight) >= 48, `${engine} ${scheme} target ${after.minHeight}`);
+          assert.ok(pixels(after.fontSize) >= 18, `${engine} ${scheme} text ${after.fontSize}`);
+          const onButton = contrast(after.outlineColor, after.buttonBackground);
+          const onCard = contrast(after.outlineColor, after.cardBackground);
+          const buttonRatio = `${after.outlineColor} on button ${after.buttonBackground} = ${onButton.toFixed(2)}:1`;
+          const cardRatio = `${after.outlineColor} on card ${after.cardBackground} = ${onCard.toFixed(2)}:1`;
+          console.log(`${engine} ${scheme} outline ${buttonRatio}; ${cardRatio}`);
+          assert.ok(onButton >= 3, `${engine} ${scheme} button contrast ${onButton.toFixed(2)}`);
+          assert.ok(onCard >= 3, `${engine} ${scheme} card contrast ${onCard.toFixed(2)}`);
+        } finally {
+          await page.close();
+        }
+      }
+    } finally {
+      await browser.close();
+    }
   }
 });

@@ -116,8 +116,8 @@ function ssoDeps(): PeptideOsSsoDeps {
 }
 
 /** Legacy `GET ?token=` does not sign anyone in and does not read the query string. */
-export function GET() {
-  return ssoMethodNotAllowed();
+export function GET(request: NextRequest) {
+  return ssoMethodNotAllowed(request);
 }
 
 export function HEAD() {

@@ -102,6 +102,18 @@ test("youtube embed decodes a percent-encoded video id from every url shape", ()
   }
 });
 
+test("youtube embed rejects undecodable ids without throwing", () => {
+  for (const id of ["%", "%E0%A4%A", "%ZZ"]) {
+    for (const url of videoIdShapes(id)) {
+      let embed: string | null = "threw";
+      assert.doesNotThrow(() => {
+        embed = getYouTubeEmbedUrl(url);
+      });
+      assert.equal(embed, null, url);
+    }
+  }
+});
+
 test("youtube embed rejects ids outside the anchored 11-character allowlist", () => {
   for (const id of ["NmfQzqGktg", "NmfQzqGktgs1", "xNmfQzqGktgs", "NmfQzqGktgs."]) {
     for (const url of videoIdShapes(id)) {

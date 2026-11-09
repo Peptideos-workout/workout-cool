@@ -164,7 +164,7 @@ export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHr
         text-decoration: none;
       }
       a:focus-visible {
-        outline: 3px solid #be68f8;
+        outline: 3px solid #16a34a;
         outline-offset: 3px;
       }
       .support {
@@ -177,7 +177,7 @@ export function ssoErrorHtml(input: { locale?: string; error: string; tryAgainHr
         h1 { color: #f8fafc; }
         p { color: #e2e8f0; }
         a { background: #bfdbfe; color: #0f172a; }
-        a:focus-visible { outline-color: #6a734c; }
+        a:focus-visible { outline-color: #15803d; }
         .support { color: #e2e8f0; }
       }
     </style>

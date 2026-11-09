@@ -274,8 +274,22 @@ interface FocusPaint {
   fontSize: string;
   buttonBackground: string;
   cardBackground: string;
+  pageBackground: string;
   width: number;
   height: number;
+}
+
+function normalizedColor(color: string): string {
+  const [red, green, blue] = channelsOf(color).map((channel) => Math.round(channel));
+  return `rgb(${red}, ${green}, ${blue})`;
+}
+
+function focusRingColor(declarations: CssDeclarations): string {
+  const explicit = hexColor(declarations["outline-color"]);
+  if (explicit) return explicit;
+  const match = declarations.outline?.match(/#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/);
+  assert.ok(match, "focus ring color");
+  return hexColor(match[0]) ?? match[0];
 }
 
 function readFocusPaint(): FocusPaint | null {
@@ -298,10 +312,37 @@ function readFocusPaint(): FocusPaint | null {
     fontSize: linkStyle.fontSize,
     buttonBackground: linkStyle.backgroundColor,
     cardBackground: getComputedStyle(card).backgroundColor,
+    pageBackground: getComputedStyle(document.body).backgroundColor,
     width: rect.width,
     height: rect.height
   };
 }
+
+test("SSO focus ring colour meets 3:1 on the page, card, and button", () => {
+  const { light, dark } = schemeCss(styleText(renderedErrorPage()));
+  const lightRules = rulesFrom(light);
+  const darkRules = cascade(lightRules, rulesFrom(dark));
+  const themes = [
+    ["light", "#16a34a", lightRules, declarationsFor(light, "a:focus-visible")],
+    ["dark", "#15803d", darkRules, { ...declarationsFor(light, "a:focus-visible"), ...declarationsFor(dark, "a:focus-visible") }]
+  ] as const;
+  for (const [scheme, expected, rules, ring] of themes) {
+    assert.equal(focusRingColor(ring), expected, scheme);
+    assert.match(ring.outline ?? "", /3px solid/);
+    assert.equal(ring["outline-offset"], "3px");
+    const surfaces = [
+      ["page", rules.body.background],
+      ["card", rules.main.background],
+      ["button", rules.a.background]
+    ] as const;
+    for (const [surface, background] of surfaces) {
+      assert.ok(background, `${scheme} ${surface}`);
+      const ratio = contrast(expected, background);
+      console.log(`${scheme} ring ${expected} on ${surface} ${background} = ${ratio.toFixed(2)}:1`);
+      assert.ok(ratio >= 3, `${scheme} ${surface} contrast ${ratio.toFixed(2)}`);
+    }
+  }
+});
 
 test("Try again focus ring contrasts with the button and the card", { timeout: 120000 }, async () => {
   const playwright = await import("playwright");
@@ -334,13 +375,18 @@ test("Try again focus ring contrasts with the button and the card", { timeout: 1
           assert.equal(after.height, before.height, `${engine} ${scheme} height shift`);
           assert.ok(pixels(after.minHeight) >= 48, `${engine} ${scheme} target ${after.minHeight}`);
           assert.ok(pixels(after.fontSize) >= 18, `${engine} ${scheme} text ${after.fontSize}`);
-          const onButton = contrast(after.outlineColor, after.buttonBackground);
-          const onCard = contrast(after.outlineColor, after.cardBackground);
-          const buttonRatio = `${after.outlineColor} on button ${after.buttonBackground} = ${onButton.toFixed(2)}:1`;
-          const cardRatio = `${after.outlineColor} on card ${after.cardBackground} = ${onCard.toFixed(2)}:1`;
-          console.log(`${engine} ${scheme} outline ${buttonRatio}; ${cardRatio}`);
-          assert.ok(onButton >= 3, `${engine} ${scheme} button contrast ${onButton.toFixed(2)}`);
-          assert.ok(onCard >= 3, `${engine} ${scheme} card contrast ${onCard.toFixed(2)}`);
+          const expectedRing = scheme === "light" ? "rgb(22, 163, 74)" : "rgb(21, 128, 61)";
+          assert.equal(normalizedColor(after.outlineColor), expectedRing, `${engine} ${scheme} ring`);
+          const surfaces = [
+            ["button", after.buttonBackground],
+            ["card", after.cardBackground],
+            ["page", after.pageBackground]
+          ] as const;
+          for (const [surface, background] of surfaces) {
+            const ratio = contrast(after.outlineColor, background);
+            console.log(`${engine} ${scheme} ${after.outlineColor} on ${surface} ${background} = ${ratio.toFixed(2)}:1`);
+            assert.ok(ratio >= 3, `${engine} ${scheme} ${surface} contrast ${ratio.toFixed(2)}`);
+          }
         } finally {
           await page.close();
         }

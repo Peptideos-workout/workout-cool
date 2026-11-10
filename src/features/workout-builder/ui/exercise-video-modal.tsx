@@ -4,6 +4,8 @@ import { BarChart3, Crown, Lock, Play, TrendingUp, Zap } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 import { ExerciseAttributeNameEnum, ExerciseAttributeValueEnum } from "@prisma/client";
 
+import { ExerciseDialogScroll } from "./exercise-dialog-scroll";
+
 import type { ExerciseWithAttributes } from "@/entities/exercise/types/exercise.types";
 
 import { getYouTubeEmbedUrl, youTubeEmbedOptionsFromUrl } from "@/shared/lib/youtube";
@@ -65,7 +67,8 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="!z-[240] max-h-[80vh] w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] overflow-x-hidden border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] sm:max-w-2xl [&>button]:!right-2 [&>button]:top-2 [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)] [&>button]:dark:!bg-[var(--wc-dash-panel)] [&>button]:dark:!text-[var(--wc-dash-text)]">
+      <DialogContent className="!z-[240] flex max-h-[calc(100dvh-16px)] w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] flex-col overflow-y-visible border-[var(--wc-dash-border)] bg-[var(--wc-dash-panel)] p-0 text-[var(--wc-dash-text)] sm:max-w-2xl [&>button]:!right-2 [&>button]:top-2 [&>button]:min-h-12 [&>button]:min-w-12 [&>button]:text-[var(--wc-dash-text)] [&>button]:dark:!bg-[var(--wc-dash-panel)] [&>button]:dark:!text-[var(--wc-dash-text)]">
+        <ExerciseDialogScroll>
         <DialogHeader className="flex flex-row items-start justify-between px-4 pb-2 pr-16 pt-4">
           <DialogTitle className="text-lg md:text-xl font-bold flex min-w-0 flex-col gap-2">
             <span className="break-words text-left text-lg text-[var(--wc-dash-text)]">{title}</span>
@@ -107,13 +110,16 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
             )}
 
             {/* Vidéo */}
-            <div className="flex aspect-video w-full items-center justify-center bg-[var(--wc-dash-page)]">
+            <div
+              className="flex aspect-video w-full touch-pan-y items-center justify-center bg-[var(--wc-dash-page)]"
+              data-exercise-video-player=""
+            >
               {videoUrl ? (
                 youTubeEmbedUrl ? (
                   <iframe
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
-                    className="w-full h-full border-0"
+                    className="h-full w-full touch-pan-y border-0"
                     referrerPolicy="strict-origin-when-cross-origin"
                     src={youTubeEmbedUrl}
                     title={title ?? ""}
@@ -121,7 +127,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
                 ) : (
                   <video
                     autoPlay
-                    className="h-full w-full bg-[var(--wc-dash-page)] object-contain"
+                    className="h-full w-full touch-pan-y bg-[var(--wc-dash-page)] object-contain"
                     controls
                     playsInline
                     poster=""
@@ -214,6 +220,7 @@ export function ExerciseVideoModal({ open, onOpenChange, exercise, defaultTab = 
             </div>
           </TabsContent>
         </Tabs>
+        </ExerciseDialogScroll>
       </DialogContent>
     </Dialog>
   );

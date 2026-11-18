@@ -16,8 +16,9 @@ export function ExerciseDialogScroll({ children }: ExerciseDialogScrollProps) {
     const releaseLockedTouch = (event: TouchEvent) => {
       event.stopPropagation();
     };
-    node.addEventListener("touchmove", releaseLockedTouch);
-    return () => node.removeEventListener("touchmove", releaseLockedTouch);
+    const touchMoveOptions: AddEventListenerOptions = { passive: true };
+    node.addEventListener("touchmove", releaseLockedTouch, touchMoveOptions);
+    return () => node.removeEventListener("touchmove", releaseLockedTouch, touchMoveOptions);
   }, []);
 
   return (

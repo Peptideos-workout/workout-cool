@@ -113,6 +113,18 @@ test("exercise dialog touch-scrolls inside the body scroll lock", async () => {
   const { Dialog, DialogContent, DialogTitle } = await import("@/components/ui/dialog");
   const { ExerciseDialogScroll } = await import("./exercise-dialog-scroll");
 
+  const touchRegistrations: Array<{ node: EventTarget; options: unknown }> = [];
+  const originalAdd = HTMLElement.prototype.addEventListener;
+  HTMLElement.prototype.addEventListener = function addEventListenerSpy(
+    this: HTMLElement,
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ) {
+    if (type === "touchmove") touchRegistrations.push({ node: this, options });
+    return originalAdd.call(this, type, listener, options);
+  };
+
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -143,6 +155,11 @@ test("exercise dialog touch-scrolls inside the body scroll lock", async () => {
   assert.doesNotMatch(scroll.className, /touch-none/);
   assert.match(scroll.className, /touch-pan-y/);
   assert.notEqual(scroll.style.touchAction, "none");
+
+  HTMLElement.prototype.addEventListener = originalAdd;
+  const scrollTouch = touchRegistrations.filter((entry) => entry.node === scroll);
+  assert.equal(scrollTouch.length, 1);
+  assert.deepEqual(scrollTouch[0]?.options, { passive: true });
 
   assert.ok(document.body.hasAttribute("data-scroll-locked"));
   Object.defineProperty(scroll, "scrollHeight", { configurable: true, value: 2400 });

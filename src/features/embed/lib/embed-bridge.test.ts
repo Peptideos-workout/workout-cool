@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { embedSignedOutDocumentResponse } from "./embed-signed-out-document";
 import { resolveEmbedOutboundOrigins } from "./embed-mode";
 import {
+  acceptParentDialogAck,
   acceptParentThemeMessage,
   clampReportedHeight,
   createHeightReporter,
@@ -15,6 +16,7 @@ import {
   embedSessionMessage,
   explicitEmbedLogoutOnPath,
   markExplicitEmbedLogout,
+  openEmbedDialog,
   postEmbedSession,
   postToParent,
   releaseExplicitEmbedLogout,
@@ -653,6 +655,190 @@ test("bridge source never posts to a wildcard and a message cannot sign in or ou
   const markAt = body.indexOf("markExplicitEmbedLogout");
   const logoutAt = body.indexOf("logoutThenClearSession");
   assert.ok(markAt !== -1 && logoutAt !== -1 && markAt < logoutAt);
+});
+
+function flush(frames: Array<() => void>) {
+  while (frames.length > 0) frames.shift()?.();
+}
+
+function messageOf(call: { message: unknown }) {
+  return call.message as { type: string; height?: number };
+}
+
+test("an embedded dialog posts open and close only to the allowlisted origin", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 7607, path: "/programs" }));
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    const opened = calls[calls.length - 1];
+    assert.deepEqual(opened, { message: { type: "wc:dialog-open" }, origin: POS });
+    assert.equal(Object.keys(messageOf(opened ?? { message: {} })).length, 1);
+    release();
+    const closed = calls[calls.length - 1];
+    assert.deepEqual(closed, { message: { type: "wc:dialog-close" }, origin: POS });
+    assert.equal(Object.keys(messageOf(closed ?? { message: {} })).length, 1);
+    for (const call of calls) {
+      assert.notEqual(call.origin, "*");
+      assert.equal(call.origin === POS || call.origin === "https://www.peptideos.us", true);
+    }
+    assert.equal(JSON.stringify(calls).includes("*"), false);
+  } finally {
+    release();
+    stop();
+  }
+});
+
+test("height keeps flowing until a parent ack, then close posts one fresh height", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const input = { height: 400, path: "/programs" };
+  const host = bridgeHost(calls, frames, input);
+  const stop = startEmbedBridge(host);
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    const afterOpen = calls.length;
+    input.height = 900;
+    host.resize?.();
+    flush(frames);
+    const flowing = calls.slice(afterOpen).filter((call) => messageOf(call).type === "wc:height");
+    assert.deepEqual(flowing, [{ message: { type: "wc:height", height: 900 }, origin: POS }]);
+
+    host.emit?.({ origin: POS, source: host.parent, data: { type: "wc:dialog-ack" } });
+    const afterAck = calls.length;
+    input.height = 7607;
+    host.resize?.();
+    flush(frames);
+    assert.equal(calls.slice(afterAck).some((call) => messageOf(call).type === "wc:height"), false);
+
+    release();
+    flush(frames);
+    assert.deepEqual(calls.slice(afterAck).map((call) => call.message), [
+      { type: "wc:dialog-close" },
+      { type: "wc:height", height: 7607 }
+    ]);
+    assert.equal(calls.slice(afterAck).every((call) => call.origin === POS), true);
+  } finally {
+    release();
+    stop();
+  }
+});
+
+test("dialog acks from the wrong origin or source, and stale acks after close, do not pause height", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const host = bridgeHost(calls, frames, { height: 500, path: "/programs" });
+  const stop = startEmbedBridge(host);
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    host.emit?.({ origin: "https://evil.example", source: host.parent, data: { type: "wc:dialog-ack" } });
+    host.emit?.({ origin: "*", source: host.parent, data: { type: "wc:dialog-ack" } });
+    host.emit?.({ origin: POS, source: {}, data: { type: "wc:dialog-ack" } });
+    host.emit?.({ origin: POS, source: host.parent, data: { type: "wc:dialog-ack", extra: true } });
+    const afterIgnored = calls.length;
+    host.resize?.();
+    flush(frames);
+    assert.equal(calls.slice(afterIgnored).some((call) => messageOf(call).type === "wc:height"), true);
+
+    host.emit?.({ origin: "https://www.peptideos.us", source: host.parent, data: { type: "wc:dialog-ack" } });
+    const afterWww = calls.length;
+    host.resize?.();
+    flush(frames);
+    assert.equal(calls.slice(afterWww).some((call) => messageOf(call).type === "wc:height"), false);
+
+    release();
+    flush(frames);
+    host.emit?.({ origin: POS, source: host.parent, data: { type: "wc:dialog-ack" } });
+    const afterStale = calls.length;
+    host.resize?.();
+    flush(frames);
+    assert.equal(calls.slice(afterStale).some((call) => messageOf(call).type === "wc:height"), true);
+    assert.equal(acceptParentDialogAck({ origin: "https://evil.example", source: host.parent, data: { type: "wc:dialog-ack" } }, host.parent), false);
+    assert.equal(acceptParentDialogAck({ origin: POS, source: {}, data: { type: "wc:dialog-ack" } }, host.parent), false);
+  } finally {
+    release();
+    stop();
+  }
+});
+
+test("nested dialogs share one open, and a non-embed page posts nothing", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const host = bridgeHost(calls, frames, { height: 640, path: "/programs" });
+  const stop = startEmbedBridge(host);
+  flush(frames);
+  const first = openEmbedDialog();
+  const second = openEmbedDialog();
+  try {
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-open").length, 1);
+    host.emit?.({ origin: POS, source: host.parent, data: { type: "wc:dialog-ack" } });
+    first();
+    const afterFirstClose = calls.length;
+    host.resize?.();
+    flush(frames);
+    assert.equal(calls.slice(afterFirstClose).some((call) => messageOf(call).type === "wc:dialog-close"), false);
+    assert.equal(calls.slice(afterFirstClose).some((call) => messageOf(call).type === "wc:height"), false);
+    second();
+    flush(frames);
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-close").length, 1);
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:height" && messageOf(call).height === 640).length >= 1, true);
+  } finally {
+    first();
+    second();
+    stop();
+  }
+
+  const silent: Array<{ message: unknown; origin: string }> = [];
+  const hidden = bridgeHost(silent, [], { height: 500, path: "/programs" });
+  hidden.isEmbed = () => false;
+  startEmbedBridge(hidden);
+  const top = bridgeHost(silent, [], { height: 500, path: "/programs" });
+  top.isTopLevel = () => true;
+  startEmbedBridge(top);
+  const release = openEmbedDialog();
+  release();
+  assert.equal(silent.length, 0);
+});
+
+test("a dialog that opens before the bridge still posts once the embed bridge starts", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const release = openEmbedDialog();
+  try {
+    assert.equal(calls.length, 0);
+    const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 480, path: "/programs" }));
+    try {
+      assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-open").length, 1);
+      assert.equal(calls.every((call) => call.origin === POS), true);
+    } finally {
+      stop();
+    }
+  } finally {
+    release();
+  }
+});
+
+test("unmount while a dialog is open posts close, and the exercise dialog uses that cleanup", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 480, path: "/programs" }));
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    assert.equal(messageOf(calls[calls.length - 1] ?? { message: {} }).type, "wc:dialog-open");
+    release();
+    assert.equal(messageOf(calls[calls.length - 1] ?? { message: {} }).type, "wc:dialog-close");
+    assert.match(
+      readFileSync("src/features/workout-builder/ui/exercise-dialog-scroll.tsx", "utf8"),
+      /useEffect\(\(\) => openEmbedDialog\(\), \[\]\)/
+    );
+  } finally {
+    release();
+    stop();
+  }
 });
 
 function port(calls: Array<{ message: unknown; origin: string }>): EmbedMessagePort {

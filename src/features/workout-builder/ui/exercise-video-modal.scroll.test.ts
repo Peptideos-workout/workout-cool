@@ -128,52 +128,54 @@ test("exercise dialog touch-scrolls inside the body scroll lock", async () => {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
-  await act(async () => {
-    root.render(
-      createElement(
-        Dialog,
-        { onOpenChange: () => {}, open: true },
+  try {
+    await act(async () => {
+      root.render(
         createElement(
-          DialogContent,
-          { "aria-describedby": undefined },
-          createElement(DialogTitle, null, "Back Squat"),
-          createElement(ExerciseDialogScroll, null, createElement("p", null, "Keep the bar over mid-foot.".repeat(40)))
+          Dialog,
+          { onOpenChange: () => {}, open: true },
+          createElement(
+            DialogContent,
+            { "aria-describedby": undefined },
+            createElement(DialogTitle, null, "Back Squat"),
+            createElement(ExerciseDialogScroll, null, createElement("p", null, "Keep the bar over mid-foot.".repeat(40)))
+          )
         )
-      )
-    );
-  });
+      );
+    });
 
-  const scroll = document.querySelector<HTMLElement>("[data-exercise-dialog-scroll]");
-  assert.ok(scroll, "dialog scroll container");
-  const scrollStyle = getComputedStyle(scroll);
-  assert.match(scroll.className, /overflow-y-auto/);
-  assert.equal(scrollStyle.overflowY, "auto");
-  assert.match(scroll.className, /overscroll-contain/);
-  assert.equal(scrollStyle.overscrollBehavior, "contain");
-  assert.match(scroll.className, /max-h-\[calc\(100dvh-16px\)\]/);
-  assert.match(scrollStyle.maxHeight, /100dvh/);
-  assert.doesNotMatch(scroll.className, /touch-none/);
-  assert.match(scroll.className, /touch-pan-y/);
-  assert.notEqual(scroll.style.touchAction, "none");
+    const scroll = document.querySelector<HTMLElement>("[data-exercise-dialog-scroll]");
+    assert.ok(scroll, "dialog scroll container");
+    const scrollStyle = getComputedStyle(scroll);
+    assert.match(scroll.className, /overflow-y-auto/);
+    assert.equal(scrollStyle.overflowY, "auto");
+    assert.match(scroll.className, /overscroll-contain/);
+    assert.equal(scrollStyle.overscrollBehavior, "contain");
+    assert.match(scroll.className, /max-h-\[calc\(100dvh-16px\)\]/);
+    assert.match(scrollStyle.maxHeight, /100dvh/);
+    assert.doesNotMatch(scroll.className, /touch-none/);
+    assert.match(scroll.className, /touch-pan-y/);
+    assert.notEqual(scroll.style.touchAction, "none");
 
-  HTMLElement.prototype.addEventListener = originalAdd;
-  const scrollTouch = touchRegistrations.filter((entry) => entry.node === scroll);
-  assert.equal(scrollTouch.length, 1);
-  assert.deepEqual(scrollTouch[0]?.options, { passive: true });
+    const scrollTouch = touchRegistrations.filter((entry) => entry.node === scroll);
+    assert.equal(scrollTouch.length, 1);
+    assert.deepEqual(scrollTouch[0]?.options, { passive: true });
 
-  assert.ok(document.body.hasAttribute("data-scroll-locked"));
-  Object.defineProperty(scroll, "scrollHeight", { configurable: true, value: 2400 });
-  Object.defineProperty(scroll, "clientHeight", { configurable: true, value: 480 });
-  Object.defineProperty(scroll, "scrollTop", { configurable: true, value: 0, writable: true });
+    assert.ok(document.body.hasAttribute("data-scroll-locked"));
+    Object.defineProperty(scroll, "scrollHeight", { configurable: true, value: 2400 });
+    Object.defineProperty(scroll, "clientHeight", { configurable: true, value: 480 });
+    Object.defineProperty(scroll, "scrollTop", { configurable: true, value: 0, writable: true });
 
-  scroll.dispatchEvent(touchEvent("touchstart", 40, 120));
-  const move = touchEvent("touchmove", 40, 200);
-  scroll.dispatchEvent(move);
-  assert.equal(move.defaultPrevented, false);
-
-  await act(async () => {
-    root.unmount();
-  });
-  host.remove();
-  player.remove();
+    scroll.dispatchEvent(touchEvent("touchstart", 40, 120));
+    const move = touchEvent("touchmove", 40, 200);
+    scroll.dispatchEvent(move);
+    assert.equal(move.defaultPrevented, false);
+  } finally {
+    HTMLElement.prototype.addEventListener = originalAdd;
+    await act(async () => {
+      root.unmount();
+    });
+    host.remove();
+    player.remove();
+  }
 });

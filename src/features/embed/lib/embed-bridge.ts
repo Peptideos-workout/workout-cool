@@ -6,7 +6,9 @@ export const EMBED_CHILD_MESSAGE = {
   height: "wc:height",
   navigate: "wc:navigate",
   session: "wc:session",
-  signedOut: "wc:signed-out"
+  signedOut: "wc:signed-out",
+  dialogOpen: "wc:dialog-open",
+  dialogClose: "wc:dialog-close"
 } as const;
 
 export const EMBED_SESSION_STATE = {
@@ -17,7 +19,8 @@ export const EMBED_SESSION_STATE = {
 export const EMBED_LOGOUT_REASON = "logout" as const;
 
 export const EMBED_PARENT_MESSAGE = {
-  theme: "wc:theme"
+  theme: "wc:theme",
+  dialogAck: "wc:dialog-ack"
 } as const;
 
 const MIN_REPORTED_HEIGHT = 200;
@@ -51,6 +54,8 @@ export interface EmbedChildMessageMap {
   navigate: { type: typeof EMBED_CHILD_MESSAGE.navigate; path: string };
   session: { type: typeof EMBED_CHILD_MESSAGE.session; state: EmbedSessionState };
   signedOut: { type: typeof EMBED_CHILD_MESSAGE.signedOut; reason: typeof EMBED_LOGOUT_REASON };
+  dialogOpen: { type: typeof EMBED_CHILD_MESSAGE.dialogOpen };
+  dialogClose: { type: typeof EMBED_CHILD_MESSAGE.dialogClose };
 }
 
 export type EmbedChildMessage = EmbedChildMessageMap[keyof EmbedChildMessageMap];
@@ -188,6 +193,17 @@ export function acceptParentThemeMessage(event: ParentThemeEvent, parent: unknow
   return record.theme;
 }
 
+/** `{ type: "wc:dialog-ack" }` from the framing parent. No extra keys. Never `*`. */
+export function acceptParentDialogAck(event: ParentThemeEvent, parent: unknown): boolean {
+  if (typeof event.origin !== "string" || event.origin.includes("*")) return false;
+  if (!isEmbedParentOrigin(event.origin) || event.source !== parent) return false;
+  if (!event.data || typeof event.data !== "object" || Array.isArray(event.data)) return false;
+  const record = event.data as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (keys.length !== 1 || !Object.prototype.hasOwnProperty.call(record, "type")) return false;
+  return record.type === EMBED_PARENT_MESSAGE.dialogAck;
+}
+
 export interface HeightReporter {
   report: (value: unknown) => void;
   stop: () => void;
@@ -222,6 +238,50 @@ export function createHeightReporter(post: (height: number) => void, requestFram
   };
 }
 
+interface ActiveDialogBridge {
+  post: (message: EmbedChildMessage) => void;
+  reportHeight: () => void;
+  parent: unknown;
+  isStopped: () => boolean;
+}
+
+let dialogCount = 0;
+let heightPaused = false;
+let dialogBridge: ActiveDialogBridge | null = null;
+
+export function embedDialogOpenMessage(): EmbedChildMessageMap["dialogOpen"] {
+  return { type: EMBED_CHILD_MESSAGE.dialogOpen };
+}
+
+export function embedDialogCloseMessage(): EmbedChildMessageMap["dialogClose"] {
+  return { type: EMBED_CHILD_MESSAGE.dialogClose };
+}
+
+/**
+ * Opens one embed dialog. The first open posts `{ type: "wc:dialog-open" }`.
+ * Height pauses only after `{ type: "wc:dialog-ack" }` from the parent.
+ * The returned function is the close/unmount cleanup.
+ * Standalone and non-embed pages post nothing.
+ */
+export function openEmbedDialog(): () => void {
+  dialogCount += 1;
+  if (dialogCount === 1 && dialogBridge && !dialogBridge.isStopped()) dialogBridge.post(embedDialogOpenMessage());
+  let closed = false;
+  return () => {
+    if (closed) return;
+    closed = true;
+    if (dialogCount === 0) return;
+    dialogCount -= 1;
+    if (dialogCount !== 0) return;
+    const wasPaused = heightPaused;
+    heightPaused = false;
+    const current = dialogBridge;
+    if (!current || current.isStopped()) return;
+    current.post(embedDialogCloseMessage());
+    if (wasPaused) current.reportHeight();
+  };
+}
+
 /** Posts height, path, and accepts theme. Inbound messages cannot sign in or out. */
 export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   if (!host.isEmbed() || host.isTopLevel()) return () => undefined;
@@ -237,7 +297,7 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
     for (const origin of targets) postToParent(parent, origin, message);
   };
   const reporter = createHeightReporter((height) => {
-    if (stopped) return;
+    if (stopped || heightPaused) return;
     post({ type: EMBED_CHILD_MESSAGE.height, height });
   }, host.requestFrame);
 
@@ -259,6 +319,10 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
   });
   const stopPath = host.subscribePath(publishPath);
   const stopMessages = host.addMessageListener((event) => {
+    if (!stopped && acceptParentDialogAck(event, parent) && dialogCount > 0) {
+      heightPaused = true;
+      return;
+    }
     const theme = acceptParentThemeMessage(event, parent, targets[0] ?? host.parentOrigin);
     if (!theme || stopped) return;
     // A valid wc:theme from the parent locks later posts to that exact origin.
@@ -266,11 +330,23 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
     host.setTheme(theme);
   });
 
+  dialogBridge = {
+    post,
+    reportHeight: () => {
+      if (stopped) return;
+      reporter.report(host.readHeight());
+    },
+    parent,
+    isStopped: () => stopped
+  };
+  if (dialogCount > 0 && !heightPaused) post(embedDialogOpenMessage());
+
   reporter.report(host.readHeight());
   publishPath();
 
   return () => {
     stopped = true;
+    if (dialogBridge?.isStopped()) dialogBridge = null;
     reporter.stop();
     stopResize();
     stopPath();

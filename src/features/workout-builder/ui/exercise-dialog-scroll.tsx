@@ -2,12 +2,16 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 
+import { openEmbedDialog } from "@/features/embed/lib/embed-bridge";
+
 interface ExerciseDialogScrollProps {
   children: ReactNode;
 }
 
 export function ExerciseDialogScroll({ children }: ExerciseDialogScrollProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => openEmbedDialog(), []);
 
   useEffect(() => {
     const node = scrollRef.current;

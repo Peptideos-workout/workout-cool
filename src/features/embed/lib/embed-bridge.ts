@@ -243,10 +243,12 @@ interface ActiveDialogBridge {
   reportHeight: () => void;
   parent: unknown;
   isStopped: () => boolean;
+  postedOpen: boolean;
 }
 
 let dialogCount = 0;
 let heightPaused = false;
+let openPosted = false;
 let dialogBridge: ActiveDialogBridge | null = null;
 
 export function embedDialogOpenMessage(): EmbedChildMessageMap["dialogOpen"] {
@@ -263,9 +265,16 @@ export function embedDialogCloseMessage(): EmbedChildMessageMap["dialogClose"] {
  * The returned function is the close/unmount cleanup.
  * Standalone and non-embed pages post nothing.
  */
+function postDialogOpen(bridge: ActiveDialogBridge) {
+  if (openPosted || bridge.postedOpen || bridge.isStopped()) return;
+  bridge.post(embedDialogOpenMessage());
+  bridge.postedOpen = true;
+  openPosted = true;
+}
+
 export function openEmbedDialog(): () => void {
   dialogCount += 1;
-  if (dialogCount === 1 && dialogBridge && !dialogBridge.isStopped()) dialogBridge.post(embedDialogOpenMessage());
+  if (dialogCount === 1 && dialogBridge) postDialogOpen(dialogBridge);
   let closed = false;
   return () => {
     if (closed) return;
@@ -275,9 +284,12 @@ export function openEmbedDialog(): () => void {
     if (dialogCount !== 0) return;
     const wasPaused = heightPaused;
     heightPaused = false;
+    if (!openPosted) return;
     const current = dialogBridge;
     if (!current || current.isStopped()) return;
     current.post(embedDialogCloseMessage());
+    current.postedOpen = false;
+    openPosted = false;
     if (wasPaused) current.reportHeight();
   };
 }
@@ -330,21 +342,30 @@ export function startEmbedBridge(host: EmbedBridgeHost): () => void {
     host.setTheme(theme);
   });
 
-  dialogBridge = {
+  const bridge: ActiveDialogBridge = {
     post,
     reportHeight: () => {
       if (stopped) return;
       reporter.report(host.readHeight());
     },
     parent,
-    isStopped: () => stopped
+    isStopped: () => stopped,
+    postedOpen: false
   };
-  if (dialogCount > 0 && !heightPaused) post(embedDialogOpenMessage());
+  dialogBridge = bridge;
+  if (dialogCount > 0) postDialogOpen(bridge);
 
   reporter.report(host.readHeight());
   publishPath();
 
   return () => {
+    // Pathname changes stop this bridge before the dialog unmounts. Tell the parent now.
+    if (!stopped && dialogCount > 0 && bridge.postedOpen) {
+      post(embedDialogCloseMessage());
+      heightPaused = false;
+      bridge.postedOpen = false;
+      openPosted = false;
+    }
     stopped = true;
     if (dialogBridge?.isStopped()) dialogBridge = null;
     reporter.stop();

@@ -831,13 +831,167 @@ test("unmount while a dialog is open posts close, and the exercise dialog uses t
     assert.equal(messageOf(calls[calls.length - 1] ?? { message: {} }).type, "wc:dialog-open");
     release();
     assert.equal(messageOf(calls[calls.length - 1] ?? { message: {} }).type, "wc:dialog-close");
-    assert.match(
-      readFileSync("src/features/workout-builder/ui/exercise-dialog-scroll.tsx", "utf8"),
-      /useEffect\(\(\) => openEmbedDialog\(\), \[\]\)/
-    );
   } finally {
     release();
     stop();
+  }
+});
+
+test("stopping the bridge posts close once and the later dialog cleanup posts nothing", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 700, path: "/programs" }));
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    const beforeStop = calls.length;
+    stop();
+    assert.deepEqual(calls.slice(beforeStop).map((call) => messageOf(call).type), ["wc:dialog-close"]);
+    release();
+    assert.deepEqual(calls.slice(beforeStop).map((call) => messageOf(call).type), ["wc:dialog-close"]);
+    assert.equal(calls.slice(beforeStop).every((call) => call.origin === POS), true);
+  } finally {
+    release();
+  }
+});
+
+test("stopping an acked bridge lets the next bridge post height and one open", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const host = bridgeHost(calls, frames, { height: 400, path: "/programs" });
+  const stop = startEmbedBridge(host);
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    host.emit?.({ origin: POS, source: host.parent, data: { type: "wc:dialog-ack" } });
+    const pausedAt = calls.length;
+    host.resize?.();
+    flush(frames);
+    assert.equal(calls.slice(pausedAt).some((call) => messageOf(call).type === "wc:height"), false);
+    stop();
+    const restart = startEmbedBridge(bridgeHost(calls, frames, { height: 7607, path: "/programs" }));
+    try {
+      flush(frames);
+      const dialogs = calls.map((call) => messageOf(call).type).filter((type) => type.startsWith("wc:dialog-"));
+      assert.deepEqual(dialogs, ["wc:dialog-open", "wc:dialog-close", "wc:dialog-open"]);
+      assert.equal(calls.some((call) => messageOf(call).type === "wc:height" && messageOf(call).height === 7607), true);
+    } finally {
+      restart();
+    }
+  } finally {
+    release();
+  }
+});
+
+test("a second start while the parent still has the dialog open does not post another open", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const release = openEmbedDialog();
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 480, path: "/programs" }));
+  const again = startEmbedBridge(bridgeHost(calls, frames, { height: 500, path: "/programs" }));
+  try {
+    flush(frames);
+    const dialogs = () => calls.map((call) => messageOf(call).type).filter((type) => type.startsWith("wc:dialog-"));
+    assert.deepEqual(dialogs(), ["wc:dialog-open"]);
+    // The first bridge posted the open, so its stop closes. The replacement must not close again.
+    stop();
+    assert.deepEqual(dialogs(), ["wc:dialog-open", "wc:dialog-close"]);
+    release();
+    assert.deepEqual(dialogs(), ["wc:dialog-open", "wc:dialog-close"]);
+  } finally {
+    again();
+    stop();
+    release();
+  }
+});
+
+test("restarting before the ack alternates dialog open and close", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 500, path: "/programs" }));
+  flush(frames);
+  const release = openEmbedDialog();
+  try {
+    stop();
+    const restart = startEmbedBridge(bridgeHost(calls, frames, { height: 500, path: "/programs" }));
+    try {
+      const dialogs = () => calls.map((call) => messageOf(call).type).filter((type) => type.startsWith("wc:dialog-"));
+      assert.deepEqual(dialogs(), ["wc:dialog-open", "wc:dialog-close", "wc:dialog-open"]);
+      release();
+      assert.deepEqual(dialogs(), ["wc:dialog-open", "wc:dialog-close", "wc:dialog-open", "wc:dialog-close"]);
+    } finally {
+      restart();
+    }
+  } finally {
+    release();
+  }
+});
+
+test("calling one dialog cleanup twice does not close the dialog that is still open", () => {
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 500, path: "/programs" }));
+  flush(frames);
+  const first = openEmbedDialog();
+  const second = openEmbedDialog();
+  try {
+    const afterOpen = calls.length;
+    first();
+    first();
+    assert.equal(calls.slice(afterOpen).some((call) => messageOf(call).type === "wc:dialog-close"), false);
+    second();
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-close").length, 1);
+  } finally {
+    first();
+    second();
+    stop();
+  }
+});
+
+test("ExerciseDialogScroll posts open on mount and close on unmount", async () => {
+  const { JSDOM } = await import("jsdom");
+  const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost:3000" });
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  const previousHtml = globalThis.HTMLElement;
+  const previousNode = globalThis.Node;
+  const previousNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  globalThis.window = dom.window as unknown as Window & typeof globalThis;
+  globalThis.document = dom.window.document;
+  globalThis.HTMLElement = dom.window.HTMLElement;
+  globalThis.Node = dom.window.Node;
+  Object.defineProperty(globalThis, "navigator", { value: dom.window.navigator, configurable: true });
+  (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const calls: Array<{ message: unknown; origin: string }> = [];
+  const frames: Array<() => void> = [];
+  const stop = startEmbedBridge(bridgeHost(calls, frames, { height: 640, path: "/programs" }));
+  flush(frames);
+  try {
+    const { act, createElement } = await import("react");
+    const { createRoot } = await import("react-dom/client");
+    const { ExerciseDialogScroll } = await import("../../workout-builder/ui/exercise-dialog-scroll");
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(createElement(ExerciseDialogScroll, null, "Back squat"));
+    });
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-open").length, 1);
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-close").length, 0);
+    await act(async () => {
+      root.unmount();
+    });
+    assert.equal(calls.filter((call) => messageOf(call).type === "wc:dialog-close").length, 1);
+    assert.equal(calls.every((call) => call.origin !== "*"), true);
+    host.remove();
+  } finally {
+    stop();
+    globalThis.window = previousWindow;
+    globalThis.document = previousDocument;
+    globalThis.HTMLElement = previousHtml;
+    globalThis.Node = previousNode;
+    if (previousNavigator) Object.defineProperty(globalThis, "navigator", previousNavigator);
+    else delete (globalThis as { navigator?: Navigator }).navigator;
   }
 });
 

@@ -468,6 +468,7 @@ export default {
     premium_tooltip: "Torne-se Premium",
     leaderboard: "Classificação",
     leaderboard_tooltip: "Ver ranking de treinos",
+    peptideos_dashboard: "PeptideOS Dashboard",
     tools: "Ferramentas",
     tools_tooltip: "Explorar ferramentas",
     label: "Navegação principal",

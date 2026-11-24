@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Dumbbell, Grid, Hammer, Crown, Activity, Trophy } from "lucide-react";
+import { Dumbbell, Grid, Hammer, Crown, Activity, Trophy, LayoutDashboard } from "lucide-react";
 import { useCurrentLocale, useI18n } from "locales/client";
 
 import { cn } from "@/shared/lib/utils";
 import { paths } from "@/shared/constants/paths";
 import { SiteConfig } from "@/shared/config/site-config";
+import { getConfiguredPeptideOsOrigin } from "@/features/auth/lib/configured-peptideos-signup";
 
 export function BottomNavigation() {
   const pathname = usePathname();
@@ -69,6 +70,16 @@ export function BottomNavigation() {
       isActive: pathname.includes(paths.leaderboard),
     },
     {
+      id: "peptideos-dashboard",
+      label: t("bottom_navigation.peptideos_dashboard"),
+      shortLabel: t("bottom_navigation.peptideos_dashboard"),
+      mobileLabel: t("bottom_navigation.peptideos_dashboard"),
+      href: `${getConfiguredPeptideOsOrigin()}/dashboard`,
+      icon: LayoutDashboard,
+      description: t("bottom_navigation.peptideos_dashboard"),
+      isActive: false,
+    },
+    {
       id: "premium",
       label: t("bottom_navigation.premium"),
       shortLabel: t("bottom_navigation.premium"),
@@ -110,29 +121,22 @@ export function BottomNavigation() {
           {tabs.map((tab) => {
             const isActive = tab.isActive;
             const isPremium = tab.id === "premium";
+            const isPeptideOsDashboard = tab.id === "peptideos-dashboard";
             const IconComponent = tab.icon;
-
-            return (
-              <Link
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 py-1",
-                  "lg:px-0 rounded-2xl transition-all duration-300 ease-out",
-                  "hover:scale-105 active:scale-95",
-                  isActive && isPremium
-                    ? "border border-[color-mix(in_srgb,var(--wc-dash-link)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-link)_8%,transparent)]"
-                    : isActive
-                      ? "border border-[color-mix(in_srgb,var(--wc-dash-accent)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-accent)_8%,transparent)]"
-                      : isPremium
-                        ? "hover:bg-[color-mix(in_srgb,var(--wc-dash-link)_5%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--wc-dash-link)_10%,transparent)]"
-                        : "hover:bg-gray-50/80 dark:hover:bg-slate-800/50",
-                )}
-                data-active={isActive ? "true" : "false"}
-                data-wc-entry={tab.id === "leaderboard" || tab.id === "premium" ? tab.id : undefined}
-                data-wc-nav-premium={isPremium ? "" : undefined}
-                href={tab.href}
-                key={tab.id}
-              >
+            const className = cn(
+              "group relative flex min-h-12 flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0 px-1 py-1",
+              "lg:px-0 rounded-2xl transition-all duration-300 ease-out",
+              "hover:scale-105 active:scale-95",
+              isActive && isPremium
+                ? "border border-[color-mix(in_srgb,var(--wc-dash-link)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-link)_8%,transparent)]"
+                : isActive
+                  ? "border border-[color-mix(in_srgb,var(--wc-dash-accent)_20%,transparent)] bg-[color-mix(in_srgb,var(--wc-dash-accent)_8%,transparent)]"
+                  : isPremium
+                    ? "hover:bg-[color-mix(in_srgb,var(--wc-dash-link)_5%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--wc-dash-link)_10%,transparent)]"
+                    : "hover:bg-gray-50/80 dark:hover:bg-slate-800/50",
+            );
+            const item = (
+              <>
                 {/* Active top indicator */}
                 {isActive && (
                   <div
@@ -182,7 +186,8 @@ export function BottomNavigation() {
                 {/* Label - responsive text */}
                 <span
                   className={cn(
-                    "text-lg font-semibold transition-all duration-300 ease-out leading-tight whitespace-nowrap text-center",
+                    "text-lg font-semibold transition-all duration-300 ease-out leading-tight text-center",
+                    isPeptideOsDashboard ? "block w-full min-w-0" : "whitespace-nowrap",
                     isActive || isPremium ? "text-[var(--wc-dash-link)]" : "text-[var(--wc-dash-text)]",
                   )}
                 >
@@ -200,6 +205,35 @@ export function BottomNavigation() {
                 >
                   {tab.description}
                 </div>
+              </>
+            );
+
+            if (isPeptideOsDashboard) {
+              return (
+                <a
+                  className={className}
+                  data-active={isActive ? "true" : "false"}
+                  href={tab.href}
+                  key={tab.id}
+                  rel="noopener noreferrer"
+                  target="_top"
+                >
+                  {item}
+                </a>
+              );
+            }
+
+            return (
+              <Link
+                aria-current={isActive ? "page" : undefined}
+                className={className}
+                data-active={isActive ? "true" : "false"}
+                data-wc-entry={tab.id === "leaderboard" || tab.id === "premium" ? tab.id : undefined}
+                data-wc-nav-premium={isPremium ? "" : undefined}
+                href={tab.href}
+                key={tab.id}
+              >
+                {item}
               </Link>
             );
           })}

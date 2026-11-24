@@ -446,6 +446,7 @@ export default {
     premium_tooltip: "Passer à Premium",
     leaderboard: "Classement",
     leaderboard_tooltip: "Voir le classement d'entraînements",
+    peptideos_dashboard: "PeptideOS Dashboard",
     tools: "Outils",
     tools_tooltip: "Parcourir les outils",
     label: "Navigation principale",

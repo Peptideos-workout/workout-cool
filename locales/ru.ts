@@ -473,6 +473,7 @@ export default {
     profile_tooltip: "Просмотр профиля",
     leaderboard: "Рейтинг",
     leaderboard_tooltip: "Просмотр рейтинга",
+    peptideos_dashboard: "PeptideOS Dashboard",
   },
   tools: {
     try_now: "Попробовать сейчас",

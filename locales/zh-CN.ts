@@ -473,6 +473,7 @@ export default {
     profile_tooltip: "查看您的个人资料",
     leaderboard: "排行榜",
     leaderboard_tooltip: "查看排行榜",
+    peptideos_dashboard: "PeptideOS Dashboard",
   },
   levels: {
     BEGINNER: "初学者",

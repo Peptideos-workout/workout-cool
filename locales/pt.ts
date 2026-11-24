@@ -1483,30 +1483,6 @@ export default {
     or: "ou",
   },
 
-  // Donation Modal
-  donation_modal: {
-    support_via: "Apoiar via...",
-    title: "Apoiar o projeto",
-    congrats: "Parabéns pelo seu treino! 🎉",
-    subtitle: "Esta app ajuda-o gratuitamente, mas tem um custo real para mim...",
-    costs_title: "A realidade dos custos",
-    costs_description:
-      "Actualmente, as doações nem sequer cobrem os custos básicos: servidores, autenticação, infraestrutura, base de dados, etc.",
-    open_source_title: "100% Open Source",
-    open_source_description:
-      "Esta app é completamente gratuita e de open source. Não há lucro - é um projeto de paixão para ajudar a comunidade e ajudar as pessoas a fazer exercício.",
-    no_ads: "Sem publicidade",
-    no_tracking: "Sem rastreamento",
-    impact_title: "O seu impacto",
-    impact_3_euros: "• Mesmo 3€ cobrem 1 semana de servidor",
-    impact_support: "• O seu apoio mantém a app gratuita para todos",
-    impact_footer: "Cada doação, mesmo pequena, faz uma diferença real! 🙏",
-    later_button: "Mais tarde",
-    support_button: "Apoiar o projeto",
-    watch_ad: "Ver um anúncio para nos apoiar",
-    or: "ou",
-  },
-
   // Contact Support
   exercise_modal: {
     pr_title: "Tendência de recordes pessoais",

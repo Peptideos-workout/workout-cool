@@ -1477,29 +1477,6 @@ export default {
     or: "or",
   },
 
-  // Donation Modal
-  donation_modal: {
-    support_via: "Support via...",
-    title: "Support the project",
-    congrats: "Congratulations on your workout! 🎉",
-    subtitle: "This app helps you for free, but it has a real cost for me...",
-    costs_title: "The reality of costs",
-    costs_description: "Currently, donations don't even cover basic costs: servers, authentication, infrastructure, database, etc.",
-    open_source_title: "100% Open Source",
-    open_source_description:
-      "This app is completely free, ads free and open source. No profit is generated - it's a passion project to help the community and help people exercise.",
-    no_ads: "No ads",
-    no_tracking: "No tracking",
-    impact_title: "Your impact",
-    impact_3_euros: "• Even €3 covers 1 week of server",
-    impact_support: "• Your support keeps the app free for everyone",
-    impact_footer: "Every donation, even small, makes a real difference! 🙏",
-    later_button: "Later",
-    support_button: "Support the project",
-    watch_ad: "Watch an ad to support us",
-    or: "or",
-  },
-
   // Exercise modal premium teaser
   exercise_modal: {
     pr_title: "Personal Record Trend",

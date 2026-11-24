@@ -1502,30 +1502,6 @@ export default {
     or: "ou",
   },
 
-  // Donation Modal
-  donation_modal: {
-    support_via: "Soutenir via...",
-    title: "Soutenez le projet",
-    congrats: "Félicitations pour la séance ! 🎉",
-    subtitle: "Cette app vous aide gratuitement, mais elle a un coût réel pour moi...",
-    costs_title: "La réalité des coûts",
-    costs_description:
-      "Actuellement, les donations ne couvrent même pas les coûts de base : serveurs, authentification, infrastructure, base de données, etc.",
-    open_source_title: "100% Open Source",
-    open_source_description:
-      "Cette app est entièrement gratuite et open source. Aucun profit n'est généré - c'est un projet de passion pour aider la communauté et aider les gens à faire du sport.",
-    no_ads: "Pas de pub",
-    no_tracking: "Pas de tracking",
-    impact_title: "Votre impact",
-    impact_3_euros: "• Même 3€ couvrent 1 semaine de serveur",
-    impact_support: "• Votre soutien garde l'app gratuite pour tous",
-    impact_footer: "Chaque don, même petit, fait une vraie différence ! 🙏",
-    later_button: "Plus tard",
-    support_button: "Soutenir le projet",
-    watch_ad: "Regarder une pub pour soutenir le projet",
-    or: "ou",
-  },
-
   exercise_modal: {
     pr_title: "Tendance des records personnels",
     unlock_insights: "Débloquer les analyses avancées",

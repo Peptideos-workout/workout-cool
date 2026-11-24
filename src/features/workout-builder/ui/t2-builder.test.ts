@@ -2,6 +2,9 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
+import { renderToStaticMarkup } from "react-dom/server";
+import { createElement, type ReactNode } from "react";
+
 function read(path: string) {
   return readFileSync(path, "utf8");
 }
@@ -276,4 +279,123 @@ test("equipment count bar, exercise labels, and shuffle text stay 18px", () => {
   assert.match(card, /break-words text-lg font-semibold leading-tight/);
   assert.doesNotMatch(card, /line-clamp-2/);
   assert.doesNotMatch(card, /text-sm leading-tight line-clamp-2/);
+});
+
+const DONATION_MARK = /DonationModal|useDonationModal|kofiframe|ko-fi\.com|donation_modal|openModal\s*\(/;
+
+function sliceBetween(source: string, start: string, end: string) {
+  const from = source.indexOf(start);
+  const to = source.indexOf(end, from + start.length);
+  if (from < 0 || to < 0) throw new Error(`missing slice starting at ${start}`);
+  return source.slice(from, to);
+}
+
+function stripComments(source: string) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+}
+
+function showsDonation(source: string, embedded: boolean) {
+  const code = stripComments(source);
+  if (!DONATION_MARK.test(code)) return false;
+  const embedAware = /useIsEmbedDocument|data-wc-embed|isEmbed\b|isEmbedded\b/.test(code);
+  if (!embedAware) return true;
+  const positive =
+    /(?:isEmbed|isEmbedded)\s*(?:&&|\?)[\s\S]{0,500}(?:DonationModal|kofiframe|ko-fi\.com|donation_modal|openModal)/.test(code) ||
+    /if\s*\(\s*(?:isEmbed|isEmbedded)\s*\)[\s\S]{0,800}(?:DonationModal|kofiframe|ko-fi\.com|donation_modal|openModal)/.test(code);
+  const negative =
+    /!(?:isEmbed|isEmbedded)\s*&&[\s\S]{0,500}(?:DonationModal|kofiframe|ko-fi\.com|donation_modal|openModal)/.test(code) ||
+    /if\s*\(\s*!(?:isEmbed|isEmbedded)\s*\)[\s\S]{0,800}(?:DonationModal|kofiframe|ko-fi\.com|donation_modal|openModal)/.test(code);
+  if (embedded) return positive || (!positive && !negative);
+  return negative || (!positive && !negative);
+}
+
+function localeValue(source: string, key: string) {
+  const match = source.match(new RegExp(`${key}:\\s*"([^"]*)"`));
+  if (!match) throw new Error(`missing locale string ${key}`);
+  return match[1];
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function finishedWorkoutHtml(embedded: boolean) {
+  const stepper = read("src/features/workout-builder/ui/workout-stepper.tsx");
+  const sets = read("src/features/workout-session/ui/workout-session-sets.tsx");
+  const en = read("locales/en.ts");
+  const handler = sliceBetween(stepper, "const handleCongrats", "const handleToggleEquipment");
+  const stepperDone = sliceBetween(stepper, "if (showCongrats && !isWorkoutActive)", "if (isWorkoutActive && session)");
+  const setsDone = sliceBetween(sets, "if (showCongrats)", "if (!session)");
+  const show = [handler, stepperDone, setsDone].some((part) => showsDonation(part, embedded));
+  const title = en.match(/congrats:\s*"(Congratulations, workout finished![^"]*)"/);
+  if (!title) throw new Error("missing workout finished heading");
+  const subtitle = localeValue(en, "congrats_subtitle");
+  const profile = localeValue(en, "go_to_profile");
+  const children: ReactNode[] = [
+    createElement("h2", { key: "title" }, title[1]),
+    createElement("p", { key: "subtitle" }, subtitle),
+    createElement("button", { key: "profile", type: "button" }, profile)
+  ];
+
+  if (show) {
+    const modal = read("src/features/workout-session/ui/donation-modal.tsx");
+    const iframeSrc = modal.match(/src="(https:\/\/ko-fi\.com[^"]+)"/)?.[1];
+    const iframeId = modal.match(/id="(kofiframe)"/)?.[1];
+    if (!iframeSrc || !iframeId) throw new Error("finished workout still mounts a donation block without a Ko-fi iframe");
+    const impactTitle = localeValue(en, "impact_title");
+    const impactBody = localeValue(en, "impact_3_euros");
+    children.push(
+      createElement(
+        "section",
+        { key: "impact" },
+        createElement("h3", { key: "impact-title" }, impactTitle),
+        createElement("p", { key: "impact-body" }, impactBody)
+      ),
+      createElement("iframe", { id: iframeId, key: "kofi", src: iframeSrc, title: "workoutcool" })
+    );
+  }
+
+  assert.match(stepperDone, /workout_builder\.session\.congrats/);
+  assert.match(stepperDone, /workout_builder\.session\.congrats_subtitle/);
+  assert.match(stepperDone, /commons\.go_to_profile/);
+  assert.match(setsDone, /commons\.go_to_profile/);
+
+  return renderToStaticMarkup(
+    createElement("main", { "data-embedded": embedded ? "1" : "0", "data-workout-complete": "" }, children)
+  );
+}
+
+function visibleText(html: string) {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&#x27;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function assertNoDonationBlock(html: string, embedded: boolean) {
+  assert.doesNotMatch(html, /<iframe/i);
+  assert.doesNotMatch(html, /ko-fi/i);
+  assert.doesNotMatch(html, /kofiframe/);
+  assert.doesNotMatch(html, /Your impact/);
+  assert.doesNotMatch(html, /€3 covers 1 week of server/);
+  assert.doesNotMatch(html, /Keep Workout\.cool Free/);
+  assert.doesNotMatch(html, /Support Workout\.cool/);
+  assert.doesNotMatch(html, /Tip \$5/);
+  assert.doesNotMatch(html, /Powered by Ko-fi/);
+  const text = visibleText(html);
+  assert.match(html, new RegExp(`data-embedded="${embedded ? "1" : "0"}"`));
+  assert.match(html, /data-workout-complete=""/);
+  assert.match(text, /Congratulations, workout finished/);
+  assert.match(text, new RegExp(escapeRegExp(localeValue(read("locales/en.ts"), "congrats_subtitle"))));
+  assert.match(text, /Go to profile/);
+}
+
+test("finishing a workout in embedded mode does not render the Ko-fi donation block or impact card", () => {
+  assertNoDonationBlock(finishedWorkoutHtml(true), true);
+});
+
+test("finishing a workout outside embed does not render the Ko-fi donation block or impact card", () => {
+  assertNoDonationBlock(finishedWorkoutHtml(false), false);
 });
